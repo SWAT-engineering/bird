@@ -1,0 +1,59 @@
+module network::TCP_IP
+
+import network::IPv4
+import network::IPv6
+
+import network::TCP
+import network::UDP
+
+import network::application::DNS
+
+
+struct NetworkStream {
+    RawIPPacket[] packets
+    RawProtocolData[] ipPackets = reassembleAndParse(packets)
+    ApplicationData[] applicationPackets = reassembleAndParse(contents)
+}
+
+struct RawIPPacket@(endianness = Endianness.BIG) {
+   IPHeader head
+   u8[] data[head.totalSize]
+}
+
+choice IPHeader {
+    abstract int dataSize
+    abstract u8 protocol
+    IPv4Header
+    IPv6Header
+}
+
+
+choice RawProtocolData(int protocol) {
+    abstract u8[] data
+    struct {
+        TCPSegment _ ?(protocol == 6)
+    }
+    struct {
+        UDPSegment _ ?(protocol == 17)
+    }
+
+    UnparsedProtocol
+}
+
+struct UnparsedProtocol {
+    u8[] data
+}
+
+choice ApplicationData {
+    DNS
+    HTTP
+    SMTP
+}
+
+
+
+@(engineering.swat.net.Reassembly)
+RawProtocolData[] reassembleAndParse(RawIPPacket[] packets)
+
+@(engineering.swat.net.Reassembly)
+ApplicationData[] reassembleAndParse(RawProtocolData[] protocol)

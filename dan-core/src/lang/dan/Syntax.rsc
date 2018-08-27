@@ -6,13 +6,17 @@ extend lang::std::Layout;
 keyword Reserved = "abstract" | "struct" | "choice"  | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it";
 
 start syntax Program =
-	"module" Id
+	"module" ModuleId
 	Import* imports
 	TopLevelDecl* declarations;
 	
 lexical JavaId 
 	= [a-z A-Z 0-9 _] !<< [a-z A-Z][a-z A-Z 0-9 _ .]* !>> [a-z A-Z 0-9 _]
 	;
+	
+lexical ModuleId
+    = {Id "::"}+ moduleName
+    ;
 
 lexical Id 
 	=  (([a-z A-Z 0-9 _] - [u s]) !<< ([a-z A-Z] - [u s])[a-z A-Z 0-9 _]* !>> [a-z A-Z 0-9 _]) \ Reserved 
@@ -26,8 +30,8 @@ lexical Id
 lexical DId = Id | "_";
 
 syntax Import
-	= "import" Id
-	;
+	= "import" ModuleId
+ 	;
 	
 syntax TopLevelDecl
 	= "struct" Id Formals? Annos? "{" DeclInStruct* declarations "}"

@@ -1,0 +1,4 @@
+module network::UDP
+
+struct UDPSegment {
+}

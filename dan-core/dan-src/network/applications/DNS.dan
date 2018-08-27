@@ -1,0 +1,45 @@
+module network::applications::DNS
+
+struct DNS {
+    DNSHeader header
+    Question[] questions[header.questions]
+    AnswerRecord[] answers[header.answerRecords]
+    AuthorityRecord[] authorities[header.authorityRecords]
+    AdditionalRecord[] additionals[header.additionalRecords]
+}
+
+struct Question {
+    DNSName questionName
+    u16 type ?(inValidDNSTypes(this))
+    u16 class
+}
+
+choice DNSName {
+    abstract str name
+    
+    struct {
+        u8 size ?(> 0)
+        u8[] chars[size]
+        DNSName next
+        str name = chars + "." + next.name
+    }
+    
+    struct {
+        u8 size ?(== 0)
+        str name = ""
+    }
+}
+
+
+
+struct DNSHeader {
+    u16 identifier
+    u16 flags 
+        ?( this & b111_0000 == 0 
+        && ((this >>> 11) & 0b1111) != 3 
+        && this & 0b1111 <= 10) // reserved bits and codes
+    u16 questions
+    u16 answerRecords
+    u16 authorityRecords
+    u16 additionalRecords
+}
