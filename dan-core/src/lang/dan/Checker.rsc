@@ -1,6 +1,6 @@
-module lang::dan::Checker
+module lang::bird::Checker
 
-import lang::dan::Syntax;
+import lang::bird::Syntax;
 import util::Math;
 import ListRelation;
 import Set;
@@ -39,11 +39,11 @@ data PathRole
     = importPath()
     ;
     	
-//bool danIsSubType(AType _, topTy()) = true;
-//bool danIsSubType(_), refType("Token"))) = true;
-//bool danIsSubType(AType t1, AType t2) = true
+//bool birdIsSubType(AType _, topTy()) = true;
+//bool birdIsSubType(_), refType("Token"))) = true;
+//bool birdIsSubType(AType t1, AType t2) = true
 //	when t1 == t2;
-//default bool danIsSubType(AType _, AType _) = false;
+//default bool birdIsSubType(AType _, AType _) = false;
 
 bool isConvertible(voidType(), AType t) = true;
 
@@ -161,17 +161,17 @@ PathConfig pathConfig(loc file) {
    p = project(file);      
    cfg = pathConfig();
    
-   cfg.srcs += [ p + "dan-src"];
-   cfg.libs += [ p + "dan-lib"];
+   cfg.srcs += [ p + "bird-src"];
+   cfg.libs += [ p + "bird-lib"];
    
    return cfg;
 }
 
-private str __DAN_IMPORT_QUEUE = "__danImportQueue";
+private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
 
 tuple[bool, loc] lookupModule(str name, PathConfig pcfg) {
     for (s <- pcfg.srcs + pcfg.libs) {
-        result = (s + replaceAll(name, ".", "/"))[extension = "dan"];
+        result = (s + replaceAll(name, ".", "/"))[extension = "bird"];
         if (exists(result)) {
             return <true, result>;
         }
@@ -181,13 +181,13 @@ tuple[bool, loc] lookupModule(str name, PathConfig pcfg) {
 
 void collect(current:(Import) `import <Id name>`, Collector c) {
     c.useViaPath(name, {moduleId()}, importPath());
-    c.push(__DAN_IMPORT_QUEUE, "<name>");
+    c.push(__BIRD_IMPORT_QUEUE, "<name>");
 }
 
 void handleImports(Collector c, Tree root, PathConfig pcfg) {
     imported = {};
-    while (list[str] modulesToImport := c.getStack(__DAN_IMPORT_QUEUE) && modulesToImport != []) {
-        c.clearStack(__DAN_IMPORT_QUEUE);
+    while (list[str] modulesToImport := c.getStack(__BIRD_IMPORT_QUEUE) && modulesToImport != []) {
+        c.clearStack(__BIRD_IMPORT_QUEUE);
         for (m <- modulesToImport, m notin imported) {
             if (<true, l> := lookupModule(m, pcfg)) {
                 collect(parse(#start[Program], l).top, c);
@@ -800,19 +800,19 @@ void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, T
 }	
 
 // ----  Examples & Tests --------------------------------
-TModel danTModelFromTree(Tree pt, bool debug = false){
+TModel birdTModelFromTree(Tree pt, bool debug = false){
     if (pt has top) pt = pt.top;
-    c = newCollector("collectAndSolve", pt, config=getDanConfig(), debug=debug);    // TODO get more meaningfull name
+    c = newCollector("collectAndSolve", pt, config=getBirdConfig(), debug=debug);    // TODO get more meaningfull name
     collect(pt, c);
     handleImports(c, pt, pathConfig(pt@\loc));
     return newSolver(pt, c.run()).run();
 }
 
-tuple[bool isNamedType, str typeName, set[IdRole] idRoles] danGetTypeNameAndRole(refType(str name)) = <true, name, {structId()}>;
-tuple[bool isNamedType, str typeName, set[IdRole] idRoles] danGetTypeNameAndRole(funType(str name, _, _, _)) = <true, name, {funId()}>;
-tuple[bool isNamedType, str typeName, set[IdRole] idRoles] danGetTypeNameAndRole(AType t) = <false, "", {}>;
+tuple[bool isNamedType, str typeName, set[IdRole] idRoles] birdGetTypeNameAndRole(refType(str name)) = <true, name, {structId()}>;
+tuple[bool isNamedType, str typeName, set[IdRole] idRoles] birdGetTypeNameAndRole(funType(str name, _, _, _)) = <true, name, {funId()}>;
+tuple[bool isNamedType, str typeName, set[IdRole] idRoles] birdGetTypeNameAndRole(AType t) = <false, "", {}>;
 
-AType danGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope, Solver s){
+AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope, Solver s){
     if(anonType(fields) :=  containerType){
     	return Set::getOneFrom((ListRelation::index(fields))["<selector>"]);
     }
@@ -821,24 +821,24 @@ AType danGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope,
     }
 }
 
-private TypePalConfig getDanConfig() = tconfig(
+private TypePalConfig getBirdConfig() = tconfig(
     isSubType = isConvertible,
-    getTypeNameAndRole = danGetTypeNameAndRole,
-    getTypeInNamelessType = danGetTypeInAnonymousStruct
+    getTypeNameAndRole = birdGetTypeNameAndRole,
+    getTypeInNamelessType = birdGetTypeInAnonymousStruct
 );
 
 
-public start[Program] sampleDan(str name) = parse(#start[Program], |project://dan-core/<name>.dan|);
+public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/<name>.bird|);
 
-list[Message] runDan(str name, bool debug = false) {
-    Tree pt = sampleDan(name);
-    TModel tm = danTModelFromTree(pt, debug = debug);
+list[Message] runBird(str name, bool debug = false) {
+    Tree pt = sampleBird(name);
+    TModel tm = birdTModelFromTree(pt, debug = debug);
     return tm.messages;
 }
  
-bool testDan(int n, bool debug = false, set[str] runOnly = {}) {
-    return runTests([|project://dan-core/src/lang/dan/dan<"<n>">.ttl|], #start[Program], TModel (Tree t) {
-        return danTModelFromTree(t, debug=debug);
+bool testBird(int n, bool debug = false, set[str] runOnly = {}) {
+    return runTests([|project://bird-core/src/lang/bird/bird<"<n>">.ttl|], #start[Program], TModel (Tree t) {
+        return birdTModelFromTree(t, debug=debug);
     }, runOnly = runOnly);
 }
 

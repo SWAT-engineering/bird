@@ -1,9 +1,9 @@
-module lang::dan::Generator
+module lang::bird::Generator
 
 import IO;
 
-import lang::dan::Syntax;
-import lang::dan::Checker;
+import lang::bird::Syntax;
+import lang::bird::Checker;
 import analysis::graphs::Graph;
 
 
@@ -285,22 +285,22 @@ str type2Java(listType(t)) = "List\<<type2Java(t)>\>"
 	when !isTokenType(t);	  
             	
 
-public start[Program] sampleDan(str name) = parse(#start[Program], |project://dan-core/<name>.dan|);
+public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/<name>.bird|);
 
-str compileDan(str name) {
-	start[Program] pt = sampleDan(name);
-	return compileDan(pt);
+str compileBird(str name) {
+	start[Program] pt = sampleBird(name);
+	return compileBird(pt);
 }
 
-str compileDan(start[Program] pt) {
-	TModel model = danTModelFromTree(pt);
+str compileBird(start[Program] pt) {
+	TModel model = birdTModelFromTree(pt);
     map[loc, AType] types = getFacts(model);
     rel[loc, loc] useDefs = getUseDef(model);
     return compile(pt.top, useDefs, types);
 }
 
-void compileDanTo(str name, loc file) {
-    str text = compileDan(name);
+void compileBirdTo(str name, loc file) {
+    str text = compileBird(name);
     //println(text);
     writeFile(file, text);
 }

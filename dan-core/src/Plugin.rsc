@@ -1,8 +1,8 @@
 module Plugin
 
-import lang::dan::Syntax;
-import lang::dan::Checker;
-import lang::dan::Generator;
+import lang::bird::Syntax;
+import lang::bird::Checker;
+import lang::bird::Generator;
 import ParseTree;
 
 import IO;
@@ -11,7 +11,7 @@ import util::IDE;
 import util::Reflective;
 import lang::manifest::IO;
 
-private str LANG_NAME = "DAN";
+private str LANG_NAME = "BIRD";
 
 Contribution commonSyntaxProperties 
     = syntaxProperties(
@@ -20,8 +20,8 @@ Contribution commonSyntaxProperties
         blockComment = <"/*","*","*/">
     );
     
-Tree checkDan(Tree input){
-    model = danTModelFromTree(input); // your function that collects & solves
+Tree checkBird(Tree input){
+    model = birdTModelFromTree(input); // your function that collects & solves
     types = getFacts(model);
   
   return input[@messages={*getMessages(model)}]
@@ -34,8 +34,8 @@ Contribution compiler = builder(set[Message] (Tree tree) {
 	  if (start[Program] prog := tree) {
         loc l = prog@\loc.top;
         l.extension = "java";
-        newLoc =  |project://dan-core/dan-output/engineering/swat/formats/<l.file>|;
-        newprog = compileDan(prog);
+        newLoc =  |project://bird-core/bird-output/engineering/swat/formats/<l.file>|;
+        newprog = compileBird(prog);
         writeFile(newLoc, newprog);
         return {};
       }
@@ -44,7 +44,7 @@ Contribution compiler = builder(set[Message] (Tree tree) {
  
 
 void main() {
-	registerLanguage(LANG_NAME, "dan", start[Program](str src, loc org) {
+	registerLanguage(LANG_NAME, "bird", start[Program](str src, loc org) {
 		return parse(#start[Program], src, org);
  	});
 	
@@ -52,6 +52,6 @@ void main() {
         commonSyntaxProperties,
         compiler,
         treeProperties(hasQuickFixes = false), // performance
-        annotator(checkDan)
+        annotator(checkBird)
     });
 }

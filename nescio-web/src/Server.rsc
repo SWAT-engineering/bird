@@ -5,8 +5,8 @@ import String;
 import IO;
 import Exception;
 
-import lang::dan::Syntax;
-import lang::dan::Checker;
+import lang::bird::Syntax;
+import lang::bird::Checker;
 import ParseTree;
 import util::Reflective;
 
@@ -47,7 +47,7 @@ Response handle(r:post("/check", srcRequest)) {
 default Response handle(Request r) = response(badRequest(), "Do not know how to handle: <r>");
 
 @memo
-TModel getModel(str source) = danTModelFromTree(parse(#start[Program], source, |project://fakeproject/|));
+TModel getModel(str source) = birdTModelFromTree(parse(#start[Program], source, |project://fakeproject/|));
 
 rel[loc use, loc def] getUseDefs(str source) = getUseDef(getModel(source));
 

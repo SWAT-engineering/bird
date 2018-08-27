@@ -1,4 +1,4 @@
-module lang::dan::Syntax
+module lang::bird::Syntax
 
 extend lang::std::Layout;
 
