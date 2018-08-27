@@ -10,7 +10,7 @@ struct DNS {
 
 struct Question {
     DNSName questionName
-    u16 type
+    u16 type ?(inValidDNSTypes(this))
     u16 class
 }
 
@@ -30,9 +30,14 @@ choice DNSName {
     }
 }
 
+
+
 struct DNSHeader {
     u16 identifier
-    u16 flags ?( flags & b111_0000 == 0) // reserved bits
+    u16 flags 
+        ?( this & b111_0000 == 0 
+        && ((this >>> 11) & 0b1111) != 3 
+        && this & 0b1111 <= 10) // reserved bits and codes
     u16 questions
     u16 answerRecords
     u16 authorityRecords
