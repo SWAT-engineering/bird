@@ -6,7 +6,7 @@ import network::IPv6
 import network::TCP
 import network::UDP
 
-import network::application::DNS
+import network::applications::DNS
 
 
 struct NetworkStream {
