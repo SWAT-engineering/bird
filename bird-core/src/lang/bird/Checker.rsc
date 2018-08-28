@@ -183,7 +183,7 @@ tuple[bool, loc] lookupModule(ModuleId name, PathConfig pcfg) {
 }
 
 void collect(current:(Import) `import <ModuleId name>`, Collector c) {
-    c.useViaPath(name, {moduleId()}, importPath());
+    c.addPathToDef(name, {moduleId()}, importPath());
     c.push(__BIRD_IMPORT_QUEUE, name);
 }
 
@@ -268,7 +268,7 @@ void collect(current:(DeclInStruct) `<Type ty> <Id id> = <Expr expr>`,  Collecto
 	collect(ty, c);
 	collect(expr, c);
 	c.require("good assignment", current, [expr],
-        void (Solver s) { s.requireSubtype(s.getType(expr), s.getType(ty), error(current, "Expression should be <ty>, found <prettyPrintAType(s.getType(expr))>")); });
+        void (Solver s) { s.requireSubType(s.getType(expr), s.getType(ty), error(current, "Expression should be <ty>, found <prettyPrintAType(s.getType(expr))>")); });
 }    
 
 void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`,  Collector c) {
@@ -315,7 +315,7 @@ void collectSideCondition(Type ty, DId id, current:(SideCondition) `while ( <Exp
 void collectSideCondition(Type _, DId id, current:(SideCondition) `? ( <ComparatorOperator uo> <Expr e>)`, Collector c){
 	collect(e, c);
 	c.require("side condition", current, [e], void (Solver s) {
-		s.requireSubtype(s.getType(e), intType(), error(current, "Expression in unary comparing side condition must have numeric type"));
+		s.requireSubType(s.getType(e), intType(), error(current, "Expression in unary comparing side condition must have numeric type"));
 	});
 	//c.requireEqual(ty, e, error(sc, "Unary expression in side condition must have the same type as declaration"));
 }
@@ -329,7 +329,7 @@ void collectSize(Type ty, sz:(Size) `[<Expr e>]`, Collector c){
 	collect(e, c);
 	c.require("size argument", sz, [ty] + [e], void (Solver s) {
 		s.requireTrue(s.getType(ty) is listType, error(sz, "Setting size on a non-list element"));
-		s.requireSubtype(s.getType(e), intType(), error(sz, "Size must be an integer"));
+		s.requireSubType(s.getType(e), intType(), error(sz, "Size must be an integer"));
 	});
 }
 
@@ -358,7 +358,7 @@ void collectArgs(Type ty, Arguments? current, Collector c){
 				//println(currentScope);
 				ct = s.getTypeInType(t, newConstructorId([Id] "<idStr>", ty@\loc), {consId()}, currentScope);
 				argTypes = atypeList([ s.getType(a) | aargs <- current, a <- aargs.args]);
-				s.requireSubtype(argTypes, ct.formals, error(current, "Wrong type of arguments"));
+				s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments"));
 			}
 		});
 	
@@ -376,7 +376,7 @@ void collectFunctionArgs(Id id, Arguments current, Collector c){
 			else{
 				funType(_, _, formals,_) = ty;
 			    argTypes = atypeList([ s.getType(a) |  a <- current.args]);
-				s.requireSubtype(argTypes, formals, error(current, "Wrong type of arguments"));
+				s.requireSubType(argTypes, formals, error(current, "Wrong type of arguments"));
 			}
 		});
 	
@@ -411,7 +411,7 @@ void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? a
                 }
                 for (<aId, aTy> <- abstractFields) {
                     s.requireTrue(aId in definedFields, error(ty, "Field %v is missing from %v", aId, ty));
-                    s.requireSubtype(definedFields[aId], aTy, error(ty, "Field %v is not of the expected type %t", aId, aTy));
+                    s.requireSubType(definedFields[aId], aTy, error(ty, "Field %v is not of the expected type %t", aId, aTy));
                 }
      		};
      			
@@ -611,7 +611,7 @@ void collect(current: (Expr) `<Expr e>[<Range r>]`, Collector c){
 void collectRange(Expr access, Expr e, current:(Range) `: <Expr end>`, Collector c){
 	collect(end, c);
 	c.calculate("list access", access, [e, end], AType (Solver s){
-		s.requireSubtype(end, intType(), error(end, "Index must be integer"));
+		s.requireSubType(end, intType(), error(end, "Index must be integer"));
 		return s.getType(e);
 	});
 }
@@ -662,7 +662,7 @@ void collect(current: (Expr) `<Expr e1> ? <Expr e2> : <Expr e3>`, Collector c){
     collect(e1, e2, e3, c);
     // TODO relax equality requirement
 	c.calculate("ternary operator", current, [e1, e2, e3], AType(Solver s) {
-		s.requireSubtype(e1, boolType(), error(e1, "Condition must be boolean"));
+		s.requireSubType(e1, boolType(), error(e1, "Condition must be boolean"));
 		s.requireTrue(s.subtype(e2, e3) || s.subtype(e3, e2), error(e2, "The two branches of the ternary operation must have the same type"));
 		return s.subtype(e2, e3)?s.getType(e3):s.getType(e2);
 	});
@@ -745,7 +745,7 @@ void collect(current: (Expr)`! <Expr e>`, Collector c) {
     c.calculate(current, "not expression", [e], AType (Solver s) {
         et = s.getType(e);
         if (et != boolType()) {
-            s.requireSubtype(et, intType(),error(e, "Expected either a boolean type, or an int type, got: %t", e));
+            s.requireSubType(et, intType(),error(e, "Expected either a boolean type, or an int type, got: %t", e));
         }
         return et;
     });
@@ -754,7 +754,7 @@ void collect(current: (Expr)`! <Expr e>`, Collector c) {
 void collect(current: (Expr)`- <Expr e>`, Collector c) {
     collect(e,c);
     c.fact(current, e);
-    c.requireSubtype(e, intType(), error(e, "Expected a int type, got: %t", e));
+    c.requireSubType(e, intType(), error(e, "Expected a int type, got: %t", e));
 }
 
 
@@ -766,8 +766,8 @@ void collect(current: (Expr) `( <Type accuType> <Id accuId> = <Expr init> | <Exp
         collectGenerator(loopVar, source, c);
 
         c.define("<accuId>", variableId(), accuId, defType(accuType));
-        c.requireSubtype(update, accuId, error(update, "Expected type: %t got: %t", accuId, update));
-        c.requireSubtype(init, accuId, error(update, "Expected type: %t got: %t", accuId, init));
+        c.requireSubType(update, accuId, error(update, "Expected type: %t got: %t", accuId, update));
+        c.requireSubType(init, accuId, error(update, "Expected type: %t got: %t", accuId, init));
     } c.leaveScope(current);
 }
 
@@ -811,9 +811,9 @@ TModel birdTModelFromTree(Tree pt, bool debug = false){
     return newSolver(pt, c.run()).run();
 }
 
-tuple[bool isNamedType, str typeName, set[IdRole] idRoles] birdGetTypeNameAndRole(refType(str name)) = <true, name, {structId()}>;
-tuple[bool isNamedType, str typeName, set[IdRole] idRoles] birdGetTypeNameAndRole(funType(str name, _, _, _)) = <true, name, {funId()}>;
-tuple[bool isNamedType, str typeName, set[IdRole] idRoles] birdGetTypeNameAndRole(AType t) = <false, "", {}>;
+tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(refType(str name)) = <[name], {structId()}>;
+tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(funType(str name, _, _, _)) = <[name], {funId()}>;
+tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(AType t) = <[], {}>;
 
 AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope, Solver s){
     if(anonType(fields) :=  containerType){
@@ -826,7 +826,7 @@ AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope
 
 private TypePalConfig getBirdConfig() = tconfig(
     isSubType = isConvertible,
-    getTypeNameAndRole = birdGetTypeNameAndRole,
+    getTypeNamesAndRole = birdGetTypeNameAndRole,
     getTypeInNamelessType = birdGetTypeInAnonymousStruct
 );
 
