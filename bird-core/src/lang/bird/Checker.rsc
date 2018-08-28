@@ -169,9 +169,12 @@ PathConfig pathConfig(loc file) {
 
 private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
 
-tuple[bool, loc] lookupModule(str name, PathConfig pcfg) {
+str getFileName((ModuleId) `<{Id "::"}+ moduleName>`) = replaceAll("<moduleName>.bird", "::", "/");
+
+tuple[bool, loc] lookupModule(ModuleId name, PathConfig pcfg) {
     for (s <- pcfg.srcs + pcfg.libs) {
-        result = (s + replaceAll(name, ".", "/"))[extension = "bird"];
+        result = (s + "/" + getFileName(name)); 
+        println(result);
         if (exists(result)) {
             return <true, result>;
         }
@@ -179,14 +182,14 @@ tuple[bool, loc] lookupModule(str name, PathConfig pcfg) {
     return <false, |invalid:///|>;
 }
 
-void collect(current:(Import) `import <Id name>`, Collector c) {
+void collect(current:(Import) `import <ModuleId name>`, Collector c) {
     c.useViaPath(name, {moduleId()}, importPath());
-    c.push(__BIRD_IMPORT_QUEUE, "<name>");
+    c.push(__BIRD_IMPORT_QUEUE, name);
 }
 
 void handleImports(Collector c, Tree root, PathConfig pcfg) {
     imported = {};
-    while (list[str] modulesToImport := c.getStack(__BIRD_IMPORT_QUEUE) && modulesToImport != []) {
+    while (list[ModuleId] modulesToImport := c.getStack(__BIRD_IMPORT_QUEUE) && modulesToImport != []) {
         c.clearStack(__BIRD_IMPORT_QUEUE);
         for (m <- modulesToImport, m notin imported) {
             if (<true, l> := lookupModule(m, pcfg)) {
@@ -203,7 +206,7 @@ void handleImports(Collector c, Tree root, PathConfig pcfg) {
 // ----  Collect definitions, uses and requirements -----------------------
 
 
-void collect(current: (Program) `module <Id moduleName> <Import* imports> <TopLevelDecl* decls>`, Collector c){
+void collect(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, Collector c){
  	c.define("<moduleName>", moduleId(), current, defType(moduleType()));
     c.enterScope(current);
     collect(imports, c);

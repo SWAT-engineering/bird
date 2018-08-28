@@ -9,6 +9,7 @@ import analysis::graphs::Graph;
 
 import List;
 import Set;
+import String;
 
 extend analysis::typepal::TypePal;
 
@@ -45,19 +46,20 @@ str makeSafeId(str id, loc lo) =
 	"<newId>_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.end.line>_<lo.begin.column>_<lo.end.column>"
 	when newId := (("<id>"=="_")?"dummy":"<id>");
 
-str compile(current: (Program) `module <Id moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
-	= "package engineering.swat.formats;
+str compile(current: (Program) `module <{Id "::"}+ moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
+	= "package engineering.swat.formats<packageName>;
       '
       'import io.parsingdata.metal.token.Token;
 	  '
 	  'import static io.parsingdata.metal.token.Token.EMPTY_NAME;
 	  'import static io.parsingdata.metal.Shorthand.*;
 	  '
-	  'public class <safeId> {
-	  '\tprivate <safeId>(){}
+	  'public class <className> {
+	  '\tprivate <className>(){}
 	  '\t<intercalate("\n", [compile(d, useDefs, types, index) | d <- decls])>
 	  '}"
-	when safeId := moduleName, //makeSafeId("<moduleName>", current@\loc),
+	when [dirs*, className] := [x | x <-moduleName],
+		 packageName := size(dirs) == 0? "": ("."+ intercalate(".", dirs)),
 		 map[loc, TopLevelDecl] declsMap := (d@\loc: d | d <- decls),
 		 list[loc] tmpLos := [lo | lo <- order(useDefs), lo in declsMap],
 		 set[loc] los :=  domain(declsMap) - toSet(tmpLos),
