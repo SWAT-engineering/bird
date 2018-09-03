@@ -125,6 +125,12 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 aty := types[ty@\loc],
 		 !isSimpleByteType(aty);
 		 
+str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
+	println("Declaration of computed field case not handled in the generator");
+	//throw "Declaration of computed field case not handled in the generator";
+	return "";
+}		 		 
+		 
 str compile(DeclInStruct current, Type ty, DId id, Arguments? args, SideCondition? cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	=  compileType(ty, safeId, compiledArgs, compiledCond, useDefs, types, index)
 	when safeId := makeSafeId("<id>", id@\loc),
@@ -159,12 +165,17 @@ str compileSideCondition((SideCondition) `?(!= <Expr e>)`, AType t1,  rel[loc,lo
 	
 str calculateOp("==", set[AType] ts, list[str] es) = "<calculateEq(ts)>(<intercalate(",", es)>)";
 str calculateOp("!=", set[AType] ts, list[str] es) = "not(<calculateEq(ts)>(<intercalate(",", es)>))";
-str calculateOp("&&", set[AType] ts, list[str] es) = "and(<intercalate(",", es)>)";
-str calculateOp("||", set[AType] ts, list[str] es) = "or(<intercalate(",", es)>)";
+str calculateOp("&&", set[AType] ts, list[str] es) { throw "Not implemented generator for logical and"; } //"and(<intercalate(",", es)>)";
+str calculateOp("||", set[AType] ts, list[str] es) { throw "Not implemented generator for logical or"; } //"or(<intercalate(",", es)>)";
+str calculateOp("&", set[AType] ts, list[str] es) = "and(<intercalate(",", es)>)";
+str calculateOp("|", set[AType] ts, list[str] es) = "or(<intercalate(",", es)>)";
+str calculateOp("\>\>", set[AType] ts, list[str] es) = "shr(<intercalate(",", es)>)";
+str calculateOp("\<\<", set[AType] ts, list[str] es) = "shl(<intercalate(",", es)>)";
 str calculateOp("\>", set[AType] ts, list[str] es) = "gtNum(<intercalate(",", es)>)";
 str calculateOp("\<", set[AType] ts, list[str] es) = "ltNum(<intercalate(",", es)>)";
 str calculateOp("\>=", set[AType] ts, list[str] es) = "gtEqNum(<intercalate(",", es)>)";
 str calculateOp("\<=", set[AType] ts, list[str] es) = "ltEqNum(<intercalate(",", es)>)";
+str calculateOp("&", set[AType] ts, list[str] es) = "and(<intercalate(",", es)>)";
 	
 
 default str calculateOp(str other, set[AType] ts){ throw "generation for operator <other> not yet implemented"; }
@@ -228,7 +239,8 @@ str compile(current: (Expr) `<BitLiteral nat>`, rel[loc,loc] useDefs, map[loc, A
 
 str compile(current: (Expr) `<NatLiteral nat>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "con(<nat>)";
 
-str compile(current: (Expr) `(<Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = compile(e, useDefs, types, index);
+str compile(current: (Expr) `(<Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = compile(e, useDefs, types, index)
+	when bprintln(e);
 
 str compile(current: (Expr) `<Id id> ( <{Expr ","}* exprs>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
     "new <javaId>().apply(<intercalate(", ", [compile(e, useDefs, types, index) | Expr e <- exprs])>)"
@@ -241,11 +253,16 @@ str compile(current: (Expr) `<Expr e1> - <Expr e2>`, rel[loc,loc] useDefs, map[l
 str compile(current: (Expr) `<Expr e1> + <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
     "<getInfixOperator("+")>(<compile(e1, useDefs, types, index)>, <compile(e2, useDefs, types, index)>)";    
 
+str compile(current: (Expr) `<Expr e1> * <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+    "<getInfixOperator("*")>(<compile(e1, useDefs, types, index)>, <compile(e2, useDefs, types, index)>)";    
+
+
 str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
     "<getInfixOperator("++")>(<compile(e1, useDefs, types, index)>, <compile(e2, useDefs, types, index)>)";    
 
 str getInfixOperator("-") = "sub";
 str getInfixOperator("+") = "add";
+str getInfixOperator("*") = "mul";
 str getInfixOperator("++") = "cat";
 
 str compile(current: (Expr) `[ <{Expr ","}* es>]`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "con(<intercalate(", ",["<e>" | e <- es])>)"
@@ -263,7 +280,8 @@ str compile(current: (Expr) `<Expr e1> <ComparatorOperator uo> <Expr e2>`, rel[l
 		 
 str compile(current: (Expr) `<Expr e1> <EqualityOperator uo> <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	calculateOp("<uo>", {t1,t2}, [compile(e1, useDefs, types, index), compile(e2, useDefs, types, index)])
-	when t1 := types[e1@\loc],
+	when bprintln(e1),
+		 t1 := types[e1@\loc],
 		 t2 := types[e2@\loc];
 	
 		 
@@ -273,10 +291,31 @@ str compile(current: (Expr) `<Expr e1> && <Expr e2>`, rel[loc,loc] useDefs, map[
 	when t1 := types[e1@\loc],
 		 t2 := types[e2@\loc];
 		 
+str compile(current: (Expr) `<Expr e1> \>\> <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	calculateOp("\>\>", {t1,t2}, [compile(e1, useDefs, types, index), compile(e2, useDefs, types, index)])
+	when t1 := types[e1@\loc],
+		 t2 := types[e2@\loc];
+		 
+str compile(current: (Expr) `<Expr e1> \>\>\> <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	calculateOp("\>\>", {t1,t2}, [compile(e1, useDefs, types, index), compile(e2, useDefs, types, index)])
+	when t1 := types[e1@\loc],
+		 t2 := types[e2@\loc];
+		 
+str compile(current: (Expr) `<Expr e1> \<\< <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	calculateOp("\<\<", {t1,t2}, [compile(e1, useDefs, types, index), compile(e2, useDefs, types, index)])
+	when t1 := types[e1@\loc],
+		 t2 := types[e2@\loc];
+		 
+		 
 str compile(current: (Expr) `<Expr e1> || <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	calculateOp("||", {t1,t2}, [compile(e1, useDefs, types, index), compile(e2, useDefs, types, index)])
 	when t1 := types[e1@\loc],
 		 t2 := types[e2@\loc];
+		 
+str compile(current: (Expr) `<Expr e1> & <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	calculateOp("&", {t1,t2}, [compile(e1, useDefs, types, index), compile(e2, useDefs, types, index)])
+	when t1 := types[e1@\loc],
+		 t2 := types[e2@\loc];		 
 		 
 str type2Java(AType t) = "ValueExpression"
 	when isTokenType(t);	  
