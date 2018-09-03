@@ -77,6 +77,7 @@ str prettyPrintAType(uType(n)) = "u<n>";
 str prettyPrintAType(sType(n)) = "s<n>";
 str prettyPrintAType(consType(formals)) = "constructor(<("" | it + "<prettyPrintAType(ty)>," | atypeList(fs) := formals, ty <- fs)>)";
 str prettyPrintAType(funType(name,_,_,_)) = "fun <name>";
+str prettyPrintAType(moduleType()) = "module";
 
 AType lub(AType t1, voidType()) = t1;
 AType lub(voidType(), AType t1) = t1;
