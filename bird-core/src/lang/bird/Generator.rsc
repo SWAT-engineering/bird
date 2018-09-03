@@ -126,9 +126,9 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 !isSimpleByteType(aty);
 		 
 str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
-	println("Declaration of computed field case not handled in the generator");
+	println("[WARNING] Declaration of computed field case not handled in the generator");
 	//throw "Declaration of computed field case not handled in the generator";
-	return "";
+	return "EMPTY";
 }		 		 
 		 
 str compile(DeclInStruct current, Type ty, DId id, Arguments? args, SideCondition? cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
@@ -235,7 +235,8 @@ str compile(current: (Expr) `<StringLiteral lit>`, rel[loc,loc] useDefs, map[loc
 
 str compile(current: (Expr) `<HexIntegerLiteral nat>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "con(<nat>)";
 
-str compile(current: (Expr) `<BitLiteral nat>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "";
+str compile(current: (Expr) `<BitLiteral nat>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "con(<noUnderscoreNat>)"
+	when noUnderscoreNat := replaceAll("<nat>","_","");
 
 str compile(current: (Expr) `<NatLiteral nat>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "con(<nat>)";
 
