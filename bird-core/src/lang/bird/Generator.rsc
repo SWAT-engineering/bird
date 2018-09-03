@@ -59,7 +59,7 @@ str compile(current: (Program) `module <{Id "::"}+ moduleName> <Import* imports>
 	  '\t<intercalate("\n", [compile(d, useDefs, types, index) | d <- decls])>
 	  '}"
 	when [dirs*, className] := [x | x <-moduleName],
-		 packageName := size(dirs) == 0? "": ("."+ intercalate(".", dirs)),
+		 str packageName := ((size(dirs) == 0)? "": ("."+ intercalate(".", dirs))),
 		 map[loc, TopLevelDecl] declsMap := (d@\loc: d | d <- decls),
 		 list[loc] tmpLos := [lo | lo <- order(useDefs), lo in declsMap],
 		 set[loc] los :=  domain(declsMap) - toSet(tmpLos),
@@ -287,7 +287,7 @@ str type2Java(listType(t)) = "List\<<type2Java(t)>\>"
 	when !isTokenType(t);	  
             	
 
-public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/<name>.bird|);
+public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);
 
 str compileBird(str name) {
 	start[Program] pt = sampleBird(name);
