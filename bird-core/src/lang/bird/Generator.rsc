@@ -50,6 +50,7 @@ tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Impo
 	= <packageName, "package engineering.swat.formats<packageName>;
       '
       'import io.parsingdata.metal.token.Token;
+	  'import io.parsingdata.metal.expression.value.ValueExpression;
 	  '
 	  'import static io.parsingdata.metal.token.Token.EMPTY_NAME;
 	  'import static io.parsingdata.metal.Shorthand.*;
@@ -89,7 +90,8 @@ str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? an
 		 ; 		 
  
 str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-   "public static final Token <id><compiledFormals> <startBlock> <compiledNonComputedDecls>; <endBlock>"           	
+   "<compiledComputedDecls>
+   'public static final Token <id><compiledFormals> <startBlock> <compiledNonComputedDecls>; <endBlock>"           	
 	when areThereFormals := (fls <- formals),
 		 startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
@@ -98,7 +100,8 @@ str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? an
 		 compiledFormals := {if (fs  <- formals) compile(fs, useDefs, types, index); else "";},
 		 nonComputedDeclsNumber :=  size([d| d <- nonComputedDecls]),
 		 compiledNonComputedDecls := ((nonComputedDeclsNumber == 0)?"EMPTY":
-		 	((nonComputedDeclsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-nonComputedDecls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-nonComputedDecls])>)"))
+		 	((nonComputedDeclsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-nonComputedDecls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-nonComputedDecls])>)")),
+		 compiledComputedDecls := intercalate("\n", [compile(d, useDefs, types, index) | d <- computedDecls])
 		 ;
 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
@@ -127,11 +130,20 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 aty := types[ty@\loc],
 		 !isSimpleByteType(aty);
 		 
-str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
-	println("[WARNING] Declaration of computed field case not handled in the generator");
+str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
+	//println("[WARNING] Declaration of computed field case not handled in the generator");
 	//throw "Declaration of computed field case not handled in the generator";
-	return "EMPTY";
-}		 		 
+	// TODO is it true that this is always a ValueExpression, and therefore a dynamic type?
+	= "ValueExpression <id>() { return <compile(e, useDefs, types, index)>; }"
+	when javaType := compileToJavaType(ty);
+	
+str compileToJavaType((Type) `int`) = "int";
+str compileToJavaType((Type) `str`) = "String";
+str compileToJavaType((Type) `bool`) = "boolean";
+default str compileToJavaType(Type ty){
+	throw "Conversion to Java type not implemented for <ty>.";
+}	
+		
 		 
 str compile(DeclInStruct current, Type ty, DId id, Arguments? args, SideCondition? cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	=  compileType(ty, safeId, compiledArgs, compiledCond, useDefs, types, index)
