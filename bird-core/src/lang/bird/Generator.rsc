@@ -89,14 +89,16 @@ str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? an
 		 ; 		 
  
 str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-   "public static final Token <id><compiledFormals> <startBlock> <compiledDecls>; <endBlock>"           	
+   "public static final Token <id><compiledFormals> <startBlock> <compiledNonComputedDecls>; <endBlock>"           	
 	when areThereFormals := (fls <- formals),
 		 startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
+		 nonComputedDecls := [d | d <- decls, !isComputed(d)],
+		 computedDecls := [d | d <- decls, isComputed(d)],
 		 compiledFormals := {if (fs  <- formals) compile(fs, useDefs, types, index); else "";},
-		 declsNumber :=  size([d| d <-decls]),
-		 compiledDecls := ((declsNumber == 0)?"EMPTY":
-		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
+		 nonComputedDeclsNumber :=  size([d| d <- nonComputedDecls]),
+		 compiledNonComputedDecls := ((nonComputedDeclsNumber == 0)?"EMPTY":
+		 	((nonComputedDeclsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-nonComputedDecls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-nonComputedDecls])>)"))
 		 ;
 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
@@ -146,7 +148,7 @@ str compile(current:(DeclInChoice) `<Type ty>`, rel[loc,loc] useDefs, map[loc, A
 	
 str compileForChoice((Type) `struct { <DeclInStruct* decls>}`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	compiledDecls           	
-	when declsNumber := (0| it +1 | d <-decls),
+	when declsNumber := size([d | d <- decls]),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types,index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<safeId>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ;
@@ -162,6 +164,9 @@ str compileSideCondition((SideCondition) `?(== <Expr e>)`, AType t1, rel[loc,loc
 str compileSideCondition((SideCondition) `?(!= <Expr e>)`, AType t1,  rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	calculateOp("!=", {t1,t2}, [compile(e, useDefs, types, index)])
 	when t2 := types[e@\loc];
+	
+bool isComputed((DeclInStruct) `<Type ty> <Id id> = <Expr e>`) = true;
+default bool isComputed(DeclInStruct d) = false;
 	
 str calculateOp("==", set[AType] ts, list[str] es) = "<calculateEq(ts)>(<intercalate(",", es)>)";
 str calculateOp("!=", set[AType] ts, list[str] es) = "not(<calculateEq(ts)>(<intercalate(",", es)>))";
