@@ -134,7 +134,7 @@ str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] 
 	//println("[WARNING] Declaration of computed field case not handled in the generator");
 	//throw "Declaration of computed field case not handled in the generator";
 	// TODO is it true that this is always a ValueExpression, and therefore a dynamic type?
-	= "ValueExpression <id>() { return <compile(e, useDefs, types, index)>; }"
+	= "static ValueExpression <id>() { return <compile(e, useDefs, types, index)>; }"
 	when javaType := compileToJavaType(ty);
 	
 str compileToJavaType((Type) `int`) = "int";
@@ -288,7 +288,7 @@ str compile(current: (Expr) `[ <{Expr ","}* es>]`, rel[loc,loc] useDefs, map[loc
 
 str compile(current: (Expr) `<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "last(ref(\"<makeSafeId("<srcId>", fixedLo)>\"))" 
 	when lo := ([l | l <- useDefs[id@\loc]])[0],
-	     fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
+	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
 		 srcId := "<index(fixedLo)>";
 		 
 str compile(current: (Expr) `<Expr e1> <ComparatorOperator uo> <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
@@ -301,7 +301,6 @@ str compile(current: (Expr) `<Expr e1> <EqualityOperator uo> <Expr e2>`, rel[loc
 	when bprintln(e1),
 		 t1 := types[e1@\loc],
 		 t2 := types[e2@\loc];
-	
 		 
 		 
 str compile(current: (Expr) `<Expr e1> && <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
