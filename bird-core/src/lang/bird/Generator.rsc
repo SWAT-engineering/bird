@@ -83,7 +83,7 @@ str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? an
 		 startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
 		 compiledFormals := {if (fs  <- formals) compile(fs, useDefs, types, index); else "";},
-		 declsNumber := (0| it +1 | d <-decls),
+		 declsNumber := size([d| d <-decls]),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "cho(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ; 		 
@@ -94,7 +94,7 @@ str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? an
 		 startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
 		 compiledFormals := {if (fs  <- formals) compile(fs, useDefs, types, index); else "";},
-		 declsNumber := (0| it +1 | d <-decls),
+		 declsNumber :=  size([d| d <-decls]),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ;
@@ -213,7 +213,7 @@ str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types
 	
 
 str compile(current:(SideCondition) `while ( <Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
-	
+	throw "Missing implementation for compiling while side condition.";
 }
 
 str compile(current:(SideCondition) `? ( <ComparatorOperator uo> <Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
