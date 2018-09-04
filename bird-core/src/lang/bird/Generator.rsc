@@ -46,8 +46,8 @@ str makeSafeId(str id, loc lo) =
 	"<newId>_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.end.line>_<lo.begin.column>_<lo.end.column>"
 	when newId := (("<id>"=="_")?"dummy":"<id>");
 
-str compile(current: (Program) `module <{Id "::"}+ moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
-	= "package engineering.swat.formats<packageName>;
+tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
+	= <packageName, "package engineering.swat.formats<packageName>;
       '
       'import io.parsingdata.metal.token.Token;
 	  '
@@ -57,7 +57,7 @@ str compile(current: (Program) `module <{Id "::"}+ moduleName> <Import* imports>
 	  'public class <className> {
 	  '\tprivate <className>(){}
 	  '\t<intercalate("\n", [compile(d, useDefs, types, index) | d <- decls])>
-	  '}"
+	  '}">
 	when [dirs*, className] := [x | x <-moduleName],
 		 str packageName := ((size(dirs) == 0)? "": ("."+ intercalate(".", dirs))),
 		 map[loc, TopLevelDecl] declsMap := (d@\loc: d | d <- decls),
@@ -329,12 +329,12 @@ str type2Java(listType(t)) = "List\<<type2Java(t)>\>"
 
 public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);
 
-str compileBird(str name) {
+tuple[str,str] compileBird(str name) {
 	start[Program] pt = sampleBird(name);
 	return compileBird(pt);
 }
 
-str compileBird(start[Program] pt) {
+tuple[str,str] compileBird(start[Program] pt) {
 	TModel model = birdTModelFromTree(pt);
     map[loc, AType] types = getFacts(model);
     rel[loc, loc] useDefs = getUseDef(model);
@@ -342,7 +342,7 @@ str compileBird(start[Program] pt) {
 }
 
 void compileBirdTo(str name, loc file) {
-    str text = compileBird(name);
+    <_,text> = compileBird(name);
     //println(text);
     writeFile(file, text);
 }

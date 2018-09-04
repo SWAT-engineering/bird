@@ -7,6 +7,7 @@ import ParseTree;
 
 import IO;
 import util::IDE;
+import String;
 
 import util::Reflective;
 import lang::manifest::IO;
@@ -34,8 +35,14 @@ Contribution compiler = builder(set[Message] (Tree tree) {
 	  if (start[Program] prog := tree) {
         loc l = prog@\loc.top;
         l.extension = "java";
-        newLoc =  |project://bird-core/bird-output/engineering/swat/formats/<l.file>|;
-        newprog = compileBird(prog);
+        <package, newprog> = compileBird(prog);
+        println(package);
+        println("HH");
+        str path = ((package =="")?"/":"<replaceAll(package, "." , "/")>/");
+         
+        println(path);
+        newLoc =  |project://bird-core/bird-output/engineering/swat/formats<path><l.file>|;
+        println(newLoc);
         writeFile(newLoc, newprog);
         return {};
       }
