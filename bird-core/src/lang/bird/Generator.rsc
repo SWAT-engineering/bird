@@ -90,18 +90,15 @@ str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? an
 		 ; 		 
  
 str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-   "<compiledComputedDecls>
-   'public static final Token <id><compiledFormals> <startBlock> <compiledNonComputedDecls>; <endBlock>"           	
+   "public static final Token <id><compiledFormals> <startBlock> <compiledDecls>; <endBlock>"           	
 	when areThereFormals := (fls <- formals),
 		 startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
-		 nonComputedDecls := [d | d <- decls, !isComputed(d)],
-		 computedDecls := [d | d <- decls, isComputed(d)],
+		 decls := [d | d <- decls],
 		 compiledFormals := {if (fs  <- formals) compile(fs, useDefs, types, index); else "";},
-		 nonComputedDeclsNumber :=  size([d| d <- nonComputedDecls]),
-		 compiledNonComputedDecls := ((nonComputedDeclsNumber == 0)?"EMPTY":
-		 	((nonComputedDeclsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-nonComputedDecls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-nonComputedDecls])>)")),
-		 compiledComputedDecls := intercalate("\n", [compile(d, useDefs, types, index) | d <- computedDecls])
+		 declsNumber :=  size([d| d <- decls]),
+		 compiledDecls := ((declsNumber == 0)?"EMPTY":
+		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ;
 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
@@ -135,15 +132,7 @@ str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] 
 	//throw "Declaration of computed field case not handled in the generator";
 	// TODO is it true that this is always a ValueExpression, and therefore a dynamic type?
 	= "static ValueExpression <id>() { return <compile(e, useDefs, types, index)>; }"
-	when javaType := compileToJavaType(ty);
-	
-str compileToJavaType((Type) `int`) = "int";
-str compileToJavaType((Type) `str`) = "String";
-str compileToJavaType((Type) `bool`) = "boolean";
-default str compileToJavaType(Type ty){
-	throw "Conversion to Java type not implemented for <ty>.";
-}	
-		
+	;
 		 
 str compile(DeclInStruct current, Type ty, DId id, Arguments? args, SideCondition? cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	=  compileType(ty, safeId, compiledArgs, compiledCond, useDefs, types, index)
@@ -176,10 +165,7 @@ str compileSideCondition((SideCondition) `?(== <Expr e>)`, AType t1, rel[loc,loc
 str compileSideCondition((SideCondition) `?(!= <Expr e>)`, AType t1,  rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	calculateOp("!=", {t1,t2}, [compile(e, useDefs, types, index)])
 	when t2 := types[e@\loc];
-	
-bool isComputed((DeclInStruct) `<Type ty> <Id id> = <Expr e>`) = true;
-default bool isComputed(DeclInStruct d) = false;
-	
+
 str calculateOp("==", set[AType] ts, list[str] es) = "<calculateEq(ts)>(<intercalate(",", es)>)";
 str calculateOp("!=", set[AType] ts, list[str] es) = "not(<calculateEq(ts)>(<intercalate(",", es)>))";
 str calculateOp("&&", set[AType] ts, list[str] es) { throw "Not implemented generator for logical and"; } //"and(<intercalate(",", es)>)";
