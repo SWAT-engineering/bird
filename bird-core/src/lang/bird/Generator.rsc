@@ -49,6 +49,8 @@ str makeSafeId(str id, loc lo) =
 tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
 	= <packageName, "package engineering.swat.formats<packageName>;
       '
+      'import static engineering.swat.metal.Let.*;
+      '
       'import io.parsingdata.metal.token.Token;
 	  'import io.parsingdata.metal.expression.value.ValueExpression;
 	  '
@@ -94,7 +96,6 @@ str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? an
 	when areThereFormals := (fls <- formals),
 		 startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
-		 decls := [d | d <- decls],
 		 compiledFormals := {if (fs  <- formals) compile(fs, useDefs, types, index); else "";},
 		 declsNumber :=  size([d| d <- decls]),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
@@ -131,8 +132,8 @@ str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] 
 	//println("[WARNING] Declaration of computed field case not handled in the generator");
 	//throw "Declaration of computed field case not handled in the generator";
 	// TODO is it true that this is always a ValueExpression, and therefore a dynamic type?
-	= "static ValueExpression <id>() { return <compile(e, useDefs, types, index)>; }"
-	;
+	= "let(\"<safeId>\", <compile(e, useDefs, types, index)>)"
+	when safeId := makeSafeId("<id>", id@\loc);
 		 
 str compile(DeclInStruct current, Type ty, DId id, Arguments? args, SideCondition? cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	=  compileType(ty, safeId, compiledArgs, compiledCond, useDefs, types, index)
