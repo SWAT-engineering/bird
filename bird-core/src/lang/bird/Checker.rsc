@@ -13,9 +13,9 @@ lexical ConsId =  "$" ([a-z A-Z 0-9 _] !<< [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z 
 data AType
 	= voidType()
 	| intType()
+	| typeType(AType ty)
 	| strType()
 	| boolType()
-	| typeType()
 	| listType(AType ty)
 	| consType(AType formals)
 	| funType(str name, AType returnType, AType formals, str javaRef)
@@ -48,7 +48,8 @@ data PathRole
 bool isConvertible(voidType(), AType t) = true;
 
 bool isConvertible(atypeList(vs), atypeList(ws))
-	= (true | isConvertible(v, w) && it | <v,w> <- zip(vs, ws));
+	= (true | isConvertible(v, w) && it | <v,w> <- zip(vs, ws))
+	when (size(vs) == size(ws));
 
 bool isConvertible(uType(_), intType()) = true;
 	
@@ -68,6 +69,7 @@ default bool isConvertible(AType _, AType _) = false;
 
 str prettyPrintAType(voidType()) = "void";
 str prettyPrintAType(intType()) = "int";
+str prettyPrintAType(typeType(t)) = "typeof(<prettyPrintAType(t)>)";
 str prettyPrintAType(strType()) = "str";
 str prettyPrintAType(boolType()) = "bool";
 str prettyPrintAType(listType(t)) = "<prettyPrintAType(t)>[]";
@@ -460,8 +462,9 @@ void collect(current:(Type)`bool`, Collector c) {
 	c.fact(current, boolType());
 }  
 
-void collect(current:(Type)`typ`, Collector c) {
-	c.fact(current, typeType());
+void collect(current:(Type)`typ\<<Type t>\>`, Collector c) {
+	collect(t, c);
+	c.calculate("reified type", current, [t], AType(Solver s) { return typeType(s.getType(t)); });
 }  
 
 void collect(current:(Type)`int`, Collector c) {
@@ -562,9 +565,11 @@ void collect(current: (Expr) `<Expr e>.length`, Collector c){
 	c.fact(current, intType());
 }
 
-void collect(current: (Expr) `<Expr e>.type`, Collector c){
-	collect(e, c);
-	c.fact(current, typeType());
+void collect(current: (Expr) `typeOf[<Type t>]`, Collector c){
+	collect(t, c);
+	c.calculate("reified type", current, [t], AType (Solver s){
+		return typeType(s.getType(t));
+	});
 }
 
 void collect(current: (Expr) `<Expr e>.size`, Collector c){
@@ -779,6 +784,17 @@ void collect(current: (Expr) `[ <Expr mapper> | <Id loopVar> \<- <Expr source>]`
         collect(mapper, c);
         collectGenerator(loopVar, source, c);
     } c.leaveScope(current);
+}
+
+void collect(current: (Expr) `parse ( <Expr exp> ) with <Expr typeExp>`, Collector c){
+    collect(exp, c);
+    collect(typeExp, c);
+    c.calculate("parser", current, [exp, typeExp], AType (Solver s){
+		s.requireTrue(isTokenType(s.getType(exp)), error(typeExp, "The expression to parse should correspond to a token type"));
+		s.requireTrue(typeType(_) := s.getType(typeExp), error(typeExp, "The expression denoting the parser should correspond to a reified type"));
+		if (typeType(rt) := s.getType(typeExp))
+			return rt;
+	}); 
 }
 
 void collectGenerator(Id loopVar, Expr source, Collector c) {

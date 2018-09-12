@@ -3,7 +3,7 @@ module lang::bird::Syntax
 extend lang::std::Layout;
 
 // TODO can we specify a pattern for u? types
-keyword Reserved = "abstract" | "struct" | "choice"  | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it";
+keyword Reserved = "abstract" | "struct" | "choice"  | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it" | "parse" | "with" | "typeOf";
 
 start syntax Program =
 	"module" ModuleId
@@ -82,9 +82,11 @@ syntax Expr
 	| HexIntegerLiteral
 	| BitLiteral
 	| StringLiteral
+	| TypeLiteral
 	| Id
 	| "[" {Expr ","}* "]"
 	| bracket "(" Expr ")"
+	| "parse" "(" Expr ")" "with" Expr
 	| Id Arguments
 	| "(" Type typ Id id "=" Expr initital "|" Expr update "|" Id loopVar "\<-" Expr source ")"
 	| "[" Expr mapper "|" Id loopVar "\<-" Expr source "]" // maybe need to add a conditional?
@@ -159,12 +161,14 @@ syntax Type
 	| "int"
 	| "str"
 	| "bool"
-	| "typ"
+	| "typ" "\<" Type "\>"
 	| UInt
 	| SInt
 	| AnonStruct
 	| Type "[" "]"
 	;
+	
+syntax TypeLiteral = "typeOf" "[" Type "]";	
 	
 lexical UInt = @category="Constant" "u" [0-9]+ !>> [0-9];
 

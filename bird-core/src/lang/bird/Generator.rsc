@@ -265,6 +265,9 @@ str compile(current: (Expr) `<Expr e1> * <Expr e2>`, rel[loc,loc] useDefs, map[l
 str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
     "<getInfixOperator("++")>(<compile(e1, useDefs, types, index)>, <compile(e2, useDefs, types, index)>)";    
 
+str compile(current: (Expr) `<Expr e>.<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+    "EMPTY";  
+
 str getInfixOperator("-") = "sub";
 str getInfixOperator("+") = "add";
 str getInfixOperator("*") = "mul";
