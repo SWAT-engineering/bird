@@ -34,7 +34,7 @@ syntax Import
  	;
 	
 syntax TopLevelDecl
-	= "struct" TypePars? Id Formals? Annos? "{" DeclInStruct* declarations "}"
+	= "struct" Id TypePars? Formals? Annos? "{" DeclInStruct* declarations "}"
 	| "choice" Id Formals? Annos? "{" DeclInChoice* declarations "}"
 	| "@" "(" JavaId ")" Type Id Formals?
 	;

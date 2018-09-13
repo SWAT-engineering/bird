@@ -253,7 +253,7 @@ void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? a
     c.leaveScope(current);
 }
 
-void collect(current:(TopLevelDecl) `struct \< <{Id "," }* typeParameters>\> <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
+void collect(current:(TopLevelDecl) `struct <Id id> \< <{Id "," }* typeParameters>\> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
      c.define("<id>", structId(), current, defType(refType("<id>")));
      //collect(id, formals, c);
      c.enterScope(current); {
@@ -474,11 +474,6 @@ void collect(current:(Type)`str`, Collector c) {
 
 void collect(current:(Type)`bool`, Collector c) {
 	c.fact(current, boolType());
-}  
-
-void collect(current:(Type)`typ\<<Type t>\>`, Collector c) {
-	collect(t, c);
-	c.calculate("reified type", current, [t], AType(Solver s) { return typeType(s.getType(t)); });
 }  
 
 void collect(current:(Type)`int`, Collector c) {
@@ -800,14 +795,12 @@ void collect(current: (Expr) `[ <Expr mapper> | <Id loopVar> \<- <Expr source>]`
     } c.leaveScope(current);
 }
 
-void collect(current: (Expr) `parse ( <Expr exp> ) with <Expr typeExp>`, Collector c){
+void collect(current: (Expr) `parse ( <Expr exp> ) with <Type t>`, Collector c){
     collect(exp, c);
-    collect(typeExp, c);
-    c.calculate("parser", current, [exp, typeExp], AType (Solver s){
+    collect(t, c);
+    c.calculate("parser", current, [exp, t], AType (Solver s){
 		s.requireTrue(isTokenType(s.getType(exp)), error(typeExp, "The expression to parse should correspond to a token type"));
-		s.requireTrue(typeType(_) := s.getType(typeExp), error(typeExp, "The expression denoting the parser should correspond to a reified type"));
-		if (typeType(rt) := s.getType(typeExp))
-			return rt;
+		return s.getType(t);
 	}); 
 }
 

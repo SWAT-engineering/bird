@@ -1,0 +1,6 @@
+module generics
+
+struct Foo<T>{
+	u8[] data
+	T arbitraryToken = parse(data) with T 
+}
