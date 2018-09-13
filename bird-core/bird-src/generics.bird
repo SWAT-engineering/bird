@@ -1,5 +1,13 @@
 module generics
 
+struct Bar{
+	u8 zero ? (== 0)
+}
+
+struct T{
+	Foo<Bar> foo
+}
+
 struct Foo<T>{
 	u8[] data
 	T arbitraryToken = parse(data) with T 

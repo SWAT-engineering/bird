@@ -19,7 +19,8 @@ data AType
 	| listType(AType ty)
 	| consType(AType formals)
 	| funType(str name, AType returnType, AType formals, str javaRef)
-	| refType(str name)
+	| structType(str name)
+	| refType(str name, list[AType] args)
 	| anonType(lrel[str, AType] fields)
 	| uType(int n)
 	| sType(int n)
@@ -75,7 +76,7 @@ str prettyPrintAType(typeType(t)) = "typeof(<prettyPrintAType(t)>)";
 str prettyPrintAType(strType()) = "str";
 str prettyPrintAType(boolType()) = "bool";
 str prettyPrintAType(listType(t)) = "<prettyPrintAType(t)>[]";
-str prettyPrintAType(refType(name)) = name;
+str prettyPrintAType(refType(name, args)) = "<name>\< <intercalate(",", [prettyPrintAType(a) | a <- args])>";
 str prettyPrintAType(anonType(_)) = "anonymous";
 str prettyPrintAType(uType(n)) = "u<n>";
 str prettyPrintAType(sType(n)) = "s<n>";
@@ -83,6 +84,7 @@ str prettyPrintAType(consType(formals)) = "constructor(<("" | it + "<prettyPrint
 str prettyPrintAType(funType(name,_,_,_)) = "fun <name>";
 str prettyPrintAType(moduleType()) = "module";
 str prettyPrintAType(variableType()) = "typeVariable";
+str prettyPrintAType(structType(name)) = "struct <name>";
 
 AType lub(AType t1, voidType()) = t1;
 AType lub(voidType(), AType t1) = t1;
@@ -98,7 +100,7 @@ default AType lub(AType t1, AType t2){ throw "Cannot find a lub for types <prett
 
 bool isTokenType(uType(_)) = true;
 bool isTokenType(sType(_)) = true;
-bool isTokenType(refType(_)) = true;
+bool isTokenType(refType(_,_)) = true;
 bool isTokenType(anonType(_)) = true;
 bool isTokenType(listType(t)) = isTokenType(t);
 bool isTokenType(consType(_)) = true;  
@@ -143,11 +145,11 @@ default AType infixArithmetic(AType t1, AType t2){ throw "Wrong operands for an 
 // TODO make it more flexible. Does this unify?
 AType infixConcat(lt:listType(_), lt) = lt;
 
-bool isUserDefined(refType(_)) = true;
+bool isUserDefined(refType(_,_)) = true;
 bool isUserDefined(listType(t)) = isUserDefined(t);
 default bool isUserDefined(AType t) = false;
 
-str getUserDefinedName(refType(id)) = id;
+str getUserDefinedName(refType(id, _)) = id;
 str getUserDefinedName(listType(t)) = getUserDefinedName(t);
 default str getUserDefinedName(AType t){ throw "Operation not defined on non-user defined types."; }
 
@@ -245,7 +247,7 @@ private loc relocsingleLine(loc osrc, loc base)
 
  
 void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     c.define("<id>", structId(), current, defType(refType("<id>")));
+     c.define("<id>", structId(), current, defType(structType("<id>")));
      //collect(id, formals, c);
      c.enterScope(current); {
      	collectFormals(id, formals, c);
@@ -255,7 +257,7 @@ void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? a
 }
 
 void collect(current:(TopLevelDecl) `struct <Id id> \< <{Id "," }* typeParameters>\> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     c.define("<id>", structId(), current, defType(refType("<id>")));
+     c.define("<id>", structId(), current, defType(structType("<id>")));
      //collect(id, formals, c);
      c.enterScope(current); {
      	for (Id typePar <- typeParameters)
@@ -411,7 +413,7 @@ void collectFormals(Id id, Formals? current, Collector c){
 
 void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`,  Collector c) {
 	 // TODO  explore `Solver.getAllDefinedInType` for implementing the check of abstract fields
-	 c.define("<id>", structId(), current, defType(refType("<id>")));
+	 c.define("<id>", structId(), current, defType(structType("<id>")));
      c.enterScope(current); {
      	collectFormals(id, formals, c);
      	collect(decls, c);
@@ -485,6 +487,15 @@ void collect(current:(Type)`<Id i>`, Collector c) {
 	c.use(i, {structId(), typeVariableId()}); 
 } 
 
+void collect(current:(Type)`<Id i> \< <{Type "," }* types>\>`, Collector c) {
+	c.use(i, {structId()}); 
+	for (t <- types)
+		collect(t, c);
+	c.calculate("bound type", current, [i] + [t | t <- types], AType(Solver s) { 
+    	return refType("<i>", [ s.getType(t) | t <- types]);
+     });
+} 
+
 void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c) {
 	c.enterScope(current);
 		collect(decls, c);
@@ -504,7 +515,7 @@ void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c) {
 } 
 
 void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     c.define("<id>", structId(), current, defType(refType("<id>")));
+     c.define("<id>", structId(), current, defType(structType("<id>")));
      //collect(id, formals, c);
      c.enterScope(current); {
      	actualFormals = [af | f <- formals, af <- f.formals];
@@ -836,7 +847,7 @@ TModel birdTModelFromTree(Tree pt, bool debug = false){
     return newSolver(pt, c.run()).run();
 }
 
-tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(refType(str name)) = <[name], {structId()}>;
+tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structType(str name)) = <[name], {structId()}>;
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(funType(str name, _, _, _)) = <[name], {funId()}>;
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(AType t) = <[], {}>;
 

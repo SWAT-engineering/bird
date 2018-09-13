@@ -52,7 +52,7 @@ void main() {
 	
 	registerContributions(LANG_NAME, {
         commonSyntaxProperties,
-        compiler,
+        //compiler,
         treeProperties(hasQuickFixes = false), // performance
         annotator(checkBird)
     });

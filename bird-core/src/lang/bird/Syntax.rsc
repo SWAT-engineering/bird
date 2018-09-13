@@ -168,6 +168,7 @@ syntax Type
 	| UInt
 	| SInt
 	| AnonStruct
+	| Id "\<" {Type "," }* types "\>"
 	| Type "[" "]"
 	;
 	
