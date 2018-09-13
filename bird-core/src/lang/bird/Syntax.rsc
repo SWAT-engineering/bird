@@ -34,7 +34,7 @@ syntax Import
  	;
 	
 syntax TopLevelDecl
-	= "struct" Id Formals? Annos? "{" DeclInStruct* declarations "}"
+	= "struct" TypePars? Id Formals? Annos? "{" DeclInStruct* declarations "}"
 	| "choice" Id Formals? Annos? "{" DeclInChoice* declarations "}"
 	| "@" "(" JavaId ")" Type Id Formals?
 	;
@@ -49,6 +49,10 @@ syntax Anno
 	
 syntax Formals
 	= "(" {Formal "," }* formals  ")"
+	;
+	
+syntax TypePars
+	= "\<" {Id "," }* parameters  "\>"
 	;
 	
 syntax Formal = Type typ Id id;
@@ -86,7 +90,7 @@ syntax Expr
 	| Id
 	| "[" {Expr ","}* "]"
 	| bracket "(" Expr ")"
-	| "parse" "(" Expr ")" "with" Expr
+	| "parse" "(" Expr ")" "with" Type
 	| Id Arguments
 	| "(" Type typ Id id "=" Expr initital "|" Expr update "|" Id loopVar "\<-" Expr source ")"
 	| "[" Expr mapper "|" Id loopVar "\<-" Expr source "]" // maybe need to add a conditional?
@@ -161,7 +165,6 @@ syntax Type
 	| "int"
 	| "str"
 	| "bool"
-	| "typ" "\<" Type "\>"
 	| UInt
 	| SInt
 	| AnonStruct

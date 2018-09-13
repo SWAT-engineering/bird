@@ -24,11 +24,13 @@ data AType
 	| uType(int n)
 	| sType(int n)
 	| moduleType()
+	| variableType()
 	;
 	
 data IdRole
     = structId()
     | fieldId()
+    | typeVariableId()
     | variableId()
     | consId()
     | moduleId()
@@ -246,6 +248,18 @@ void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? a
      //collect(id, formals, c);
      c.enterScope(current); {
      	collectFormals(id, formals, c);
+     	collect(decls, c);
+    }
+    c.leaveScope(current);
+}
+
+void collect(current:(TopLevelDecl) `struct \< <{Id "," }* typeParameters>\> <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
+     c.define("<id>", structId(), current, defType(refType("<id>")));
+     //collect(id, formals, c);
+     c.enterScope(current); {
+     	for (Id typePar <- typeParameters)
+     		c.define("<typePar>", typeVariableId(), typePar, defType(variableType()));
+		collectFormals(id, formals, c);
      	collect(decls, c);
     }
     c.leaveScope(current);

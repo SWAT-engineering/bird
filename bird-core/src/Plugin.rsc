@@ -36,13 +36,8 @@ Contribution compiler = builder(set[Message] (Tree tree) {
         loc l = prog@\loc.top;
         l.extension = "java";
         <package, newprog> = compileBird(prog);
-        println(package);
-        println("HH");
         str path = ((package =="")?"/":"<replaceAll(package, "." , "/")>/");
-         
-        println(path);
         newLoc =  |project://bird-core/bird-output/engineering/swat/formats<path><l.file>|;
-        println(newLoc);
         writeFile(newLoc, newprog);
         return {};
       }
