@@ -82,6 +82,7 @@ str prettyPrintAType(sType(n)) = "s<n>";
 str prettyPrintAType(consType(formals)) = "constructor(<("" | it + "<prettyPrintAType(ty)>," | atypeList(fs) := formals, ty <- fs)>)";
 str prettyPrintAType(funType(name,_,_,_)) = "fun <name>";
 str prettyPrintAType(moduleType()) = "module";
+str prettyPrintAType(variableType()) = "typeVariable";
 
 AType lub(AType t1, voidType()) = t1;
 AType lub(voidType(), AType t1) = t1;
@@ -481,7 +482,7 @@ void collect(current:(Type)`int`, Collector c) {
 }  
 
 void collect(current:(Type)`<Id i>`, Collector c) {
-	c.use(i, {structId()}); 
+	c.use(i, {structId(), typeVariableId()}); 
 } 
 
 void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c) {
@@ -799,7 +800,7 @@ void collect(current: (Expr) `parse ( <Expr exp> ) with <Type t>`, Collector c){
     collect(exp, c);
     collect(t, c);
     c.calculate("parser", current, [exp, t], AType (Solver s){
-		s.requireTrue(isTokenType(s.getType(exp)), error(typeExp, "The expression to parse should correspond to a token type"));
+		s.requireTrue(isTokenType(s.getType(exp)), error(exp, "The expression to parse should correspond to a token type"));
 		return s.getType(t);
 	}); 
 }
