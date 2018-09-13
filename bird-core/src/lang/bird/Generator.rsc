@@ -101,6 +101,17 @@ str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? an
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ;
+		 
+str compile(current:(TopLevelDecl) `struct <Id id> \< <{Id "," }* typeParameters>\> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+   "public static final Token <id><compiledFormals> <startBlock> <compiledDecls>; <endBlock>"           	
+	when areThereFormals := (fls <- formals),
+		 startBlock := (areThereFormals?"{ return ":"="),
+		 endBlock := (areThereFormals?"}":""),
+		 compiledFormals := {if (fs  <- formals) compile(fs, useDefs, types, index); else "";},
+		 declsNumber :=  size([d| d <- decls]),
+		 compiledDecls := ((declsNumber == 0)?"EMPTY":
+		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
+		 ;
 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"rep(\"<safeId>\", <compile(current, ty, id, args, cond, useDefs, types, index)>)"
@@ -245,6 +256,10 @@ str compile(current: (Expr) `<BitLiteral nat>`, rel[loc,loc] useDefs, map[loc, A
 str compile(current: (Expr) `<NatLiteral nat>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "con(<nat>)";
 
 str compile(current: (Expr) `(<Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = compile(e, useDefs, types, index)
+	when bprintln(e);
+	
+str compile(current: (Expr) `parse (<Expr e>) with <Type t>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = 
+	"tie()"
 	when bprintln(e);
 
 str compile(current: (Expr) `<Id id> ( <{Expr ","}* exprs>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
