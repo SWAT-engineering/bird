@@ -85,7 +85,8 @@ str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? an
    when  areThereFormals := (fls <- formals),
 		 startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
-		 compiledFormals := {if (fs  <- formals) compile(fs, useDefs, types, index); else "";},
+		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index); else [];},
+		 compiledFormals := {if (fs  <- formals) "(<intercalate(", ", compiledFormalsList)>)"; else "";},
 		 declsNumber := size([d| d <-decls]),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "cho(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
@@ -96,7 +97,8 @@ str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? an
 	when areThereFormals := (fls <- formals),
 		 startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
-		 compiledFormals := {if (fs  <- formals) compile(fs, useDefs, types, index); else "";},
+		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index); else [];},
+		 compiledFormals := {if (fs  <- formals) "(<intercalate(", ", compiledFormalsList)>)"; else "";},
 		 declsNumber :=  size([d| d <- decls]),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
@@ -107,14 +109,17 @@ str compile(current:(TopLevelDecl) `struct <Id id> \< <{Id "," }* typeParameters
 	when areThereFormals := (fls <- formals),
 		 startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
-		 compiledFormals := {if (fs  <- formals) compile(fs, useDefs, types, index); else "";},
+		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index); else [];},
+		 list[str] compiledTypeParsList := {if (tps  <- typeParameters) getActualTypePars(tps, useDefs, types, index); else [];},
+		 list[str] formalsAndTypePars := compiledTypeParsList + compiledFormalsList,
+		 compiledFormalsAndTypePars := {if (size(formalsAndTypePars)!=0) "(<intercalate(", ", formalsAndTypePars)>)"; else "";},
 		 declsNumber :=  size([d| d <- decls]),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ;
 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"rep(\"<safeId>\", <compile(current, ty, id, args, cond, useDefs, types, index)>)"
+	"rep(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, cond, useDefs, types, index)>)"
 	when safeId := makeSafeId("<id>", id@\loc)
 		;
 		
@@ -131,9 +136,9 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	{if (aCond <- cond)
-		"post(repn(\"<safeId>\", <compile(current, ty, id, args, emptyCond, useDefs, types, index)>,  <compile(n, useDefs, types, index)>), <compile(aCond, useDefs, types, index)>)";
+		"post(repn(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, emptyCond, useDefs, types, index)>,  <compile(n, useDefs, types, index)>), <compile(aCond, useDefs, types, index)>)";
 	else
-		"repn(\"<safeId>\", <compile(current, ty, id, args, emptyCond, useDefs, types, index)>,  <compile(n, useDefs, types, index)>)";}
+		"repn(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, emptyCond, useDefs, types, index)>,  <compile(n, useDefs, types, index)>)";}
 	when emptyCond := ([Aux] "{ }").sc,
 		 safeId := makeSafeId("<id>_ARR", current@\loc),
 		 aty := types[ty@\loc],
@@ -146,11 +151,11 @@ str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] 
 	= "let(\"<safeId>\", <compile(e, useDefs, types, index)>)"
 	when safeId := makeSafeId("<id>", id@\loc);
 		 
-str compile(DeclInStruct current, Type ty, DId id, Arguments? args, SideCondition? cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
-	=  compileType(ty, safeId, compiledArgs, compiledCond, useDefs, types, index)
+str compileDeclInStruct(DeclInStruct current, Type ty, DId id, Arguments? args, SideCondition? cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
+	=  compileType(ty, safeId, args, compiledCond, useDefs, types, index)
 	when safeId := makeSafeId("<id>", id@\loc),
 		 AType aty := types[ty@\loc],
-		 compiledArgs := ("" | it + compile(aargs, useDefs, types, index) | aargs <- args),
+		 bprintln(ty),
 		 compiledCond := ("" | it + ", <compileSideCondition(c, aty, useDefs, types, index)>" | c <- cond);   
 	        	
 str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
@@ -200,9 +205,14 @@ default str compileSideCondition(current:(SideCondition) `? ( <Expr e>)`, AType 
 	
 default str compileSideCondition(SideCondition sc, AType ty, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){ throw "Not yet implemented: <sc>"; } 
 
-str compile(Formals current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
-	= "(<intercalate(", ", actualFormals)>)"
+list[str] getActualFormals(Formals current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
+	= actualFormals
 	when actualFormals := [compile(af, useDefs, types, index) | af <- current.formals];
+	
+list[str] getActualTypePars(TypePars current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
+	= actualTypePars
+	when actualTypePars := [compile(tp, useDefs, types, index) | tp <- current.parameters];
+
 	
 str compile(current:(Formal) `<Type ty> <Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	= "ValueExpression <safeId>" 
@@ -213,20 +223,46 @@ str compile((Arguments)  `( <{Expr ","}* args>  )`, rel[loc,loc] useDefs, map[lo
 	= "(<intercalate(", ", actualArgs)>)"
 	when actualArgs := [compile(arg, useDefs, types, index) | arg <- args];	 
 
-str compileType(current:(Type)`<UInt v>`, str containerId, str args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+str compileType(current:(Type)`<UInt v>`, str containerId, Arguments? args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	(cond == "")? "def(\"<containerId>\", con(<toInt("<v>"[1..])/BYTE_SIZE>))" : "def(\"<containerId>\", con(<toInt("<v>"[1..])/BYTE_SIZE>) <cond>)";	
 
-str compileType(current:(Type)`<Id id>`, str containerId, str args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"<id><args>";
+str compileType(current:(Type)`<Id id>`, str containerId, Arguments? args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	"<id><compiledArgs>"
+	when compiledArgs := "(<("" | it + compile(aargs, useDefs, types, index) | aargs <- args)>)";
+		 
+	
+str compileType(current:(Type)`<Id id> \< <{ Type ";"}+ ts> \>`, str containerId, Arguments? args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	"<id><args>"
+	when compiledArgsLst := [compile(aargs, useDefs, types, index) | aargs <- args],
+		 compiledTypeArgsLst := [compileType(ta, useDefs, types, index) | ta <- ts];
 
 	
 str compile(current:(Type)`<UInt v>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"nod(<toInt("<v>"[1..])/BYTE_SIZE>)";
 
 str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"<id>";
+	"<id>"
+	when refType(_,targs) := types(current@\loc);
 	
-
+str compile(current:(Type)`<Id id> \< <{Type ";"}+ ts> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	"<id><args>"
+	when refType(_,targs) := types(current@\loc),
+		 size(ts) == size(targs),
+		 args := "(<intercalate(", ", [t | t <- ts])>";
+		 
+str compile(current:(Type)`<Id id> \< <{Type ";"}+ ts> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	{ throw "Arguments and formals size do not match";}
+	when refType(_,targs) := types(current@\loc),
+		 size(ts) != size(targs);
+		 
+str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	{ throw "Not bound type variable"; }
+	when variableType() := types(current@\loc);
+	
+str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	{ throw "BUG!"; }
+	when structType(name) := types(current@\loc);		 	
+	
 str compile(current:(SideCondition) `while ( <Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
 	throw "Missing implementation for compiling while side condition.";
 }

@@ -5,7 +5,8 @@ struct Bar{
 }
 
 struct T{
-	Foo<Bar> foo
+	Foo<Bar> foo 
+	u8 x = foo.arbitraryToken.zero
 }
 
 struct Foo<T>{
