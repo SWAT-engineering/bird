@@ -376,9 +376,13 @@ void collectArgs(Type ty, Arguments? current, Collector c){
 				//println(t);
 				//println(conId);
 				//println(currentScope);
-				ct = s.getTypeInType(t, newConstructorId([Id] "<idStr>", ty@\loc), {consId()}, currentScope);
-				argTypes = atypeList([ s.getType(a) | aargs <- current, a <- aargs.args]);
-				s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments"));
+				if (refType(refName,_) := t){
+					ct = s.getTypeInType(structType(refName), newConstructorId([Id] "<idStr>", ty@\loc), {consId()}, currentScope);
+					argTypes = atypeList([ s.getType(a) | aargs <- current, a <- aargs.args]);
+					s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments"));
+				}
+				else throw "Operation not supported";
+				
 			}
 		});
 	
