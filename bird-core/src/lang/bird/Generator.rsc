@@ -104,8 +104,8 @@ str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? an
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ;
 		 
-str compile(current:(TopLevelDecl) `struct <Id id> \< <{Id "," }* typeParameters>\> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-   "public static final Token <id><compiledFormals> <startBlock> <compiledDecls>; <endBlock>"           	
+str compile(current:(TopLevelDecl) `struct <Id id> <TypePars? typeParameters> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+   "public static final Token <id><compiledFormalsAndTypePars> <startBlock> <compiledDecls>; <endBlock>"           	
 	when areThereFormals := (fls <- formals),
 		 startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
@@ -159,7 +159,7 @@ str compileDeclInStruct(DeclInStruct current, Type ty, DId id, Arguments? args, 
 		 compiledCond := ("" | it + ", <compileSideCondition(c, aty, useDefs, types, index)>" | c <- cond);   
 	        	
 str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	compile(current, ty, id, args, cond, useDefs, types, index);
+	compileDeclInStruct(current, ty, id, args, cond, useDefs, types, index);
 		 
 str compile(current:(DeclInChoice) `<Type ty>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	compileForChoice(ty, useDefs, types, index);
@@ -211,7 +211,8 @@ list[str] getActualFormals(Formals current, rel[loc,loc] useDefs, map[loc, AType
 	
 list[str] getActualTypePars(TypePars current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	= actualTypePars
-	when actualTypePars := [compile(tp, useDefs, types, index) | tp <- current.parameters];
+	when actualTypePars := ["Token <tp>" | 
+	     	Id tp <- current.parameters, bprintln(tp)];
 
 	
 str compile(current:(Formal) `<Type ty> <Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
@@ -228,40 +229,41 @@ str compileType(current:(Type)`<UInt v>`, str containerId, Arguments? args, str 
 
 str compileType(current:(Type)`<Id id>`, str containerId, Arguments? args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"<id><compiledArgs>"
-	when compiledArgs := "(<("" | it + compile(aargs, useDefs, types, index) | aargs <- args)>)";
+	when compiledArgs := ((aargs <- args) ? "(<("" | it + compile(aargs, useDefs, types, index) | aargs <- args)>)" : "");
 		 
 	
-str compileType(current:(Type)`<Id id> \< <{ Type ";"}+ ts> \>`, str containerId, Arguments? args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"<id><args>"
+str compileType(current:(Type)`<Id id> \< <{ Type ","}* ts> \>`, str containerId, Arguments? args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	"<id><compiledArgs>"
 	when compiledArgsLst := [compile(aargs, useDefs, types, index) | aargs <- args],
-		 compiledTypeArgsLst := [compileType(ta, useDefs, types, index) | ta <- ts];
-
+		 bprintln(ts),
+		 compiledTypeArgsLst := [compileType(ta, containerId, args, cond, useDefs, types, index) | ta <- ts],
+		 compiledArgs := "(<intercalate(",", compiledArgsLst + compiledTypeArgsLst)>)";
 	
 str compile(current:(Type)`<UInt v>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"nod(<toInt("<v>"[1..])/BYTE_SIZE>)";
 
 str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"<id>"
-	when refType(_,targs) := types(current@\loc);
+	when refType(_,targs) := types[current@\loc];
 	
-str compile(current:(Type)`<Id id> \< <{Type ";"}+ ts> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+str compile(current:(Type)`<Id id> \< <{Type ","}* ts> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"<id><args>"
 	when refType(_,targs) := types(current@\loc),
 		 size(ts) == size(targs),
 		 args := "(<intercalate(", ", [t | t <- ts])>";
 		 
-str compile(current:(Type)`<Id id> \< <{Type ";"}+ ts> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+str compile(current:(Type)`<Id id> \< <{Type ","}* ts> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	{ throw "Arguments and formals size do not match";}
 	when refType(_,targs) := types(current@\loc),
 		 size(ts) != size(targs);
 		 
 str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	{ throw "Not bound type variable"; }
-	when variableType() := types(current@\loc);
+	"<id>"
+	when variableType() := types[current@\loc];
 	
 str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	{ throw "BUG!"; }
-	when structType(name) := types(current@\loc);		 	
+	when structType(name) := types[current@\loc];		 	
 	
 str compile(current:(SideCondition) `while ( <Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
 	throw "Missing implementation for compiling while side condition.";
@@ -295,8 +297,9 @@ str compile(current: (Expr) `(<Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] 
 	when bprintln(e);
 	
 str compile(current: (Expr) `parse (<Expr e>) with <Type t>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = 
-	"tie()"
-	when bprintln(e);
+	"tie(<compiledType>, <compiledExpr>)"
+	when compiledType := compile(t, useDefs, types, index),
+		 compiledExpr := compile(e, useDefs, types, index);
 
 str compile(current: (Expr) `<Id id> ( <{Expr ","}* exprs>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
     "new <javaId>().apply(<intercalate(", ", [compile(e, useDefs, types, index) | Expr e <- exprs])>)"
