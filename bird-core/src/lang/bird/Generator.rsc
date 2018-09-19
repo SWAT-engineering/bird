@@ -106,8 +106,8 @@ str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? an
 		 
 str compile(current:(TopLevelDecl) `struct <Id id> <TypePars? typeParameters> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
    "public static final Token <id><compiledFormalsAndTypePars> <startBlock> <compiledDecls>; <endBlock>"           	
-	when areThereFormals := (fls <- formals),
-		 startBlock := (areThereFormals?"{ return ":"="),
+	when areThereFormals := ((fls <- formals) || (tps <- typeParameters)),
+	     startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
 		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index); else [];},
 		 list[str] compiledTypeParsList := {if (tps  <- typeParameters) getActualTypePars(tps, useDefs, types, index); else [];},
@@ -117,6 +117,11 @@ str compile(current:(TopLevelDecl) `struct <Id id> <TypePars? typeParameters> <F
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ;
+
+str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> byparsing (<Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	"tie(\"<safeId>\", <compile(ty, useDefs, types, index)>, <compile(e, useDefs, types, index)>)"   
+	when safeId := makeSafeId("<id>", id@\loc)
+		;
 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"rep(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, cond, useDefs, types, index)>)"
@@ -133,7 +138,7 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 isSimpleByteType(aty),
 		 int size := sizeSimpleByteType(aty);
 		
-		 
+/*		 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	{if (aCond <- cond)
 		"post(repn(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, emptyCond, useDefs, types, index)>,  <compile(n, useDefs, types, index)>), <compile(aCond, useDefs, types, index)>)";
@@ -143,6 +148,7 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 safeId := makeSafeId("<id>_ARR", current@\loc),
 		 aty := types[ty@\loc],
 		 !isSimpleByteType(aty);
+*/		 
 		 
 str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	//println("[WARNING] Declaration of computed field case not handled in the generator");
@@ -296,10 +302,10 @@ str compile(current: (Expr) `<NatLiteral nat>`, rel[loc,loc] useDefs, map[loc, A
 str compile(current: (Expr) `(<Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = compile(e, useDefs, types, index)
 	when bprintln(e);
 	
-str compile(current: (Expr) `parse (<Expr e>) with <Type t>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = 
+/*str compile(current: (Expr) `parse (<Expr e>) with <Type t>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = 
 	"tie(<compiledType>, <compiledExpr>)"
 	when compiledType := compile(t, useDefs, types, index),
-		 compiledExpr := compile(e, useDefs, types, index);
+		 compiledExpr := compile(e, useDefs, types, index);*/
 
 str compile(current: (Expr) `<Id id> ( <{Expr ","}* exprs>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
     "new <javaId>().apply(<intercalate(", ", [compile(e, useDefs, types, index) | Expr e <- exprs])>)"

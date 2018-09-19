@@ -31,6 +31,29 @@ Tree checkBird(Tree input){
          ; 
 }
 
+
+Tree checkBird2(Tree input){
+    model = birdTModelFromTree(input); // your function that collects & solves
+    types = getFacts(model);
+     
+    Tree newInput = visit(input){
+    	case (Type) `<Id id>` => (Type) `<Id id> \< \>`
+    		when bprintln("t: <types[id@\loc]>")
+    			 //structType(_) := types[id@\loc]
+    };
+    
+    println(newInput);
+    
+    model = birdTModelFromTree(newInput); // your function that collects & solves
+    types = getFacts(model);
+    
+    return newInput[@messages={*getMessages(model)}]
+              [@hyperlinks=getUseDef(model)]
+              [@docs=(l:"<prettyPrintAType(types[l])>" | l <- types)]
+         ; 
+}
+
+
 Contribution compiler = builder(set[Message] (Tree tree) {
 	  if (start[Program] prog := tree) {
         loc l = prog@\loc.top;
@@ -52,7 +75,7 @@ void main() {
 	
 	registerContributions(LANG_NAME, {
         commonSyntaxProperties,
-        //compiler,
+        compiler,
         treeProperties(hasQuickFixes = false), // performance
         annotator(checkBird)
     });

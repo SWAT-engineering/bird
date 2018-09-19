@@ -293,7 +293,10 @@ void collect(current:(DeclInStruct) `<Type ty> <Id id> = <Expr expr>`,  Collecto
 
 void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`,  Collector c) {
 	c.require("declared type", ty, [ty], void(Solver s){
-		s.requireTrue(isTokenType(s.getType(ty)), error(ty, "Non-initialized fields must be of a token type, but it was %t", ty));
+		println("0: <s.getType(ty)>");
+		println("1: <ty>");
+		println("2: <prettyAType(s.getType(ty))>");
+		s.requireTrue(isTokenType(s.getType(ty)), error(ty, "Non-initialized fields must be of a token type, but it was %t (AType: %t)", ty, s.getType(ty)));
 	});
 	if ("<id>" != "_"){
 		c.define("<id>", fieldId(), id, defType(ty));
@@ -328,9 +331,19 @@ void collectSideCondition(Type ty, DId id, current:(SideCondition) `while ( <Exp
 	    s.report(error(current, "while side condition can only guard list types"));
 	}));
 	collect(e, c);
-	c.leaveScope(current);
-	
+	c.leaveScope(current);	
 }
+
+void collectSideCondition(Type ty, DId id, current:(SideCondition) `byparsing ( <Expr exp> )`, Collector c){
+    c.enterScope(current);
+    collect(exp, c);
+    c.require("byparsing", current, [exp], void (Solver s){
+		s.requireTrue(isTokenType(s.getType(exp)), error(exp, "The expression to parse should correspond to a token type"));
+	});
+    c.leaveScope(current);
+}
+
+
 
 void collectSideCondition(Type _, DId id, current:(SideCondition) `? ( <ComparatorOperator uo> <Expr e>)`, Collector c){
 	collect(e, c);
@@ -489,6 +502,14 @@ void collect(current:(Type)`int`, Collector c) {
 
 void collect(current:(Type)`<Id i>`, Collector c) {
 	c.use(i, {structId(), typeVariableId()}); 
+	c.calculate("variable type", current, [i] , AType(Solver s) { 
+		println(s.getType(i));
+    	if (structType(_):= s.getType(i))
+    		return refType("<i>", []);
+    	else
+    		return s.getType(i);
+  
+     });
 } 
 
 void collect(current:(Type)`<Id i> \< <{Type "," }* types>\>`, Collector c) {
@@ -809,15 +830,6 @@ void collect(current: (Expr) `[ <Expr mapper> | <Id loopVar> \<- <Expr source>]`
         collect(mapper, c);
         collectGenerator(loopVar, source, c);
     } c.leaveScope(current);
-}
-
-void collect(current: (Expr) `parse ( <Expr exp> ) with <Type t>`, Collector c){
-    collect(exp, c);
-    collect(t, c);
-    c.calculate("parser", current, [exp, t], AType (Solver s){
-		s.requireTrue(isTokenType(s.getType(exp)), error(exp, "The expression to parse should correspond to a token type"));
-		return s.getType(t);
-	}); 
 }
 
 void collectGenerator(Id loopVar, Expr source, Collector c) {

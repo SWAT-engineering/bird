@@ -5,12 +5,12 @@ struct Bar{
 }
 
 struct T{
-	Bar bar
-	Foo<Bar> foo 
+	//Bar bar
+	Foo<Bar> foo  
 	//u8 x = foo.arbitraryToken.zero
 }
 
 struct Foo<T>{
 	u8[] data[20]
-	T arbitraryToken = parse(data) with T 
+	T arbitraryToken byparsing (data) 
 }
