@@ -110,7 +110,8 @@ default AType lub(AType t1, AType t2){ throw "Cannot find a lub for types <prett
 
 bool isTokenType(uType(_)) = true;
 bool isTokenType(sType(_)) = true;
-bool isTokenType(refType(_,_)) = true;
+bool isTokenType(structType(_,_)) = true;
+bool isTokenType(variableType(_)) = true;
 bool isTokenType(anonType(_)) = true;
 bool isTokenType(listType(t)) = isTokenType(t);
 bool isTokenType(consType(_)) = true;  
@@ -256,7 +257,7 @@ private loc relocsingleLine(loc osrc, loc base)
         ;
 
  
-void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
+/*void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
      c.define("<id>", structId(), current, defType(structDef("<id>", [])));
      //collect(id, formals, c);
      c.enterScope(current); {
@@ -264,16 +265,16 @@ void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? a
      	collect(decls, c);
     }
     c.leaveScope(current);
-}
+}*/
 
-void collect(current:(TopLevelDecl) `struct <Id id> \< <{Id "," }* typeFormals>\> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
+void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
      typeFormalList = typeFormals is noTypeFormals ? [] : [f | f <- typeFormals.formals];
-     c.define("<id>", structId(), current, defType(structDef("<id>", ["<tp>" | tp <- typeParameters])));
+     c.define("<id>", structId(), current, defType(structDef("<id>", ["<tp>" | tp <- typeFormalList])));
      //collect(id, formals, c);
      c.enterScope(current); {
      	for (Id tf <- typeFormalList)
      		c.define("<tf>", typeVariableId(), tf, defType(variableType("<tf>")));
-     	collect(typeFormals, fields, c);
+     	collect(typeFormalList, c);
 		collectFormals(id, formals, c);
      	collect(decls, c);
     }
@@ -305,9 +306,6 @@ void collect(current:(DeclInStruct) `<Type ty> <Id id> = <Expr expr>`,  Collecto
 
 void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`,  Collector c) {
 	c.require("declared type", ty, [ty], void(Solver s){
-		println("0: <s.getType(ty)>");
-		println("1: <ty>");
-		println("2: <prettyAType(s.getType(ty))>");
 		s.requireTrue(isTokenType(s.getType(ty)), error(ty, "Non-initialized fields must be of a token type, but it was %t (AType: %t)", ty, s.getType(ty)));
 	});
 	if ("<id>" != "_"){
@@ -530,8 +528,7 @@ void collect(current: (Type) `<Id name> <TypeActuals actuals>`, Collector c){
         tpActuals = [tp | tp <- actuals.actuals];
         c.calculate("actual type", current, name + tpActuals,
             AType(Solver s) { return structType("<name>", [s.getType(tp) | tp <- tpActuals]);});
-            
-        collect(actuals, c);
+        collect(tpActuals, c);
     } else {
         c.fact(current, name);
     }
