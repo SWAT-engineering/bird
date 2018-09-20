@@ -161,16 +161,20 @@ syntax AnonStruct
 	;
 	
 syntax Type
-	= Id
-	| "int"
+	= "int"
 	| "str"
 	| "bool"
 	| UInt
 	| SInt
 	| AnonStruct
-	| Id "\<" {Type "," }* types "\>"
+	| Id TypeActuals? 
 	| Type "[" "]"
 	;
+	
+syntax TypeActuals 
+    = noActuals: ()
+    | withTypeActuals: "\<" {Type "," }* actuals "\>"
+    ;
 	
 syntax TypeLiteral = "typeOf" "[" Type "]";	
 	

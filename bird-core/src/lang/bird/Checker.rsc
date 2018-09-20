@@ -19,13 +19,13 @@ data AType
 	| listType(AType ty)
 	| consType(AType formals)
 	| funType(str name, AType returnType, AType formals, str javaRef)
-	| structType(str name)
-	| refType(str name, list[AType] args)
+	| structDef(str name, list[str] args)
+	| structType(str name, list[AType] actuals)
 	| anonType(lrel[str, AType] fields)
 	| uType(int n)
 	| sType(int n)
 	| moduleType()
-	| variableType()
+	| variableType(str s)
 	;
 	
 data IdRole
@@ -76,15 +76,25 @@ str prettyPrintAType(typeType(t)) = "typeof(<prettyPrintAType(t)>)";
 str prettyPrintAType(strType()) = "str";
 str prettyPrintAType(boolType()) = "bool";
 str prettyPrintAType(listType(t)) = "<prettyPrintAType(t)>[]";
-str prettyPrintAType(refType(name, args)) = "<name>\< <intercalate(",", [prettyPrintAType(a) | a <- args])>";
+str prettyPrintAType(structType(name, args)) = "<name>\< <intercalate(",", [prettyPrintAType(a) | a <- args])>";
 str prettyPrintAType(anonType(_)) = "anonymous";
 str prettyPrintAType(uType(n)) = "u<n>";
 str prettyPrintAType(sType(n)) = "s<n>";
 str prettyPrintAType(consType(formals)) = "constructor(<("" | it + "<prettyPrintAType(ty)>," | atypeList(fs) := formals, ty <- fs)>)";
 str prettyPrintAType(funType(name,_,_,_)) = "fun <name>";
 str prettyPrintAType(moduleType()) = "module";
-str prettyPrintAType(variableType()) = "typeVariable";
-str prettyPrintAType(structType(name)) = "struct <name>";
+str prettyPrintAType(variableType(s)) = "variableType(<s>)";
+str prettyPrintAType(structDef(name, args)) = "struct <name> \< <intercalate(", ", args)> \>";
+
+
+AType instantiateTypeParametersStructWithParameters(Tree selector, structDef(str name1, list[str] formals), structType(str name2, list[AType] actuals), AType t, Solver s){
+    if(size(formals) != size(actuals)) throw checkFailed({});
+    bindings = (formals[i] : actuals [i] | int i <- index(formals));
+    return visit(t) { case variableType(str x) => bindings[x] };
+}
+
+default AType instantiateTypeParametersStructWithParameters(Tree selector, AType def, AType ins, AType act, Solver s) = act;
+
 
 AType lub(AType t1, voidType()) = t1;
 AType lub(voidType(), AType t1) = t1;
@@ -247,7 +257,7 @@ private loc relocsingleLine(loc osrc, loc base)
 
  
 void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     c.define("<id>", structId(), current, defType(structType("<id>")));
+     c.define("<id>", structId(), current, defType(structDef("<id>", [])));
      //collect(id, formals, c);
      c.enterScope(current); {
      	collectFormals(id, formals, c);
@@ -256,12 +266,14 @@ void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? a
     c.leaveScope(current);
 }
 
-void collect(current:(TopLevelDecl) `struct <Id id> \< <{Id "," }* typeParameters>\> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     c.define("<id>", structId(), current, defType(structType("<id>")));
+void collect(current:(TopLevelDecl) `struct <Id id> \< <{Id "," }* typeFormals>\> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
+     typeFormalList = typeFormals is noTypeFormals ? [] : [f | f <- typeFormals.formals];
+     c.define("<id>", structId(), current, defType(structDef("<id>", ["<tp>" | tp <- typeParameters])));
      //collect(id, formals, c);
      c.enterScope(current); {
-     	for (Id typePar <- typeParameters)
-     		c.define("<typePar>", typeVariableId(), typePar, defType(variableType()));
+     	for (Id tf <- typeFormalList)
+     		c.define("<tf>", typeVariableId(), tf, defType(variableType("<tf>")));
+     	collect(typeFormals, fields, c);
 		collectFormals(id, formals, c);
      	collect(decls, c);
     }
@@ -389,8 +401,8 @@ void collectArgs(Type ty, Arguments? current, Collector c){
 				//println(t);
 				//println(conId);
 				//println(currentScope);
-				if (refType(refName,_) := t){
-					ct = s.getTypeInType(structType(refName), newConstructorId([Id] "<idStr>", ty@\loc), {consId()}, currentScope);
+				if (structType(refName,actuals) := t){
+					ct = s.getTypeInType(structType(refName, actuals), newConstructorId([Id] "<idStr>", ty@\loc), {consId()}, currentScope);
 					argTypes = atypeList([ s.getType(a) | aargs <- current, a <- aargs.args]);
 					s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments"));
 				}
@@ -430,7 +442,7 @@ void collectFormals(Id id, Formals? current, Collector c){
 
 void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`,  Collector c) {
 	 // TODO  explore `Solver.getAllDefinedInType` for implementing the check of abstract fields
-	 c.define("<id>", structId(), current, defType(structType("<id>")));
+	 c.define("<id>", structId(), current, defType(structDef("<id>",[])));
      c.enterScope(current); {
      	collectFormals(id, formals, c);
      	collect(decls, c);
@@ -500,7 +512,7 @@ void collect(current:(Type)`int`, Collector c) {
 	c.fact(current, intType());
 }  
 
-void collect(current:(Type)`<Id i>`, Collector c) {
+/*void collect(current:(Type)`<Id i>`, Collector c) {
 	c.use(i, {structId(), typeVariableId()}); 
 	c.calculate("variable type", current, [i] , AType(Solver s) { 
 		println(s.getType(i));
@@ -510,16 +522,20 @@ void collect(current:(Type)`<Id i>`, Collector c) {
     		return s.getType(i);
   
      });
-} 
+}*/
 
-void collect(current:(Type)`<Id i> \< <{Type "," }* types>\>`, Collector c) {
-	c.use(i, {structId()}); 
-	for (t <- types)
-		collect(t, c);
-	c.calculate("bound type", current, [i] + [t | t <- types], AType(Solver s) { 
-    	return refType("<i>", [ s.getType(t) | t <- types]);
-     });
-} 
+void collect(current: (Type) `<Id name> <TypeActuals actuals>`, Collector c){
+    c.use(name, {structId(), typeVariableId()});
+    if(actuals is withTypeActuals){
+        tpActuals = [tp | tp <- actuals.actuals];
+        c.calculate("actual type", current, name + tpActuals,
+            AType(Solver s) { return structType("<name>", [s.getType(tp) | tp <- tpActuals]);});
+            
+        collect(actuals, c);
+    } else {
+        c.fact(current, name);
+    }
+}
 
 void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c) {
 	c.enterScope(current);
@@ -540,7 +556,7 @@ void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c) {
 } 
 
 void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     c.define("<id>", structId(), current, defType(structType("<id>")));
+     c.define("<id>", structId(), current, defType(structDef("<id>")));
      //collect(id, formals, c);
      c.enterScope(current); {
      	actualFormals = [af | f <- formals, af <- f.formals];
