@@ -92,7 +92,7 @@ str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? an
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "cho(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ; 		 
  
-str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+/*str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
    "public static final Token <id><compiledFormals> <startBlock> <compiledDecls>; <endBlock>"           	
 	when areThereFormals := (fls <- formals),
 		 startBlock := (areThereFormals?"{ return ":"="),
@@ -103,14 +103,15 @@ str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? an
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ;
+*/
 		 
-str compile(current:(TopLevelDecl) `struct <Id id> <TypePars? typeParameters> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
    "public static final Token <id><compiledFormalsAndTypePars> <startBlock> <compiledDecls>; <endBlock>"           	
-	when areThereFormals := ((fls <- formals) || (tps <- typeParameters)),
+	when areThereFormals := ((fls <- formals) || (typeFormals is withTypeFormals)),
 	     startBlock := (areThereFormals?"{ return ":"="),
 		 endBlock := (areThereFormals?"}":""),
 		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index); else [];},
-		 list[str] compiledTypeParsList := {if (tps  <- typeParameters) getActualTypePars(tps, useDefs, types, index); else [];},
+		 list[str] compiledTypeParsList := getActualTypeFormals(typeFormals, useDefs, types, index),
 		 list[str] formalsAndTypePars := compiledTypeParsList + compiledFormalsList,
 		 compiledFormalsAndTypePars := {if (size(formalsAndTypePars)!=0) "(<intercalate(", ", formalsAndTypePars)>)"; else "";},
 		 declsNumber :=  size([d| d <- decls]),
@@ -138,18 +139,6 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 isSimpleByteType(aty),
 		 int size := sizeSimpleByteType(aty);
 		
-/*		 
-str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	{if (aCond <- cond)
-		"post(repn(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, emptyCond, useDefs, types, index)>,  <compile(n, useDefs, types, index)>), <compile(aCond, useDefs, types, index)>)";
-	else
-		"repn(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, emptyCond, useDefs, types, index)>,  <compile(n, useDefs, types, index)>)";}
-	when emptyCond := ([Aux] "{ }").sc,
-		 safeId := makeSafeId("<id>_ARR", current@\loc),
-		 aty := types[ty@\loc],
-		 !isSimpleByteType(aty);
-*/		 
-		 
 str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	//println("[WARNING] Declaration of computed field case not handled in the generator");
 	//throw "Declaration of computed field case not handled in the generator";
@@ -215,10 +204,10 @@ list[str] getActualFormals(Formals current, rel[loc,loc] useDefs, map[loc, AType
 	= actualFormals
 	when actualFormals := [compile(af, useDefs, types, index) | af <- current.formals];
 	
-list[str] getActualTypePars(TypePars current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
+list[str] getActualTypeFormals(TypeFormals current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	= actualTypePars
-	when actualTypePars := ["Token <tp>" | 
-	     	Id tp <- current.parameters, bprintln(tp)];
+	when typeFormalList := (current is noTypeFormals ? [] : [f | f <- current.formals]),
+		 actualTypePars := ["Token <tp>" | Id tp <- typeFormalList];
 
 	
 str compile(current:(Formal) `<Type ty> <Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
@@ -247,25 +236,22 @@ str compileType(current:(Type)`<Id id> \< <{ Type ","}* ts> \>`, str containerId
 	
 str compile(current:(Type)`<UInt v>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"nod(<toInt("<v>"[1..])/BYTE_SIZE>)";
-
-str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"<id>"
-	when refType(_,targs) := types[current@\loc];
 	
-str compile(current:(Type)`<Id id> \< <{Type ","}* ts> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"<id><args>"
-	when refType(_,targs) := types(current@\loc),
+	when structType(_,[]) := types[current@\loc],
 		 size(ts) == size(targs),
 		 args := "(<intercalate(", ", [t | t <- ts])>";
 		 
-str compile(current:(Type)`<Id id> \< <{Type ","}* ts> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	{ throw "Arguments and formals size do not match";}
-	when refType(_,targs) := types(current@\loc),
-		 size(ts) != size(targs);
+str compile(current:(Type)`<Id id> \< <{Type ","}* targs> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	"<id><args>"
+	when structType(_,ts) := types[current@\loc],
+		 size(ts) == size(targs),
+		 args := "(<intercalate(", ", [t | t <- targs])>";	
 		 
 str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"<id>"
-	when variableType() := types[current@\loc];
+	when variableType(_) := types[current@\loc];
 	
 str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	{ throw "BUG!"; }
