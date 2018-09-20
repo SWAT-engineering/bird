@@ -175,16 +175,14 @@ private loc project(loc file) {
    return |project://<file.authority>|;
 }
 
+data PathConfig = pathConfig(list[loc] srcs = [], list[loc] libs = []);
+
 PathConfig pathConfig(loc file) {
    assert file.scheme == "project";
 
    p = project(file);      
-   cfg = pathConfig();
-   
-   cfg.srcs += [ p + "bird-src"];
-   cfg.libs += [ p + "bird-lib"];
-   
-   return cfg;
+ 
+   return pathConfig(srcs = [ p + "bird-src"],  libs =[ p + "bird-lib"]);
 }
 
 private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
