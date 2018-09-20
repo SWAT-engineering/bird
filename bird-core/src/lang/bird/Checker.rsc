@@ -77,7 +77,7 @@ str prettyPrintAType(typeType(t)) = "typeof(<prettyPrintAType(t)>)";
 str prettyPrintAType(strType()) = "str";
 str prettyPrintAType(boolType()) = "bool";
 str prettyPrintAType(listType(t)) = "<prettyPrintAType(t)>[]";
-str prettyPrintAType(structType(name, args)) = "<name>\< <intercalate(",", [prettyPrintAType(a) | a <- args])>";
+str prettyPrintAType(structType(name, args)) = "structType(<name>, [<intercalate(",", [prettyPrintAType(a) | a <- args])>])";
 str prettyPrintAType(anonType(_)) = "anonymous";
 str prettyPrintAType(uType(n)) = "u<n>";
 str prettyPrintAType(sType(n)) = "s<n>";
@@ -85,16 +85,16 @@ str prettyPrintAType(consType(formals)) = "constructor(<("" | it + "<prettyPrint
 str prettyPrintAType(funType(name,_,_,_)) = "fun <name>";
 str prettyPrintAType(moduleType()) = "module";
 str prettyPrintAType(variableType(s)) = "variableType(<s>)";
-str prettyPrintAType(structDef(name, args)) = "struct <name> \< <intercalate(", ", args)> \>";
+str prettyPrintAType(structDef(name, args)) = "structDef(<name>, [<intercalate(", ", args)>])";
 
 
-AType instantiateTypeParametersStructWithParameters(Tree selector, structDef(str name1, list[str] formals), structType(str name2, list[AType] actuals), AType t, Solver s){
+AType birdInstantiateTypeParameters(Tree selector, structDef(str name1, list[str] formals), structType(str name2, list[AType] actuals), AType t, Solver s){
     if(size(formals) != size(actuals)) throw checkFailed({});
     bindings = (formals[i] : actuals [i] | int i <- index(formals));
     return visit(t) { case variableType(str x) => bindings[x] };
 }
 
-default AType instantiateTypeParametersStructWithParameters(Tree selector, AType def, AType ins, AType act, Solver s) = act;
+default AType birdInstantiateTypeParameters(Tree selector, AType def, AType ins, AType act, Solver s) = act;
 
 
 AType lub(AType t1, voidType()) = t1;
@@ -299,8 +299,9 @@ void collect(current:(DeclInStruct) `<Type ty> <Id id> = <Expr expr>`,  Collecto
 	c.define("<id>", fieldId(), id, defType(ty));
 	collect(ty, c);
 	collect(expr, c);
-	c.require("good assignment", current, [expr],
-        void (Solver s) { s.requireSubType(s.getType(expr), s.getType(ty), error(current, "Expression should be <ty>, found <prettyPrintAType(s.getType(expr))>")); });
+	c.require("good assignment", current, [expr] + [ty],
+        void (Solver s) { s.requireSubType(s.getType(expr), s.getType(ty), 
+        				  error(current, "Expression should be <prettyPrintAType(s.getType(ty))>, found <prettyPrintAType(s.getType(expr))>")); });
 }    
 
 void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`,  Collector c) {
@@ -898,7 +899,8 @@ AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope
 private TypePalConfig getBirdConfig() = tconfig(
     isSubType = isConvertible,
     getTypeNamesAndRole = birdGetTypeNameAndRole,
-    getTypeInNamelessType = birdGetTypeInAnonymousStruct
+    getTypeInNamelessType = birdGetTypeInAnonymousStruct,
+    instantiateTypeParameters = birdInstantiateTypeParameters
 );
 
 
