@@ -529,7 +529,14 @@ void collect(current: (Type) `<Id name> <TypeActuals actuals>`, Collector c){
             AType(Solver s) { return structType("<name>", [s.getType(tp) | tp <- tpActuals]);});
         collect(tpActuals, c);
     } else {
-        c.fact(current, name);
+         c.calculate("actual type", current, [name],
+			AType(Solver s) { 
+            	if (structDef(_,_) := s.getType(name)){
+                	return structType("<name>", []);
+				}
+                else{
+                	return s.getType(name);
+			};});
     }
 }
 
@@ -639,10 +646,10 @@ void collect(current: (Expr) `<Expr e>.size`, Collector c){
 }
 
 void collect(current: (Expr) `<Expr e>.<Id field>`, Collector c){
-	collect(e, c);
 	//currentScope = c.getScope();
 	c.useViaType(e, field, {fieldId()});
 	c.fact(current, field);
+	collect(e, c);
 	//c.calculate("field type", current, [e], AType(Solver s) {
 	//	return s.getTypeInType(s.getType(e), field, {fieldId()}, currentScope); });
 
@@ -875,7 +882,7 @@ TModel birdTModelFromTree(Tree pt, bool debug = false){
     return newSolver(pt, c.run()).run();
 }
 
-tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structType(str name)) = <[name], {structId()}>;
+tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structType(str name,_)) = <[name], {structId()}>;
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(funType(str name, _, _, _)) = <[name], {funId()}>;
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(AType t) = <[], {}>;
 
