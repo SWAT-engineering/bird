@@ -1,16 +1,19 @@
 module generics
 
 struct Bar{
-	u8 zero ? (== 0)
+	u8 zero ? (== "0")
+	u8 two
 }
 
 struct T{
-	//Bar bar
-	Foo<Bar> foo  
-	//u8 x = foo.arbitraryToken.zero
+	Bar bar
+	Foo<Bar<>> foo  
+	u8 z = bar.zero
+	u8 t = bar.two
+	Bar x = foo.arbitraryToken
 }
 
 struct Foo<T>{
-	u8[] data[20]
+	u8[] data[5]
 	T arbitraryToken byparsing (data) 
 }

@@ -312,7 +312,8 @@ str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, rel[loc,loc] useDefs, map[
     "<getInfixOperator("++")>(<compile(e1, useDefs, types, index)>, <compile(e2, useDefs, types, index)>)";    
 
 str compile(current: (Expr) `<Expr e>.<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-    "EMPTY";  
+    "seq(let(\"<safeId>\", <compile(e, useDefs, types, index)>), last(ref(\"<safeId>.<id>\")))"
+    when safeId := makeSafeId("generated", current@\loc); 
 
 str getInfixOperator("-") = "sub";
 str getInfixOperator("+") = "add";
