@@ -232,7 +232,7 @@ str compileType(current:(Type)`<Id id> \< <{ Type ","}* ts> \>`, str containerId
 	when compiledArgsLst := [compile(aargs, useDefs, types, index) | aargs <- args],
 		 bprintln(ts),
 		 compiledTypeArgsLst := [compileType(ta, containerId, args, cond, useDefs, types, index) | ta <- ts],
-		 compiledArgs := "(<intercalate(",", compiledArgsLst + compiledTypeArgsLst)>)";
+		 compiledArgs := ((_ <- compiledArgsLst + compiledTypeArgsLst)?"(<intercalate(",", compiledArgsLst + compiledTypeArgsLst)>)":"");
 	
 str compile(current:(Type)`<UInt v>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"nod(<toInt("<v>"[1..])/BYTE_SIZE>)";
@@ -241,13 +241,13 @@ str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types
 	"<id><args>"
 	when structType(_,[]) := types[current@\loc],
 		 size(ts) == size(targs),
-		 args := "(<intercalate(", ", [t | t <- ts])>";
+		 args := ((t <- ts)?"(<intercalate(", ", [t | t <- ts])>":"");
 		 
 str compile(current:(Type)`<Id id> \< <{Type ","}* targs> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"<id><args>"
 	when structType(_,ts) := types[current@\loc],
 		 size(ts) == size(targs),
-		 args := "(<intercalate(", ", [t | t <- targs])>";	
+		 args := ((t <- targs)?"(<intercalate(", ", [t | t <- targs])>":"");
 		 
 str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"<id>"
@@ -255,7 +255,7 @@ str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types
 	
 str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	{ throw "BUG!"; }
-	when structType(name) := types[current@\loc];		 	
+	when structType(name,_) := types[current@\loc];		 	
 	
 str compile(current:(SideCondition) `while ( <Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
 	throw "Missing implementation for compiling while side condition.";
@@ -312,8 +312,9 @@ str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, rel[loc,loc] useDefs, map[
     "<getInfixOperator("++")>(<compile(e1, useDefs, types, index)>, <compile(e2, useDefs, types, index)>)";    
 
 str compile(current: (Expr) `<Expr e>.<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-    "seq(let(\"<safeId>\", <compile(e, useDefs, types, index)>), last(ref(\"<safeId>.<id>\")))"
-    when safeId := makeSafeId("generated", current@\loc); 
+    "seq(\"<safeId1>\", let(\"<safeId2>\", <compile(e, useDefs, types, index)>), last(ref(\"<safeId2>.<id>\")))"
+    when safeId1 := makeSafeId("__generated1", current@\loc),
+    	 safeId2 := makeSafeId("__generated2", current@\loc); 
 
 str getInfixOperator("-") = "sub";
 str getInfixOperator("+") = "add";
