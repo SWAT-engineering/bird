@@ -223,7 +223,7 @@ str compileType(current:(Type)`<UInt v>`, str containerId, Arguments? args, str 
 	(cond == "")? "def(\"<containerId>\", con(<toInt("<v>"[1..])/BYTE_SIZE>))" : "def(\"<containerId>\", con(<toInt("<v>"[1..])/BYTE_SIZE>) <cond>)";	
 
 str compileType(current:(Type)`<Id id>`, str containerId, Arguments? args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"<id><compiledArgs>"
+	"seq(\"<containerId>\", <id><compiledArgs>, EMPTY)"
 	when compiledArgs := ((aargs <- args) ? "(<("" | it + compile(aargs, useDefs, types, index) | aargs <- args)>)" : "");
 		 
 	
@@ -311,11 +311,22 @@ str compile(current: (Expr) `<Expr e1> * <Expr e2>`, rel[loc,loc] useDefs, map[l
 str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
     "<getInfixOperator("++")>(<compile(e1, useDefs, types, index)>, <compile(e2, useDefs, types, index)>)";    
 
-str compile(current: (Expr) `<Expr e>.<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-    "seq(\"<safeId1>\", let(\"<safeId2>\", <compile(e, useDefs, types, index)>), last(ref(\"<safeId2>.<id>\")))"
-    when safeId1 := makeSafeId("__generated1", current@\loc),
-    	 safeId2 := makeSafeId("__generated2", current@\loc); 
+str compile(current: (Expr) `<Id id1>.<Id id2>.<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+    "last(ref(\"<makeSafeId("<srcId>", fixedLo)>.<id2>.<id>\"))" 
+    when lo := ([l | l <- useDefs[id1@\loc]])[0],
+	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
+		 srcId := "<index(fixedLo)>";
 
+str compile(current: (Expr) `<Id id1>.<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+    "last(ref(\"<makeSafeId("<srcId>", fixedLo)>.<id>\"))" 
+    when lo := ([l | l <- useDefs[id1@\loc]])[0],
+	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
+		 srcId := "<index(fixedLo)>";
+    	 
+str compile(current: (Expr) e, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
+    throw "Operation not yet implemented";
+}    	 
+ 
 str getInfixOperator("-") = "sub";
 str getInfixOperator("+") = "add";
 str getInfixOperator("*") = "mul";
