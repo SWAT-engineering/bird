@@ -37,8 +37,8 @@ str calculateEq({uType(_), listType(intType())}) = "eq";
 
 str calculateOp("==", set[AType] ts, list[str] es) = "<calculateEq(ts)>(<intercalate(",", es)>)";
 str calculateOp("!=", set[AType] ts, list[str] es) = "not(<calculateEq(ts)>(<intercalate(",", es)>))";
-str calculateOp("&&", set[AType] ts, list[str] es) { throw "Not implemented generator for logical and"; } //"and(<intercalate(",", es)>)";
-str calculateOp("||", set[AType] ts, list[str] es) { throw "Not implemented generator for logical or"; } //"or(<intercalate(",", es)>)";
+str calculateOp("&&", set[AType] ts, list[str] es) = "and(<intercalate(",", es)>)";
+str calculateOp("||", set[AType] ts, list[str] es)= "or(<intercalate(",", es)>)"; 
 str calculateOp("&", set[AType] ts, list[str] es) = "and(<intercalate(",", es)>)";
 str calculateOp("|", set[AType] ts, list[str] es) = "or(<intercalate(",", es)>)";
 str calculateOp("\>\>", set[AType] ts, list[str] es) = "shr(<intercalate(",", es)>)";
