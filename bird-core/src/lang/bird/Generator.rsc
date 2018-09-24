@@ -35,6 +35,37 @@ str calculateEq({sType(_)}) = "eq";
 str calculateEq({uType(_)}) = "eq";
 str calculateEq({uType(_), listType(intType())}) = "eq";
 
+str calculateOp("==", set[AType] ts, list[str] es) = "<calculateEq(ts)>(<intercalate(",", es)>)";
+str calculateOp("!=", set[AType] ts, list[str] es) = "not(<calculateEq(ts)>(<intercalate(",", es)>))";
+str calculateOp("&&", set[AType] ts, list[str] es) { throw "Not implemented generator for logical and"; } //"and(<intercalate(",", es)>)";
+str calculateOp("||", set[AType] ts, list[str] es) { throw "Not implemented generator for logical or"; } //"or(<intercalate(",", es)>)";
+str calculateOp("&", set[AType] ts, list[str] es) = "and(<intercalate(",", es)>)";
+str calculateOp("|", set[AType] ts, list[str] es) = "or(<intercalate(",", es)>)";
+str calculateOp("\>\>", set[AType] ts, list[str] es) = "shr(<intercalate(",", es)>)";
+str calculateOp("\<\<", set[AType] ts, list[str] es) = "shl(<intercalate(",", es)>)";
+str calculateOp("\>", set[AType] ts, list[str] es) = "gtNum(<intercalate(",", es)>)";
+str calculateOp("\<", set[AType] ts, list[str] es) = "ltNum(<intercalate(",", es)>)";
+str calculateOp("\>=", set[AType] ts, list[str] es) = "gtEqNum(<intercalate(",", es)>)";
+str calculateOp("\<=", set[AType] ts, list[str] es) = "ltEqNum(<intercalate(",", es)>)";
+str calculateOp("&", set[AType] ts, list[str] es) = "and(<intercalate(",", es)>)";
+	
+
+default str calculateOp(str other, set[AType] ts){ throw "generation for operator <other> not yet implemented"; }
+
+list[str] getActualFormals(Formals current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
+	= actualFormals
+	when actualFormals := [compile(af, useDefs, types, index) | af <- current.formals];
+	
+list[str] getActualTypeFormals(TypeFormals current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
+	= actualTypePars
+	when typeFormalList := (current is noTypeFormals ? [] : [f | f <- current.formals]),
+		 actualTypePars := ["Token <tp>" | Id tp <- typeFormalList];
+
+str getInfixOperator("-") = "sub";
+str getInfixOperator("+") = "add";
+str getInfixOperator("*") = "mul";
+str getInfixOperator("++") = "cat";
+
 //default str calculateEq(set[AType] ts) { throw "Incorrect arguments to calculateEq: <ts>"; }
 
 bool biprintln(value v){
@@ -91,19 +122,6 @@ str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? an
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "cho(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ; 		 
- 
-/*str compile(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-   "public static final Token <id><compiledFormals> <startBlock> <compiledDecls>; <endBlock>"           	
-	when areThereFormals := (fls <- formals),
-		 startBlock := (areThereFormals?"{ return ":"="),
-		 endBlock := (areThereFormals?"}":""),
-		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index); else [];},
-		 compiledFormals := {if (fs  <- formals) "(<intercalate(", ", compiledFormalsList)>)"; else "";},
-		 declsNumber :=  size([d| d <- decls]),
-		 compiledDecls := ((declsNumber == 0)?"EMPTY":
-		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
-		 ;
-*/
 		 
 str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
    "public static final Token <id><compiledFormalsAndTypePars> <startBlock> <compiledDecls>; <endBlock>"           	
@@ -138,6 +156,9 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 AType aty := types[ty@\loc],
 		 isSimpleByteType(aty),
 		 int size := sizeSimpleByteType(aty);
+		 
+str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	compileDeclInStruct(current, ty, id, args, cond, useDefs, types, index);
 		
 str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	//println("[WARNING] Declaration of computed field case not handled in the generator");
@@ -152,9 +173,7 @@ str compileDeclInStruct(DeclInStruct current, Type ty, DId id, Arguments? args, 
 		 AType aty := types[ty@\loc],
 		 bprintln(ty),
 		 compiledCond := ("" | it + ", <compileSideCondition(c, aty, useDefs, types, index)>" | c <- cond);   
-	        	
-str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	compileDeclInStruct(current, ty, id, args, cond, useDefs, types, index);
+	        
 		 
 str compile(current:(DeclInChoice) `<Type ty>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	compileForChoice(ty, useDefs, types, index);
@@ -178,38 +197,11 @@ str compileSideCondition((SideCondition) `?(!= <Expr e>)`, AType t1,  rel[loc,lo
 	calculateOp("!=", {t1,t2}, [compile(e, useDefs, types, index)])
 	when t2 := types[e@\loc];
 
-str calculateOp("==", set[AType] ts, list[str] es) = "<calculateEq(ts)>(<intercalate(",", es)>)";
-str calculateOp("!=", set[AType] ts, list[str] es) = "not(<calculateEq(ts)>(<intercalate(",", es)>))";
-str calculateOp("&&", set[AType] ts, list[str] es) { throw "Not implemented generator for logical and"; } //"and(<intercalate(",", es)>)";
-str calculateOp("||", set[AType] ts, list[str] es) { throw "Not implemented generator for logical or"; } //"or(<intercalate(",", es)>)";
-str calculateOp("&", set[AType] ts, list[str] es) = "and(<intercalate(",", es)>)";
-str calculateOp("|", set[AType] ts, list[str] es) = "or(<intercalate(",", es)>)";
-str calculateOp("\>\>", set[AType] ts, list[str] es) = "shr(<intercalate(",", es)>)";
-str calculateOp("\<\<", set[AType] ts, list[str] es) = "shl(<intercalate(",", es)>)";
-str calculateOp("\>", set[AType] ts, list[str] es) = "gtNum(<intercalate(",", es)>)";
-str calculateOp("\<", set[AType] ts, list[str] es) = "ltNum(<intercalate(",", es)>)";
-str calculateOp("\>=", set[AType] ts, list[str] es) = "gtEqNum(<intercalate(",", es)>)";
-str calculateOp("\<=", set[AType] ts, list[str] es) = "ltEqNum(<intercalate(",", es)>)";
-str calculateOp("&", set[AType] ts, list[str] es) = "and(<intercalate(",", es)>)";
-	
-
-default str calculateOp(str other, set[AType] ts){ throw "generation for operator <other> not yet implemented"; }
-
 default str compileSideCondition(current:(SideCondition) `? ( <Expr e>)`, AType ty, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) 
 	= compile(e, useDefs, types, index);
 	
 default str compileSideCondition(SideCondition sc, AType ty, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){ throw "Not yet implemented: <sc>"; } 
 
-list[str] getActualFormals(Formals current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
-	= actualFormals
-	when actualFormals := [compile(af, useDefs, types, index) | af <- current.formals];
-	
-list[str] getActualTypeFormals(TypeFormals current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
-	= actualTypePars
-	when typeFormalList := (current is noTypeFormals ? [] : [f | f <- current.formals]),
-		 actualTypePars := ["Token <tp>" | Id tp <- typeFormalList];
-
-	
 str compile(current:(Formal) `<Type ty> <Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	= "ValueExpression <safeId>" 
 	when safeId := makeSafeId("<id>", current@\loc);
@@ -326,11 +318,6 @@ str compile(current: (Expr) `<Id id1>.<Id id>`, rel[loc,loc] useDefs, map[loc, A
 str compile(current: (Expr) e, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
     throw "Operation not yet implemented";
 }    	 
- 
-str getInfixOperator("-") = "sub";
-str getInfixOperator("+") = "add";
-str getInfixOperator("*") = "mul";
-str getInfixOperator("++") = "cat";
 
 str compile(current: (Expr) `[ <{Expr ","}* es>]`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "con(<intercalate(", ",["<e>" | e <- es])>)"
 	when listType(ty) := types[current@\loc]; 
