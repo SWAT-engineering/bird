@@ -208,7 +208,7 @@ str compile(current:(Formal) `<Type ty> <Id id>`, rel[loc,loc] useDefs, map[loc,
 
 		 
 str compile((Arguments)  `( <{Expr ","}* args>  )`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
-	= "(<intercalate(", ", actualArgs)>)"
+	= "<intercalate(", ", actualArgs)>"
 	when actualArgs := [compile(arg, useDefs, types, index) | arg <- args];	 
 
 str compileType(current:(Type)`<UInt v>`, str containerId, Arguments? args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
@@ -220,7 +220,7 @@ str compileType(current:(Type)`<Id id>`, str containerId, Arguments? args, str c
 		 
 	
 str compileType(current:(Type)`<Id id> \< <{ Type ","}* ts> \>`, str containerId, Arguments? args, str cond, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"<id><compiledArgs>"
+	"seq(\"<containerId>\", <id><compiledArgs>, EMPTY)"
 	when compiledArgsLst := [compile(aargs, useDefs, types, index) | aargs <- args],
 		 bprintln(ts),
 		 compiledTypeArgsLst := [compileType(ta, containerId, args, cond, useDefs, types, index) | ta <- ts],
