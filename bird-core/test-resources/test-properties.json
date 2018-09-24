@@ -1,4 +1,7 @@
 {
-      "JPEG.Format": ["test.jpg"],
-      "PNG.PNG": ["test.png", "nfi.png"]
+    "JPEG.Format": ["test.jpg"],
+    "PNG.PNG": ["test.png", "nfi.png"],
+    "generics.T" : ["fivezeros.txt"],
+    "fieldaccess.S" : ["fivezeros.txt"],
+    "fieldaccess2.S" : ["onezero.txt"]
 }
