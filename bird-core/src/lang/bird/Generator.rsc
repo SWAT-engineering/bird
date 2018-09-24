@@ -74,7 +74,8 @@ bool biprintln(value v){
 } 
 
 str makeSafeId(str id, loc lo) =
-	"<newId>_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.end.line>_<lo.begin.column>_<lo.end.column>"
+	//"<newId>_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.end.line>_<lo.begin.column>_<lo.end.column>"
+	"<newId>"
 	when newId := (("<id>"=="_")?"dummy":"<id>");
 
 tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
@@ -134,7 +135,7 @@ str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Fo
 		 compiledFormalsAndTypePars := {if (size(formalsAndTypePars)!=0) "(<intercalate(", ", formalsAndTypePars)>)"; else "";},
 		 declsNumber :=  size([d| d <- decls]),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
-		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
+		 	((declsNumber ==  1)? "seq(\"<id>\",  <([compile(d,useDefs,types, index) | d <-decls])[0]>, EMPTY)": "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ;
 
 str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> byparsing (<Expr e>)`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
@@ -310,10 +311,11 @@ str compile(current: (Expr) `<Id id1>.<Id id2>.<Id id>`, rel[loc,loc] useDefs, m
 		 srcId := "<index(fixedLo)>";
 
 str compile(current: (Expr) `<Id id1>.<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-    "last(ref(\"<makeSafeId("<srcId>", fixedLo)>.<id>\"))" 
+    "last(ref(\"<makeSafeId("<srcId>", fixedLo)>.<tid>.<id>\"))" 
     when lo := ([l | l <- useDefs[id1@\loc]])[0],
-	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-		 srcId := "<index(fixedLo)>";
+         fixedLo := (("<id1>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
+         srcId := "<index(fixedLo)>",
+         structType(tid, _) := types[fixedLo];
     	 
 str compile(current: (Expr) e, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
     throw "Operation not yet implemented";
