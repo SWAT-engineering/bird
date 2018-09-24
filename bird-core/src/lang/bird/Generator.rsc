@@ -120,8 +120,9 @@ str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? an
 		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index); else [];},
 		 compiledFormals := {if (fs  <- formals) "(<intercalate(", ", compiledFormalsList)>)"; else "";},
 		 declsNumber := size([d| d <-decls]),
+		 abstractIds := ["<name>" | (DeclInChoice) `abstract <Type _> <Id name>` <- decls],
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
-		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "cho(<intercalate(", ", ["\"<id>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
+		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "cho(<intercalate(", ", ["\"<id>\""] + [compileDeclInChoice(d, abstractIds, useDefs, types, index) | d <-decls, !((DeclInChoice) `abstract <Type _> <Id name>` := d)])>)"))
 		 ; 		 
 		 
 str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
@@ -174,22 +175,18 @@ str compileDeclInStruct(DeclInStruct current, Type ty, DId id, Arguments? args, 
 		 AType aty := types[ty@\loc],
 		 bprintln(ty),
 		 compiledCond := ("" | it + ", <compileSideCondition(c, aty, useDefs, types, index)>" | c <- cond);   
-
-str compile(current:(DeclInChoice) `abstract <Type ty> <Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "";
 	
-		 
-str compile(current:(DeclInChoice) `<Type ty>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	compileForChoice(ty, useDefs, types, index);
-	
-str compileForChoice((Type) `struct { <DeclInStruct* decls>}`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+str compileDeclInChoice((DeclInChoice) `struct { <DeclInStruct* decls>}`, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	compiledDecls           	
 	when declsNumber := size([d | d <- decls]),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? (([compile(d,useDefs,types,index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<safeId>\""] + [compile(d, useDefs, types, index) | d <-decls])>)"))
 		 ;
 
-str compileForChoice(current:(Type) `<Id typeId>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	compile(current, useDefs, types, index);
+str compileDeclInChoice(current:(DeclInChoice) `<Id typeId>`, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	"seq(<typeId>, <abstracts>)"
+	when abstracts := ((size(abstractIds) == 0)?EMPTY:intercalate(", ", ["let(\"<aid>\",last(ref(\"<typeId>.<aid>\")))" | aid <- abstractIds]));
+	
 
 		 
 str compileSideCondition((SideCondition) `?(== <Expr e>)`, AType t1, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =

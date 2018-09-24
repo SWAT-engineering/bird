@@ -1,0 +1,15 @@
+module fieldaccesschoice
+
+struct A{
+	u8 y?(=="0") 
+}
+
+struct B{
+	u8 y?(=="1")
+}
+
+choice S{
+	abstract int y
+	A
+	B
+}
