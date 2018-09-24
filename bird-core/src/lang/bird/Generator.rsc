@@ -174,7 +174,9 @@ str compileDeclInStruct(DeclInStruct current, Type ty, DId id, Arguments? args, 
 		 AType aty := types[ty@\loc],
 		 bprintln(ty),
 		 compiledCond := ("" | it + ", <compileSideCondition(c, aty, useDefs, types, index)>" | c <- cond);   
-	        
+
+str compile(current:(DeclInChoice) `abstract <Type ty> <Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "";
+	
 		 
 str compile(current:(DeclInChoice) `<Type ty>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	compileForChoice(ty, useDefs, types, index);
@@ -231,10 +233,9 @@ str compile(current:(Type)`<UInt v>`, rel[loc,loc] useDefs, map[loc, AType] type
 	"nod(<toInt("<v>"[1..])/BYTE_SIZE>)";
 	
 str compile(current:(Type)`<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"<id><args>"
-	when structType(_,[]) := types[current@\loc],
-		 size(ts) == size(targs),
-		 args := ((t <- ts)?"(<intercalate(", ", [t | t <- ts])>":"");
+	"<id>"
+	when structType(_,[]) := types[current@\loc];
+		 
 		 
 str compile(current:(Type)`<Id id> \< <{Type ","}* targs> \>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"<id><args>"
