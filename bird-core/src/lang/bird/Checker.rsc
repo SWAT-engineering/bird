@@ -154,6 +154,11 @@ AType infixArithmetic(t1, t2) = intType()
 	when isConvertible(t1, intType()) && isConvertible(t2, intType());
 default AType infixArithmetic(AType t1, AType t2){ throw "Wrong operands for an arithmetic operation"; }
 
+AType infixString(t1, t2) = strType()
+	when isConvertible(t1, strType()) && isConvertible(t2, strType());
+default AType infixString(AType t1, AType t2){ throw "Wrong operands for a string operation"; }
+
+
 // TODO make it more flexible. Does this unify?
 AType infixConcat(lt:listType(_), lt) = lt;
 
@@ -524,13 +529,13 @@ void collect(current:(Type)`int`, Collector c) {
 
 void collect(current: (Type) `<Id name> <TypeActuals actuals>`, Collector c){
     c.use(name, {structId(), typeVariableId()});
-    if(actuals is withTypeActuals){
-        tpActuals = [tp | tp <- actuals.actuals];
+	if (actuals is withTypeActuals){
+    	tpActuals = [tp | tp <- actuals.actuals];
         c.calculate("actual type", current, name + tpActuals,
             AType(Solver s) { return structType("<name>", [s.getType(tp) | tp <- tpActuals]);});
         collect(tpActuals, c);
     } else {
-         c.calculate("actual type", current, [name],
+		 c.calculate("actual type", current, [name],
 			AType(Solver s) { 
             	if (structDef(_,_) := s.getType(name)){
                 	return structType("<name>", []);
@@ -776,6 +781,10 @@ void collect(current: (Expr) `<Expr e1> \<\< <Expr e2>`, Collector c){
     collectInfixOperation(current, "\<\<", infixShift, e1, e2, c); 
 }
 
+void collect(current: (Expr) `<Expr e1> (+) <Expr e2>`, Collector c){
+    collect(e1, e2, c);
+    collectInfixOperation(current, "+", infixString, e1, e2, c); 
+}
 
 void collect(current: (Expr) `<Expr e1> + <Expr e2>`, Collector c){
     collect(e1, e2, c);
@@ -884,6 +893,7 @@ TModel birdTModelFromTree(Tree pt, bool debug = false){
 }
 
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structType(str name,_)) = <[name], {structId()}>;
+tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structDef(str name,_)) = <[name], {structId()}>; // TODO this *has to be* deprecated
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(funType(str name, _, _, _)) = <[name], {funId()}>;
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(AType t) = <[], {}>;
 
