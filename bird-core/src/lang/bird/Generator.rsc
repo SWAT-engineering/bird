@@ -62,6 +62,7 @@ list[str] getActualTypeFormals(TypeFormals current, rel[loc,loc] useDefs, map[lo
 		 actualTypePars := ["Token <tp>" | Id tp <- typeFormalList];
 
 str getInfixOperator("-") = "sub";
+str getInfixOperator("(+)") = "cat";
 str getInfixOperator("+") = "add";
 str getInfixOperator("*") = "mul";
 str getInfixOperator("++") = "cat";
@@ -185,7 +186,13 @@ str compileDeclInChoice((DeclInChoice) `struct { <DeclInStruct* decls>}`, list[s
 
 str compileDeclInChoice(current:(DeclInChoice) `<Id typeId>`, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"seq(<typeId>, <abstracts>)"
-	when abstracts := ((size(abstractIds) == 0)?EMPTY:intercalate(", ", ["let(\"<aid>\",last(ref(\"<typeId>.<aid>\")))" | aid <- abstractIds]));
+	when abstracts := ((size(abstractIds) == 0)?"EMPTY":intercalate(", ", ["let(\"<aid>\",last(ref(\"<typeId>.<aid>\")))" | aid <- abstractIds]));
+	
+str compileDeclInChoice(current:(DeclInChoice) `<Id typeId> (<{Expr ","}* args>)`, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	"seq(<typeId><exprs>, <abstracts>)"
+	when abstracts := ((size(abstractIds) == 0)?"EMPTY":intercalate(", ", ["let(\"<aid>\",last(ref(\"<typeId>.<aid>\")))" | aid <- abstractIds])),
+		 exprs := ((_ <- args)?"(<intercalate(", ", [compile(a, useDefs, types, index) | a <- args])>)":"");
+	
 	
 
 		 
@@ -300,7 +307,11 @@ str compile(current: (Expr) `<Expr e1> * <Expr e2>`, rel[loc,loc] useDefs, map[l
 
 
 str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-    "<getInfixOperator("++")>(<compile(e1, useDefs, types, index)>, <compile(e2, useDefs, types, index)>)";    
+    "<getInfixOperator("++")>(<compile(e1, useDefs, types, index)>, <compile(e2, useDefs, types, index)>)";
+    
+str compile(current: (Expr) `<Expr e1> (+) <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+    "<getInfixOperator("(+)")>(<compile(e1, useDefs, types, index)>, <compile(e2, useDefs, types, index)>)";    
+        
 
 str compile(current: (Expr) `<Id id1>.<Id id2>.<Id id>`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
     "last(ref(\"<makeSafeId("<srcId>", fixedLo)>.<id2>.<id>\"))" 
@@ -316,7 +327,7 @@ str compile(current: (Expr) `<Id id1>.<Id id>`, rel[loc,loc] useDefs, map[loc, A
          structType(tid, _) := types[fixedLo];
     	 
 str compile(current: (Expr) e, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
-    throw "Operation not yet implemented";
+    throw "Operation not yet implemented: <e>";
 }    	 
 
 str compile(current: (Expr) `[ <{Expr ","}* es>]`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "con(<intercalate(", ",["<e>" | e <- es])>)"
