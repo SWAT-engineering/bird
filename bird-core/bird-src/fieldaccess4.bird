@@ -1,0 +1,14 @@
+module fieldaccess4
+
+struct A{
+	u8 x ?(this=="0" || this == "1")
+}
+
+struct B{
+	A a
+}
+
+struct S{
+	B b
+	A x = b.a
+}

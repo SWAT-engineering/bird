@@ -1,0 +1,21 @@
+module fieldaccess5
+
+struct A{
+	u8[] data[5]
+}
+
+struct B{
+	u8 data1
+	u8 data2
+	u8 data3
+	u8 data4
+	u8 data5
+}
+
+struct S{
+	A a
+	u8[] data = a.data
+	B b byparsing (data)	
+	B x = b
+	str y = x.data1 (+) "1"
+} 
