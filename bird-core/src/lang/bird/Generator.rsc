@@ -86,6 +86,7 @@ tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Impo
       '
       'import io.parsingdata.metal.token.Token;
 	  'import io.parsingdata.metal.expression.value.ValueExpression;
+	  'import io.parsingdata.metal.Shorthand;
 	  '
 	  'import static io.parsingdata.metal.token.Token.EMPTY_NAME;
 	  'import static io.parsingdata.metal.Shorthand.*;
@@ -123,7 +124,7 @@ str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? an
 		 declsNumber := size([d| d <-decls]),
 		 abstractIds := ["<name>" | (DeclInChoice) `abstract <Type _> <Id name>` <- decls],
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
-		 	((declsNumber ==  1)? (([compile(d,useDefs,types, index) | d <-decls])[0]) : "cho(<intercalate(", ", ["\"<id>\""] + [compileDeclInChoice(d, abstractIds, useDefs, types, index) | d <-decls, !((DeclInChoice) `abstract <Type _> <Id name>` := d)])>)"))
+		 	((declsNumber ==  1)? (([compile(d, useDefs,types, index) | d <-decls])[0]) : "cho(<intercalate(", ", ["\"<id>\""] + [compileDeclInChoice(d, abstractIds, useDefs, types, index) | d <-decls, !((DeclInChoice) `abstract <Type _> <Id name>` := d)])>)"))
 		 ; 		 
 		 
 Type extractType((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`)	= ty;
@@ -202,14 +203,17 @@ str compileDeclInStruct(DeclInStruct current, Type ty, DId id, Arguments? args, 
 		 bprintln(ty),
 		 compiledCond := ("" | it + ", <compileSideCondition(c, aty, tokenExps, useDefs, types, index)>" | c <- cond);   
 	
-str compileDeclInChoice((DeclInChoice) `struct { <DeclInStruct* decls>}`, list[str] abstractIds, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+str compileDeclInChoice((DeclInChoice) `struct { <DeclInStruct* decls>}`, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	compiledDecls           	
 	when declsNumber := size([d | d <- decls]),
+		 map[str, str] tokenExps := (()|it + (extractId(d):
+		 										(((DeclInStruct) `<Type t> <Id i> = <Expr e>` := d)?compile(e, it, useDefs, types, index) :extractId(d))
+		 									  )|d <- decls, (isUserDefined(types[extractIdLoc(d)]) || structDef(_,_) := types[extractIdLoc(d)])),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
-		 	((declsNumber ==  1)? (([compile(d,useDefs,types,index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<safeId>\""] + [compile(d, tokenExps, useDefs, types, index) | d <-decls])>)"))
+		 	((declsNumber ==  1)? (([compile(d, tokenExps,  useDefs,types,index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<safeId>\""] + [compile(d, tokenExps, useDefs, types, index) | d <-decls])>)"))
 		 ;
 
-str compileDeclInChoice(current:(DeclInChoice) `<Id typeId>`, list[str] abstractIds, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+str compileDeclInChoice(current:(DeclInChoice) `<Id typeId>`, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"seq(<typeId>, <abstracts>)"
 	when abstracts := ((size(abstractIds) == 0)?"EMPTY":intercalate(", ", ["let(\"<aid>\",last(ref(\"<typeId>.<aid>\")))" | aid <- abstractIds]));
 	
@@ -263,10 +267,7 @@ str compile(current:(Type)`<UInt v>`, map[str, str] tokenExps, rel[loc,loc] useD
 	
 str compile(current:(Type)`<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"<id>";
-//	when bprintln("the type is <types[current@\loc]>"),
-//	     structType(_,[]) := types[current@\loc];
-		 
-		 
+		  
 str compile(current:(Type)`<Id id> \< <{Type ","}* targs> \>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	"<id><args>"
 	when //structType(_,ts) := types[current@\loc],
@@ -340,19 +341,41 @@ str compile(current: (Expr) `<Expr e1> (+) <Expr e2>`, map[str, str] tokenExps, 
         
 
 str compile(current: (Expr) `<Id id1>.<Id id2>.<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-    "last(ref(\"<initialId>.<id2>.<id>\"))" 
+    "last(ref(\"<initialId>.<id2>.<id>\"))"
     when lo := ([l | l <- useDefs[id1@\loc]])[0],
 	 	 fixedLo := (("<id1>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
 		 srcId := "<index(fixedLo)>",
 		 initialId := "<id1>" in tokenExps?tokenExps["<id1>"]:makeSafeId("<srcId>", fixedLo);
 
 str compile(current: (Expr) `<Id id1>.<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-    "last(ref(\"<initialId>.<tid>.<id>\"))" 
-    when lo := ([l | l <- useDefs[id1@\loc]])[0],
+   	"fold(ref(\"<initialId>.<tid>.<id>.<id>\"), Shorthand::cat)"
+    when t:listType(_) := types[current@\loc],
+    	 !t.bounded,
+    	 lo := ([l | l <- useDefs[id1@\loc]])[0],
          fixedLo := (("<id1>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
          srcId := "<index(fixedLo)>",
          structType(tid, _) := types[fixedLo],
-         initialId := ("<id1>" in tokenExps?tokenExps["<id1>"]:makeSafeId("<srcId>", fixedLo));
+         initialId := ("<id1>" in tokenExps?tokenExps["<id1>"]:makeSafeId("<srcId>", fixedLo));    
+         
+str compile(current: (Expr) `<Id id1>.<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+    "last(ref(\"<initialId>.<tid>.<id>\"))" 
+    when //listType(_) !:= types[current@\loc],
+    	 lo := ([l | l <- useDefs[id1@\loc]])[0],
+         fixedLo := (("<id1>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
+         srcId := "<index(fixedLo)>",
+         structType(tid, _) := types[fixedLo],
+         initialId := ("<id1>" in tokenExps?tokenExps["<id1>"]:makeSafeId("<srcId>", fixedLo));              
+         
+//str compile(current: (Expr) `<Id id1>.<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+//    "seq(let(\"<newId>\", <initialExp>),last(ref(\"<newId>.<tid>.<id>\")))" 
+//    when lo := ([l | l <- useDefs[id1@\loc]])[0],
+//         fixedLo := (("<id1>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
+//         bprintln("attempting to generate for <current>"),
+//         srcId := "<index(fixedLo)>",33
+//         structType(tid, _) := types[fixedLo],
+//         Expr id1AsExp := ((Expr) `<Id id1>`)[@\loc = id1@\loc],
+//         initialExp := compile(id1AsExp,  tokenExps, useDefs, types, index),
+//         newId := "__tmp"
     	 
 str compile(current: (Expr) e, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index){
     throw "Operation not yet implemented: <e>";
@@ -360,9 +383,15 @@ str compile(current: (Expr) e, map[str, str] tokenExps, rel[loc,loc] useDefs, ma
 
 str compile(current: (Expr) `[ <{Expr ","}* es>]`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "con(<intercalate(", ",["<e>" | e <- es])>)"
 	when listType(ty) := types[current@\loc]; 
+	
+str compile(current:(Expr)`<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	"fold(ref(\"<id>.<id>\"), Shorthand::cat)"
+	when t:listType(_) := types[current@\loc],
+	     !t.bounded;
 
 str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "last(ref(\"<makeSafeId("<srcId>", fixedLo)>\"))" 
-	when lo := ([l | l <- useDefs[id@\loc]])[0],
+	when //listType(_) !:= types[current@\loc],
+		 lo := ([l | l <- useDefs[id@\loc]])[0],
 	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
 		 srcId := "<index(fixedLo)>";
 		 
