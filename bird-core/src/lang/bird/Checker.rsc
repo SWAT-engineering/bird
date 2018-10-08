@@ -11,13 +11,15 @@ extend analysis::typepal::TestFramework;
 
 lexical ConsId =  "$" ([a-z A-Z 0-9 _] !<< [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z A-Z 0-9 _])\Reserved;
 
+anno bool Type@bounded;
+
 data AType
 	= voidType()
 	| intType()
 	| typeType(AType ty)
 	| strType()
 	| boolType()
-	| listType(AType ty)
+	| listType(AType ty, bool bounded = false)
 	| consType(AType formals)
 	| funType(str name, AType returnType, AType formals, str javaRef)
 	| structDef(str name, list[str] args)
@@ -162,11 +164,11 @@ default AType infixString(AType t1, AType t2){ throw "Wrong operands for a strin
 // TODO make it more flexible. Does this unify?
 AType infixConcat(lt:listType(_), lt) = lt;
 
-bool isUserDefined(refType(_,_)) = true;
+bool isUserDefined(structType(_,_)) = true;
 bool isUserDefined(listType(t)) = isUserDefined(t);
 default bool isUserDefined(AType t) = false;
 
-str getUserDefinedName(refType(id, _)) = id;
+str getUserDefinedName(structType(id, _)) = id;
 str getUserDefinedName(listType(t)) = getUserDefinedName(t);
 default str getUserDefinedName(AType t){ throw "Operation not defined on non-user defined types."; }
 
@@ -301,12 +303,14 @@ void collect(current:(Formal) `<Type ty> <Id id>`, Collector c){
 }
 
 void collect(current:(DeclInStruct) `<Type ty> <Id id> = <Expr expr>`,  Collector c) {
-	c.define("<id>", fieldId(), id, defType(ty));
+	c.define("<id>", fieldId(), id, defType(expr));
 	collect(ty, c);
 	collect(expr, c);
 	c.require("good assignment", current, [expr] + [ty],
-        void (Solver s) { s.requireSubType(s.getType(expr), s.getType(ty), 
-        				  error(current, "Expression should be <prettyPrintAType(s.getType(ty))>, found <prettyPrintAType(s.getType(expr))>")); });
+        void (Solver s) { 
+        	println("<expr> \>\>\> <s.getType(expr)>");
+        	s.requireSubType(s.getType(expr), s.getType(ty), 
+        		error(current, "Expression should be <prettyPrintAType(s.getType(ty))>, found <prettyPrintAType(s.getType(expr))>")); });
 }    
 
 void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`,  Collector c) {
@@ -314,9 +318,19 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
 		s.requireTrue(isTokenType(s.getType(ty)), error(ty, "Non-initialized fields must be of a token type, but it was %t (AType: %t)", ty, s.getType(ty)));
 	});
 	if ("<id>" != "_"){
-		c.define("<id>", fieldId(), id, defType(ty));
+		if (sz <- size){
+			println("HAS SIZE");
+			c.define("<id>", fieldId(), id, defType(ty[@bounded = true]));
+		}else{
+			c.define("<id>", fieldId(), id, defType(ty));
+		}
 	}
-	collect(ty, c);
+	if (sz <- size){
+		collect(ty[@bounded = true], c);
+	}
+	else{
+		collect(ty, c);
+	}
 	collectArgs(ty, args, c);
 	
 	for (sz <-size){
@@ -581,7 +595,9 @@ void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? a
 
 void collect(current:(Type)`<Type t> [ ]`, Collector c) {
 	collect(t, c);
-	c.calculate("list type", current, [t], AType(Solver s) { return listType(s.getType(t)); });
+	c.calculate("list type", current, [t], AType(Solver s) {
+		println("<t> &&& <s.getType(t)>");
+		return listType(s.getType(t), bounded = (current has bounded)); });
 }  
 
 void collect(current: (Expr) `[<{Expr ","}*  exprs>]`, Collector c){
@@ -618,6 +634,9 @@ void collect(current: (Expr) `<NatLiteral nat>`, Collector c){
 
 void collect(current: (Expr) `<Id id>`, Collector c){
     c.use(id, {variableId(), fieldId()});
+    c.require("trivial", current, [current], void(Solver s){
+    	println("<id> :::: <s.getType(current) has bounded>");
+    });
 }
 
 void collect(current: (Expr) `<Expr e>.offset`, Collector c){
@@ -656,6 +675,9 @@ void collect(current: (Expr) `<Expr e>.<Id field>`, Collector c){
 	c.useViaType(e, field, {fieldId()});
 	c.fact(current, field);
 	collect(e, c);
+	c.require("trivial", current, [field], void (Solver s) {
+		println("<field> ||||| <s.getType(field)>");
+	}); 
 	//c.calculate("field type", current, [e], AType(Solver s) {
 	//	return s.getTypeInType(s.getType(e), field, {fieldId()}, currentScope); });
 
