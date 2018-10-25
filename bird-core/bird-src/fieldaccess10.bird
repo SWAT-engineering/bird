@@ -1,0 +1,9 @@
+module fieldaccess10
+
+struct A {
+     u8 x ?(== "0")
+}
+
+struct S {
+    A[] data  
+}
