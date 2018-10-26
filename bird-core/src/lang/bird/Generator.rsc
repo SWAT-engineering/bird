@@ -80,7 +80,8 @@ str makeSafeId(str id, loc lo) =
 	when newId := (("<id>"=="_")?"dummy":"<id>");
 
 tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
-	= <packageName, "package engineering.swat.formats<packageName>;
+	= <packageName,
+	  "package engineering.swat.formats<packageName>;
       '
       'import static engineering.swat.metal.Let.*;
       '
@@ -167,13 +168,11 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <Side
 		
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	{if (aCond <- cond)
-		"def(\"<safeId>\", mul(con(<size/8>), <compile(n, tokenExps, useDefs, types, index)>), <compileSideCondition(aCond, aty, tokenExps, useDefs, types, index)>)";
+		"def(\"<safeId>\", mul(<compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index)>, <compile(n, tokenExps, useDefs, types, index)>), <compileSideCondition(aCond, aty, tokenExps, useDefs, types, index)>)";
 	else
-		"def(\"<safeId>\", mul(con(<size/8>), <compile(n, tokenExps, useDefs, types, index)>))";}
+		"def(\"<safeId>\", mul(<compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index)>, <compile(n, tokenExps, useDefs, types, index)>))";}
 	when safeId := makeSafeId("<id>", id@\loc),
-		 AType aty := types[ty@\loc],
-		 isSimpleByteType(aty),
-		 int size := sizeSimpleByteType(aty);
+		 AType aty := types[ty@\loc];
 		 
 str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index);
