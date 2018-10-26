@@ -156,7 +156,7 @@ str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Fo
 		 ;		 
 
 str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> byparsing (<Expr e>)`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"tie(\"<safeId>\", <compile(ty, tokenExps, useDefs, types, index)>, <compile(e, tokenExps, useDefs, types, index)>)"   
+	"tie(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, (SideCondition?) ``, tokenExps, useDefs, types, index)>, <compile(e, tokenExps, useDefs, types, index)>)"   
 	when safeId := makeSafeId("<id>", id@\loc),
 		 bprintln("current in tie: <current>")
 		;
