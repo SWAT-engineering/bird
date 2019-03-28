@@ -5,5 +5,5 @@ struct A {
 }
 
 struct S {
-    A[] data  
+    A[] data   
 }

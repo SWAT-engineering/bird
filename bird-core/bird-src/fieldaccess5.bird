@@ -32,6 +32,7 @@ struct S{
 	C c
 	u16 data = c.data
 	D d byparsing (data)
+	D x = d
 	//B x = b
-	//str y = x.data1 (+) "1"
+	//str y = x.array.array
 }

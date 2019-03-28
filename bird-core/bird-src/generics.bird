@@ -2,14 +2,10 @@ module generics
 
 struct Bar{
 	u8 zero ? (== "0")
-	u8 two
 }
 
 struct T{
-	Bar bar
 	Foo<Bar<>> foo  
-	u8 z = bar.zero
-	u8 t = bar.two
 	Bar x = foo.arbitraryToken
 }
 

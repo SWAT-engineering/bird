@@ -1,0 +1,10 @@
+{
+    "JPEG.Format": ["test.jpg"],
+    "PNG.PNG": ["test.png", "nfi.png"],
+    "generics.T" : ["fivezeros.txt"],
+    "fieldaccess.S" : ["fivezeros.txt"],
+    "fieldaccess2.S" : ["onezero.txt"],
+    "fieldaccesschoice.S" : ["onezero.txt"],
+    "fieldaccess3.S" : ["onezero.txt"],
+    "fieldaccess4.S" : ["onezero.txt"]
+}

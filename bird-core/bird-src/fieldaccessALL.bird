@@ -1,0 +1,28 @@
+module fieldaccessALL
+
+struct A {
+     u8 x ?(== "0")
+}
+
+struct B {
+	u8 x ?(this == "1")
+}
+
+struct C {
+	u8[] data
+}
+
+struct S {
+    A[] data
+    B b
+    u8[] bytes1[3]
+    B b2
+    B b3
+    
+    //C c byparsing(bytes1)
+    //F f(b)       
+}
+
+//struct F(B bb){
+//	u8 y = bb.x
+//}
