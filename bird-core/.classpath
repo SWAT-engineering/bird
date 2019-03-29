@@ -12,5 +12,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/metal-core"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/json.jar"/>
+	<classpathentry kind="lib" path="/metal-core/target/test-classes"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
