@@ -908,7 +908,7 @@ void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, T
 // ----  Examples & Tests --------------------------------
 TModel birdTModelFromTree(Tree pt, bool debug = false){
     if (pt has top) pt = pt.top;
-    c = newCollector("collectAndSolve", pt, config=getBirdConfig(), debug=debug);    // TODO get more meaningfull name
+    c = newCollector("collectAndSolve", pt, config=getBirdConfig());    // TODO get more meaningfull name
     collect(pt, c);
     handleImports(c, pt, pathConfig(pt@\loc));
     return newSolver(pt, c.run()).run();
