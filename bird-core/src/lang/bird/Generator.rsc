@@ -52,9 +52,8 @@ str calculateOp("&", set[AType] ts, list[str] es) = "and(<intercalate(",", es)>)
 
 default str calculateOp(str other, set[AType] ts){ throw "generation for operator <other> not yet implemented"; }
 
-list[str] getActualFormals(Formals current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
-	= actualFormals
-	when actualFormals := [compile(af, [], useDefs, types, index) | af <- current.formals];
+list[str] getActualFormals(Formals current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
+	[compile(af, (), useDefs, types, index) | af <- current.formals];		
 	
 list[str] getActualTypeFormals(TypeFormals current, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index)
 	= actualTypePars
@@ -145,7 +144,9 @@ str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Fo
 		 map[str, str] tokenExps := (()|it + (extractId(d):
 		 										(((DeclInStruct) `<Type t> <Id i> = <Expr e>` := d)?compile(e, it, useDefs, types, index) :extractId(d))
 		 									  )|d <- decls, 
-		 							 bprintln("type of <d> is <types[extractIdLoc(d)]>"), (isUserDefined(types[extractIdLoc(d)]) || structDef(_,_) := types[extractIdLoc(d)])),
+		 							"_" !:= extractId(d),
+		 							bprintln("type of <d> is <types[extractIdLoc(d)]>"),
+		 							(isUserDefined(types[extractIdLoc(d)]) || structDef(_,_) := types[extractIdLoc(d)])),
 		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index); else [];},
 		 list[str] compiledTypeParsList := getActualTypeFormals(typeFormals, useDefs, types, index),
 		 list[str] formalsAndTypePars := compiledTypeParsList + compiledFormalsList,
@@ -156,7 +157,7 @@ str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Fo
 		 ;		 
 
 str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> byparsing (<Expr e>)`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"tie(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, (SideCondition?) ``, tokenExps, useDefs, types, index)>, <compile(e, tokenExps, useDefs, types, index)>)"   
+	"tie(\"<safeId>\", <compile(ty, tokenExps, useDefs, types, index)>, <compile(e, tokenExps, useDefs, types, index)>)"    
 	when safeId := makeSafeId("<id>", id@\loc),
 		 bprintln("current in tie: <current>")
 		;
@@ -167,12 +168,22 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <Side
 		;
 		
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	{if (aCond <- cond)
-		"def(\"<safeId>\", mul(<compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index)>, <compile(n, tokenExps, useDefs, types, index)>), <compileSideCondition(aCond, aty, tokenExps, useDefs, types, index)>)";
-	else
-		"def(\"<safeId>\", mul(<compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index)>, <compile(n, tokenExps, useDefs, types, index)>))";}
-	when safeId := makeSafeId("<id>", id@\loc),
-		 AType aty := types[ty@\loc];
+	"def(\"<safeId>\", last(mul(con(<size/8>), <compile(n, tokenExps, useDefs, types, index)>))<condStr>)"
+	when AType aty := types[ty@\loc],
+		 isSimpleByteType(aty),
+		 int size := sizeSimpleByteType(aty),
+		 safeId := makeSafeId("<id>", id@\loc),
+		 condStr := ("" | it + ", <compileSideCondition(aCond, aty, tokenExps, useDefs, types, index)>" |SideCondition aCond <- cond)
+		 ;
+		 
+str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = 
+	"def(\"<safeId>\", last(mul(<compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index)>, <compile(n, tokenExps, useDefs, types, index)>))<condStr>)"
+	when AType aty := types[ty@\loc], 
+		 !isSimpleByteType(aty),
+		 safeId := makeSafeId("<id>", id@\loc),
+		 condStr := ("" | it + ", <compileSideCondition(aCond, aty, tokenExps, useDefs, types, index)>" |SideCondition aCond <- cond)
+		 ;
+		 
 		 
 str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index);
