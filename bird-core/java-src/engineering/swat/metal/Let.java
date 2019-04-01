@@ -3,6 +3,7 @@ package engineering.swat.metal;
 import static io.parsingdata.metal.Shorthand.def;
 import static io.parsingdata.metal.Shorthand.len;
 import static io.parsingdata.metal.Shorthand.tie;
+import static io.parsingdata.metal.Shorthand.first;
 
 import io.parsingdata.metal.data.ParseGraph;
 import io.parsingdata.metal.expression.value.ValueExpression;
@@ -18,6 +19,6 @@ public class Let {
 	 * @return a token parsing given value and assigning a name to it
 	 */
 	public static Token let(final String name, final ValueExpression value) {
-	    return tie(def(name, len(value)), value);
+	    return tie(def(name, first(len(value))), first(value));
 	}
 }
