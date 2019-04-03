@@ -355,7 +355,7 @@ str compile(current: (Expr) `<Id id1>.<Id id2>.<Id id>`, map[str, str] tokenExps
     when lo := ([l | l <- useDefs[id1@\loc]])[0],
 	 	 fixedLo := (("<id1>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
 		 srcId := "<index(fixedLo)>",
-		 initialId := "<id1>" in tokenExps?tokenExps["<id1>"]:makeSafeId("<srcId>", fixedLo);
+		 initialId := (("<id1>" in tokenExps)?tokenExps["<id1>"]:makeSafeId("<srcId>", fixedLo));
 
 str compile(current: (Expr) `<Id id1>.<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
    	"fold(ref(\"<initialId>.<tid>.<id>.<id>\"), Shorthand::cat)"
