@@ -168,7 +168,8 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <Side
 		;
 		
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
-	"def(\"<safeId>\", last(mul(con(<size/8>), <compile(n, tokenExps, useDefs, types, index)>))<condStr>)"
+	"repn(\"<safeId>\", def(\"<safeId>\", con(<size/8>)), <compile(n, tokenExps, useDefs, types, index)>)"
+	 //"def(\"<safeId>\", last(mul(con(<size/8>), <compile(n, tokenExps, useDefs, types, index)>))<condStr>)"
 	when AType aty := types[ty@\loc],
 		 isSimpleByteType(aty),
 		 int size := sizeSimpleByteType(aty),
@@ -177,7 +178,8 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 ;
 		 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = 
-	"def(\"<safeId>\", last(mul(<compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index)>, <compile(n, tokenExps, useDefs, types, index)>))<condStr>)"
+	//"def(\"<safeId>\", last(mul(<compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index)>, <compile(n, tokenExps, useDefs, types, index)>))<condStr>)"
+	"repn(\"<safeId>\", <compile(ty, tokenExps, useDefs, types, index)>, <compile(n, tokenExps, useDefs, types, index)>)"
 	when AType aty := types[ty@\loc], 
 		 !isSimpleByteType(aty),
 		 safeId := makeSafeId("<id>", id@\loc),
@@ -399,11 +401,22 @@ str compile(current:(Expr)`<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDe
 	when t:listType(_) := types[current@\loc],
 	     !t.bounded;
 
-str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = "last(ref(\"<makeSafeId("<srcId>", fixedLo)>\"))" 
+str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = 
+	"last(<id>)" 
+	when //listType(_) !:= types[current@\loc],
+		 
+		 lo := ([l | l <- useDefs[id@\loc]])[0],
+	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
+	 	 Formal f := index(fixedLo);
+		
+
+str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) = 
+	"last(ref(\"<makeSafeId("<srcId>", fixedLo)>\"))"
 	when //listType(_) !:= types[current@\loc],
 		 lo := ([l | l <- useDefs[id@\loc]])[0],
 	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-		 srcId := "<index(fixedLo)>";
+		 srcId := index(fixedLo),
+		 Formal f !:= srcId;
 		 
 str compile(current: (Expr) `<Expr e1> <ComparatorOperator uo> <Expr e2>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index) =
 	calculateOp("<uo>", {t1,t2}, [compile(e1, tokenExps, useDefs, types, index), compile(e2, tokenExps, useDefs, types, index)])
