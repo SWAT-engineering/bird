@@ -1,0 +1,9 @@
+module structureB
+
+struct A{
+	u8 x
+}
+
+struct B{
+	A[] a[2]	
+}
