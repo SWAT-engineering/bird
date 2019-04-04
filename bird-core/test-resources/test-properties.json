@@ -17,5 +17,6 @@
     "fieldaccess10.S" : ["fivezeros.txt"],
     "fieldaccessALL.S" : ["numbers.txt"],
     "fieldaccessALL2.S" : ["numbers.txt"],
-    "structure.D" : ["structure.txt"]
+    "structure.D" : ["structure.txt"],
+    "nesting1.D" : ["onezeroonezeroone.txt"],
 }
