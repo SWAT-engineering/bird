@@ -34,6 +34,7 @@ data AType
 data IdRole
     = structId()
     | fieldId()
+    | paramId()
     | typeVariableId()
     | variableId()
     | consId()
@@ -298,7 +299,7 @@ void collect(current:(TopLevelDecl) `@( <JavaId jid> ) <Type t> <Id id> <Formals
 }
 
 void collect(current:(Formal) `<Type ty> <Id id>`, Collector c){
-	c.define("<id>", fieldId(), current, defType(ty));
+	c.define("<id>", paramId(), current, defType(ty));
 	collect(ty, c);
 }
 
@@ -633,7 +634,7 @@ void collect(current: (Expr) `<NatLiteral nat>`, Collector c){
 }
 
 void collect(current: (Expr) `<Id id>`, Collector c){
-    c.use(id, {variableId(), fieldId()});
+    c.use(id, {variableId(), fieldId(), paramId()});
     c.require("trivial", current, [current], void(Solver s){
     	println("<id> :::: <s.getType(current) has bounded>");
     });
