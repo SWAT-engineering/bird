@@ -168,7 +168,7 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <Side
 		;
 		
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
-	"repn(\"<safeId>\", def(\"<safeId>\", con(<size/8>)), <compile(n, tokenExps, useDefs, types, index, scopes)>)"
+	"repn(\"<safeId>\", def(\"<safeId>\", con(<size/8>)), first(<compile(n, tokenExps, useDefs, types, index, scopes)>))"
 	 //"def(\"<safeId>\", last(mul(con(<size/8>), <compile(n, tokenExps, useDefs, types, index, scopes)>))<condStr>)"
 	when AType aty := types[ty@\loc],
 		 isSimpleByteType(aty),
@@ -179,7 +179,7 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = 
 	//"def(\"<safeId>\", last(mul(<compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index, scopes)>, <compile(n, tokenExps, useDefs, types, index, scopes)>))<condStr>)"
-	"repn(\"<safeId>\", <compile(ty, tokenExps, useDefs, types, index, scopes)>, <compile(n, tokenExps, useDefs, types, index, scopes)>)"
+	"repn(\"<safeId>\", <compile(ty, tokenExps, useDefs, types, index, scopes)>, first(<compile(n, tokenExps, useDefs, types, index, scopes)>))"
 	when AType aty := types[ty@\loc], 
 		 !isSimpleByteType(aty),
 		 safeId := makeSafeId("<id>", id@\loc),
@@ -311,7 +311,10 @@ str compile(current:(UnaryOperator) `==`, str s, map[str, str] tokenExps, rel[lo
 
 str compile(current:(UnaryOperator) `!=`, str s, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = "not(eq(<s>))";
 
-str compile(current: (Expr) `<Expr e>.as[<Type t>]`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = compile(e, tokenExps, useDefs, types, index, scopes);
+str compile(current: (Expr) `<Expr e>.as[int]`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = 
+	"sub(<compile(e, tokenExps, useDefs, types, index, scopes)>, 0x30)";
+
+default str compile(current: (Expr) `<Expr e>.as[<Type t>]`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = compile(e, tokenExps, useDefs, types, index, scopes);
 
 str compile(current: (Expr) `<StringLiteral lit>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = "con(<lit>)";
 
