@@ -1,11 +1,11 @@
 module structure 
 
 struct A{
-	u8 x ?(== "0")
+	u8 x ?(== "1")
 }
 
 struct B{
-	u8 x ?(== "1")
+	u8 x ?(== "0")
 }
 
 struct C {
@@ -16,7 +16,5 @@ struct C {
 struct D {
 	C c1
 	C c2
-	int derived = c1.a.x * c2.b.x
-	A a1 = c1.a
-	int derived2 = a1.x
+	int derived = c2.b.x + c1.a.x
 }

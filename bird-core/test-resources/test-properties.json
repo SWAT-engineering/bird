@@ -1,12 +1,9 @@
-{  
-
-	"structureC.C" : [ "fivezerosone.txt" ],
-	"JPEG.Format": ["test.jpg"],
+{   "JPEG.Format": ["test.jpg"],
     "PNG.PNG": ["test.png", "nfi.png"],
     "generics.T" : ["fivezeros.txt"],
-    "fieldaccess.S" : ["zero.txt"],
+    "fieldaccess.S" : ["zerozero.txt"],
     "fieldaccess2.S" : ["onezero.txt"],
-    "fieldaccesschoice.S" : ["zero.txt"],
+    "fieldaccesschoice.S" : ["onezero.txt"],
     "fieldaccess3.S" : ["onezero.txt"],
     "fieldaccess4.S" : ["zero.txt"],
     "fieldaccess5.S" : ["fivezeros.txt"],
@@ -17,6 +14,13 @@
     "fieldaccess10.S" : ["fivezeros.txt"],
     "fieldaccessALL.S" : ["numbers.txt"],
     "fieldaccessALL2.S" : ["numbers.txt"],
-    "structure.D" : ["structure.txt"],
-    "nesting1.D" : ["onezeroonezeroone.txt"],
+    "nesting1.D" : [ "onezeroonezeroone.txt" ],
+    "structure.D" : ["onezeroonezero.txt"],
+    "recursion1.S" : ["onezeroone.txt"],
+    "parameters1.S" : ["onezero.txt"],
+    "parameters2.S" : ["oneone.txt"],
+	"parameters3.S1" : ["oneone.txt"],
+	"parameters3.S2" : ["oneone.txt"],
+	"parameters3.S3" : ["oneone.txt"],
+
 }
