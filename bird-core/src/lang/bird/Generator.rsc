@@ -83,6 +83,7 @@ tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Impo
 	  "package engineering.swat.formats<packageName>;
       '
       'import static engineering.swat.metal.Let.*;
+      'import engineering.swat.metal.WrapperScopedExpression;
       '
       'import io.parsingdata.metal.token.Token;
 	  'import io.parsingdata.metal.expression.value.ValueExpression;
@@ -117,7 +118,11 @@ tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Impo
 str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
    "public static final Token <id><compiledFormals> <startBlock> <compiledDecls>; <endBlock>"
    when  areThereFormals := (fls <- formals),
-		 startBlock := (areThereFormals?"{ return ":"="),
+		 startBlock := (areThereFormals?"{
+		 								'	<for (fls <- formals, f <-fls.formals) {> 
+	     								'	<f.id> = <f.id>.nestMore(); 
+	     								' 	<}> 
+	     								'	return ":"="),
 		 endBlock := (areThereFormals?"}":""),
 		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index, scopes); else [];},
 		 compiledFormals := {if (fs  <- formals) "(<intercalate(", ", compiledFormalsList)>)"; else "";},
@@ -139,7 +144,11 @@ loc extractIdLoc((DeclInStruct) `<Type ty> <Id id> = <Expr e>`) = id@\loc;
 str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
    "public static final Token <id><compiledFormalsAndTypePars> <startBlock> <compiledDecls>; <endBlock>"           	
 	when areThereFormals := ((fls <- formals) || (typeFormals is withTypeFormals)),
-	     startBlock := (areThereFormals?"{ return ":"="),
+	     startBlock := (areThereFormals?"{
+		 								'	<for (fls <- formals, f <-fls.formals) {> 
+	     								'	<f.id> = <f.id>.nestMore(); 
+	     								' 	<}> 
+	     								'	return ":"="),
 		 endBlock := (areThereFormals?"}":""),
 		 map[str, str] tokenExps := (()|it + (extractId(d):
 		 										(((DeclInStruct) `<Type t> <Id i> = <Expr e>` := d)?compile(e, it, useDefs, types, index, scopes) :extractId(d))
@@ -251,13 +260,13 @@ default str compileSideCondition(current:(SideCondition) `? ( <Expr e>)`, AType 
 default str compileSideCondition(SideCondition sc, AType ty, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes){ throw "Not yet implemented: <sc>"; } 
 
 str compile(current:(Formal) `<Type ty> <Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes)
-	= "ValueExpression <safeId>" 
+	= "WrapperScopedExpression <safeId>" 
 	when safeId := makeSafeId("<id>", current@\loc);
 
 		 
 str compile((Arguments)  `( <{Expr ","}* args>  )`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes)
 	= "<intercalate(", ", actualArgs)>"
-	when actualArgs := [compile(arg, tokenExps, useDefs, types, index, scopes) | arg <- args];	 
+	when actualArgs := ["new WrapperScopedExpression(<compile(arg, tokenExps, useDefs, types, index, scopes)>, 0)" | arg <- args];	 
 
 str compileType(current:(Type)`<UInt v>`, str containerId, Arguments? args, str cond, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
 	(cond == "")? "def(\"<containerId>\", con(<toInt("<v>"[1..])/BYTE_SIZE>))" : "def(\"<containerId>\", con(<toInt("<v>"[1..])/BYTE_SIZE>) <cond>)";	
@@ -361,11 +370,13 @@ str compile(current:(Expr)`<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDe
 	     !t.bounded;
 
 str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = 
-	"last(<id>)" 
+	"<id>" 
 	when //listType(_) !:= types[current@\loc],
 		 lo := ([l | l <- useDefs[id@\loc]])[0],
 	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-	 	 Formal f := index(fixedLo);
+	 	 bprintln("HOOOO: <index(fixedLo)>"),
+	 	 Formal f := index(fixedLo),
+	 	 bprintln("FORMAAL");
 		
 /*
 str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = 
@@ -378,14 +389,14 @@ str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] use
 */
 
 str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
-	"scope(ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\"), con(0))";  
+	"new WrapperScopedExpression(ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\"), 0)"
 /*	"first(scope(ref(\"<makeSafeId("<srcId>", fixedLo)>\")))"
-	when //listType(_) !:= types[current@\loc],
-		 lo := ([l | l <- useDefs[id@\loc]])[0],
+	when //listType(_) !:= types[current@\loc], */
+	when lo := ([l | l <- useDefs[id@\loc]])[0],
 	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
 		 srcId := index(fixedLo),
 		 Formal f !:= srcId;
-*/		 
+		 
 		 
 str compilePath(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = 
 	"<thiz>.<id>"
@@ -401,7 +412,7 @@ default str compilePath(current: (Expr) `<Expr e>.<Id id>`, map[str, str] tokenE
 
 		 
 str compile(current: (Expr) `<Expr e>.<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
-    "scope(ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\"), con(0))";
+    "new WrapperScopedExpression(ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\"), 0)";
      
 
 str compile(current: (Expr) `<Id id1>.<Id id2>.<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
