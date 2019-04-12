@@ -374,9 +374,7 @@ str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] use
 	when //listType(_) !:= types[current@\loc],
 		 lo := ([l | l <- useDefs[id@\loc]])[0],
 	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-	 	 bprintln("HOOOO: <index(fixedLo)>"),
-	 	 Formal f := index(fixedLo),
-	 	 bprintln("FORMAAL");
+	 	 Formal f := index(fixedLo);
 		
 /*
 str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = 
@@ -394,9 +392,19 @@ str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] use
 	when //listType(_) !:= types[current@\loc], */
 	when lo := ([l | l <- useDefs[id@\loc]])[0],
 	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-		 srcId := index(fixedLo),
+	 	 srcId := index(fixedLo),
+	 	 structType(ty, _) !:= types[fixedLo],
 		 Formal f !:= srcId;
-		 
+
+str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
+	"new WrapperScopedExpression(ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\"), 0)"
+/*	"first(scope(ref(\"<makeSafeId("<srcId>", fixedLo)>\")))"
+	when //listType(_) !:= types[current@\loc], */
+	when lo := ([l | l <- useDefs[id@\loc]])[0],
+	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
+	 	 srcId := index(fixedLo),
+	 	 structType(ty, _) !:= types[fixedLo],
+		 Formal f !:= srcId;		 
 		 
 str compilePath(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = 
 	"<thiz>.<id>"
