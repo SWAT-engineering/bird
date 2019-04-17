@@ -33,5 +33,9 @@ public class StructWrapperExpression implements ValueExpression {
 	public ValueExpression evalField(String s, int scope) {
 		return new WrapperScopedExpression(fields.get(s), scope);
 	}
+	
+	public ValueExpression getField(String s) {
+		return fields.get(s);
+	}
 
 }
