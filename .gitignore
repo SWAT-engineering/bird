@@ -1,6 +1,7 @@
 ## eclipse stuff
 bin/
 .metadata/
+bird-core/bird-output/**/*.java
 
 
 ## OS stuff
@@ -11,3 +12,4 @@ Thumbs.db
 
 ## maven stuff
 target/
+
