@@ -20,6 +20,11 @@ struct D{
 	u8[] array[5]
 }
 
+struct E{
+	u8 len
+	u8[] array[len]
+}
+
 struct S0{
 	A a
 	u8[] data = a.data

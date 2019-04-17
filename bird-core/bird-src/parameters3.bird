@@ -24,3 +24,8 @@ struct S3{
 	A a(x)
 }
 
+struct S4{
+	u8 x
+	A a(x)
+	B b(x)
+}
