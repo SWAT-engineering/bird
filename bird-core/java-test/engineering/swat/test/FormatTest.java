@@ -44,7 +44,6 @@ public class FormatTest extends ParameterizedParse {
 					Field f = clz.getField(formatAndTokenStart[1]);
 					String fileName = json.getJSONArray(format).getString(i);
 					long fileSize = getFileSize("/" + fileName);
-					System.out.println(fileSize);
 					list.add(new Object[]{ format, (Token) f.get(null), parseState(formatAndTokenStart[0], "/" + fileName), 
 							enc(), true,  formatAndTokenStart[0], fileName, fileSize});
 				} catch (ClassNotFoundException | SecurityException  | NoSuchFieldException | IllegalArgumentException | IllegalAccessException | JSONException e) {
