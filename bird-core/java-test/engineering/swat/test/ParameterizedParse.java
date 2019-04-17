@@ -12,6 +12,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
+import engineering.swat.metal.util.ParseGraphSerializer;
 import io.parsingdata.metal.data.ParseState;
 import io.parsingdata.metal.encoding.Encoding;
 import io.parsingdata.metal.token.Token;
@@ -32,14 +33,16 @@ public class ParameterizedParse {
     @Test
     public void test() throws IOException {
     	Optional<ParseState> graph = token.parse(env(parseState, encoding));
-        System.out.println("Result of parsing "+ fileName+ " with "+ format+ " specification:");
+        System.out.println("Specification " + description  + " parsing "+ fileName + " :");
         System.out.println();
         System.out.println(graph.toString());
         System.out.println("====================================================================================================");
         System.out.println();
     	assertEquals(result, graph.isPresent());
-    	if (graph.isPresent())
+    	if (graph.isPresent()) {
+    		ParseGraphSerializer.println(graph.get().order);
     		assertEquals(fileSize, graph.get().offset.longValue());
+    	}
     }
 
 }
