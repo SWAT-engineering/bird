@@ -139,9 +139,29 @@ str extractId((DeclInStruct) `<Type ty> <Id id> = <Expr e>`) = "<id>";
 
 loc extractIdLoc((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`) = id@\loc;
 loc extractIdLoc((DeclInStruct) `<Type ty> <Id id> = <Expr e>`) = id@\loc;
+
+str compileWrapper(str id, Formals? formals, DeclInStruct* decls, map[loc, AType] types) =
+	"public static final StructWrapperExpression __<id>(<computedFormals>){
+	'	return new StructWrapperExpression(base + \"<id>.\", new String[] { <ids> }, new ValueExpression[] { <exprs> });
+	'}"
+	when nameAndTypesFormals := [<"<name>", ty, isUserDefined(types[ty@\loc])> | fls <- formals, (Formal) `<Type ty> <Id name>` <- fls.formals],
+		 nameAndTypesDecls := [<"<d.id>", d.ty, isUserDefined(types[d.ty@\loc])> | DeclInStruct d <- decls],
+		 nameAndTypes := nameAndTypesFormals + nameAndTypesDecls,
+		 computedFormals := intercalate(", ", ["String base"] + 
+		 								["<isUserDefined?"StructWrapperExpression":"ValueExpression"> <name>"| <name, _, isUserDefined> <- nameAndTypesFormals]),
+		 ids := intercalate(", ", ["\"<name>\""| <name, _> <- nameAndTypes]),
+		 // TODO: here we assume user-defined equals structs
+		 exprs := intercalate(", ", 
+		 	["<name>" | <name, ty, isUserDefined> <- nameAndTypesFormals]
+		 	+ [isUserDefined?"__<ty>(base+\"<id>.<name>\")":"ref(base + \"<id>.<name>\")" | <name, ty, isUserDefined> <- nameAndTypesDecls])
+		 ;
+		 
+		 
 		 
 str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
-   "public static final Token <id><compiledFormalsAndTypePars> <startBlock> <compiledDecls>; <endBlock>"           	
+   "<wrapper>
+   '
+   'public static final Token <id><compiledFormalsAndTypePars> <startBlock> <compiledDecls>; <endBlock>"           	
 	when areThereFormals := ((fls <- formals) || (typeFormals is withTypeFormals)),
 	     startBlock := (areThereFormals?"{
 		 								'	<for (fls <- formals, f <-fls.formals) {> 
@@ -158,7 +178,10 @@ str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Fo
 		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index, scopes); else [];},
 		 list[str] compiledTypeParsList := getActualTypeFormals(typeFormals, useDefs, types, index, scopes),
 		 list[str] formalsAndTypePars := compiledTypeParsList + compiledFormalsList,
-		 compiledFormalsAndTypePars := {if (size(formalsAndTypePars)!=0) "(<intercalate(", ", formalsAndTypePars)>)"; else "";},
+		 //Tree constructorFakeTree := newConstructorId(id, id@\loc),
+		 //consType(atypeList(atypes)) := types[constructorFakeTree@\loc],
+		 str wrapper := compileWrapper("<id>", formals, decls, types),
+		 compiledFormalsAndTypePars := {if (size(formalsAndTypePars)!=0) "(String base, <intercalate(", ", formalsAndTypePars)>)"; else "String base";},
 		 declsNumber :=  size([d| d <- decls]),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
 		 	((declsNumber ==  1)? "seq(\"<id>\",  <([compile(d, tokenExps, useDefs ,types, index, scopes) | d <-decls])[0]>, EMPTY)": "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, tokenExps, useDefs, types, index, scopes) | d <-decls])>)"))

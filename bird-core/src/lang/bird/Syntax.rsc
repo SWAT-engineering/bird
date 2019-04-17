@@ -75,8 +75,8 @@ syntax SideCondition
 	
 	
 syntax DeclInStruct
-	= Type DId Arguments? Size? SideCondition? 
-	| Type Id "=" Expr
+	= Type ty DId id Arguments? Size? SideCondition? 
+	| Type ty Id id "=" Expr
 	;
 	
 	
