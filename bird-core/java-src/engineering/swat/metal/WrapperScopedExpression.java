@@ -18,7 +18,7 @@ public class WrapperScopedExpression implements ValueExpression {
 		this.ve = digForExpression(ve);
 		this.scope = scope + getAccumulatedScope(ve);
 	}
-
+	
 	public ValueExpression getValueExpression() {
 		return ve;
 	}

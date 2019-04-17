@@ -83,7 +83,6 @@ tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Impo
 	  "package engineering.swat.formats<packageName>;
       '
       'import static engineering.swat.metal.Let.*;
-      'import engineering.swat.metal.WrapperScopedExpression;
       '
       'import io.parsingdata.metal.token.Token;
 	  'import io.parsingdata.metal.expression.value.ValueExpression;
@@ -260,13 +259,13 @@ default str compileSideCondition(current:(SideCondition) `? ( <Expr e>)`, AType 
 default str compileSideCondition(SideCondition sc, AType ty, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes){ throw "Not yet implemented: <sc>"; } 
 
 str compile(current:(Formal) `<Type ty> <Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes)
-	= "WrapperScopedExpression <safeId>" 
+	= "<safeId>" 
 	when safeId := makeSafeId("<id>", current@\loc);
 
 		 
 str compile((Arguments)  `( <{Expr ","}* args>  )`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes)
 	= "<intercalate(", ", actualArgs)>"
-	when actualArgs := ["new WrapperScopedExpression(<compile(arg, tokenExps, useDefs, types, index, scopes)>, 0)" | arg <- args];	 
+	when actualArgs := ["<compile(arg, tokenExps, useDefs, types, index, scopes)>" | arg <- args];	 
 
 str compileType(current:(Type)`<UInt v>`, str containerId, Arguments? args, str cond, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
 	(cond == "")? "def(\"<containerId>\", con(<toInt("<v>"[1..])/BYTE_SIZE>))" : "def(\"<containerId>\", con(<toInt("<v>"[1..])/BYTE_SIZE>) <cond>)";	
@@ -387,23 +386,25 @@ str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] use
 */
 
 str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
-	"new WrapperScopedExpression(ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\"), 0)"
+	"ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\")"
 /*	"first(scope(ref(\"<makeSafeId("<srcId>", fixedLo)>\")))"
 	when //listType(_) !:= types[current@\loc], */
 	when lo := ([l | l <- useDefs[id@\loc]])[0],
 	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
 	 	 srcId := index(fixedLo),
+	 	 bprintln(types[fixedLo]),
 	 	 structType(ty, _) !:= types[fixedLo],
 		 Formal f !:= srcId;
 
 str compile(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
-	"new WrapperScopedExpression(ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\"), 0)"
+	"ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\")"
 /*	"first(scope(ref(\"<makeSafeId("<srcId>", fixedLo)>\")))"
 	when //listType(_) !:= types[current@\loc], */
 	when lo := ([l | l <- useDefs[id@\loc]])[0],
 	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
 	 	 srcId := index(fixedLo),
-	 	 structType(ty, _) !:= types[fixedLo],
+	 	 bprintln(types[fixedLo]),
+	 	 structType(ty, actuals) := types[fixedLo],
 		 Formal f !:= srcId;		 
 		 
 str compilePath(current: (Expr) `<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) = 
@@ -420,7 +421,7 @@ default str compilePath(current: (Expr) `<Expr e>.<Id id>`, map[str, str] tokenE
 
 		 
 str compile(current: (Expr) `<Expr e>.<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
-    "new WrapperScopedExpression(ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\"), 0)";
+    "ref(\"<compilePath(current, tokenExps, useDefs, types, index, scopes)>\")";
      
 
 str compile(current: (Expr) `<Id id1>.<Id id2>.<Id id>`, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
