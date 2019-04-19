@@ -117,20 +117,20 @@ tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Impo
 		 };
 		 
 str compile(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-   "public static final Token <id><compiledFormals> <startBlock> <compiledDecls>; <endBlock>"
-   when  areThereFormals := (fls <- formals),
-		 startBlock := (areThereFormals?"{
-		 								'	<for (fls <- formals, f <-fls.formals) {> 
-	     								'	<f.id> = <f.id>.nestMore(); 
-	     								' 	<}> 
-	     								'	return ":"="),
-		 endBlock := (areThereFormals?"}":""),
-		 list[str] compiledFormalsList := {if (fs  <- formals) getActualFormals(fs, useDefs, types, index, scopes, defines); else [];},
-		 compiledFormals := {if (fs  <- formals) "(<intercalate(", ", compiledFormalsList)>)"; else "";},
+   "<wrapper>
+   '
+   'public static final Token <id>(<intercalate(", ", compiledFormals)>) {
+   '	return <compiledDecls>;
+   '}"
+   when  nameAndTypesFormals := [<"<name>", ty, isUserDefined(types[ty@\loc])> | fls <- formals, (Formal) `<Type ty> <Id name>` <- fls.formals],
+		 list[str] compiledFormals := ["String base"] + ["<isUserDefined?"StructWrapperExpression":"ValueExpression"> <name>"| <name, _, isUserDefined> <- nameAndTypesFormals],
+		 //Tree constructorFakeTree := newConstructorId(id, id@\loc),
+		 //consType(atypeList(atypes)) := types[constructorFakeTree@\loc],
+		 str wrapper := compileWrapper("<id>", decls, types),
 		 declsNumber := size([d| d <-decls]),
 		 abstractIds := ["<name>" | (DeclInChoice) `abstract <Type _> <Id name>` <- decls],
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
-		 	((declsNumber ==  1)? (([compile(d, useDefs,types, index) | d <-decls])[0]) : "cho(<intercalate(", ", ["\"<id>\""] + [compileDeclInChoice(d, abstractIds, useDefs, types, index, scopes, defines) | d <-decls, !((DeclInChoice) `abstract <Type _> <Id name>` := d)])>)"))
+		 	((declsNumber ==  1)? (([compile(d, useDefs,types, index, scopes, defines) | d <-decls])[0]) : "cho(<intercalate(", ", ["\"<id>\""] + [compileDeclInChoice(d, id, abstractIds, useDefs, types, index, scopes, defines) | d <-decls, (DeclInChoice) `abstract <Type _> <Id name>` !:= d])>)"))
 		 ; 		 
 		 
 Type extractType((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`)	= ty;
@@ -150,6 +150,18 @@ str compileWrapper(str id, DeclInStruct* decls, map[loc, AType] types) =
 		 bprintln([<name, "<ty>", types[ty@\loc], isUD> | <name, ty, isUD> <- nameAndTypes]),
 		 //computedFormals := intercalate(", ", ["String base"] + 
 		 //								["<isUserDefined?"StructWrapperExpression":"ValueExpression"> <name>"| <name, _, isUserDefined> <- nameAndTypes]),
+		 ids := intercalate(", ", ["\"<name>\""| <name, _, _> <- nameAndTypes]),
+		 // TODO: here we assume user-defined equals structs
+		 exprs := intercalate(", ", 
+		 	[] //["<name>" | <name, ty, isUserDefined> <- nameAndTypes]
+		 	+ [isUserDefined?"__<ty>(base+\"<id>.<name>.\")":"ref(base + \"<id>.<name>\")" | <name, ty, isUserDefined> <- nameAndTypes])
+		 ;
+		 
+str compileWrapper(str id, DeclInChoice* decls, map[loc, AType] types) =
+	"public static final StructWrapperExpression __<id>(String base){
+	'	return new StructWrapperExpression(new String[] { <ids> }, new ValueExpression[] { <exprs> });
+	'}"
+	when nameAndTypes := [<"<id>", tp, consType(_) := types[tp@\loc]> | (DeclInChoice) `abstract <Type tp> <Id id>` <- decls],
 		 ids := intercalate(", ", ["\"<name>\""| <name, _, _> <- nameAndTypes]),
 		 // TODO: here we assume user-defined equals structs
 		 exprs := intercalate(", ", 
@@ -190,7 +202,7 @@ str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> byparsi
 		;
 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <SideCondition? cond>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-	"rep(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index, scopes, defines)>)"
+	"rep(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, cond, parentId, tokenExps, useDefs, types, index, scopes, defines)>)"
 	when safeId := makeSafeId("<id>", id@\loc)
 		;
 		
@@ -242,24 +254,24 @@ str compileDeclInStruct(DeclInStruct current, Type ty, DId id, Arguments? args, 
 		 bprintln(ty),
 		 compiledCond := ("" | it + ", <compileSideCondition(c, aty, parentId, tokenExps, useDefs, types, index, scopes, defines)>" | c <- cond);   
 	
-str compileDeclInChoice((DeclInChoice) `struct { <DeclInStruct* decls>}`, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
+str compileDeclInChoice((DeclInChoice) `struct { <DeclInStruct* decls>}`, Id parentId, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
 	compiledDecls           	
 	when declsNumber := size([d | d <- decls]),
 		 map[str, str] tokenExps := (()|it + (extractId(d):
 		 										(((DeclInStruct) `<Type t> <Id i> = <Expr e>` := d)?compile(e, it, useDefs, types, index, scopes, defines) :extractId(d))
 		 									  )|d <- decls, (isUserDefined(types[extractIdLoc(d)]) || structDef(_,_) := types[extractIdLoc(d)])),
 		 compiledDecls := ((declsNumber == 0)?"EMPTY":
-		 	((declsNumber ==  1)? (([compile(d, tokenExps,  useDefs,types,index) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<safeId>\""] + [compile(d, parentId, tokenExps, useDefs, types, index, scopes, defines) | d <-decls])>)"))
+		 	((declsNumber ==  1)? (([compile(d, parentId, tokenExps, useDefs, types, index, scopes, defines) | d <-decls])[0]) : "seq(<intercalate(", ", ["\"<safeId>\""] + [compile(d, parentId, tokenExps, useDefs, types, index, scopes, defines) | d <-decls])>)"))
 		 ;
 
-str compileDeclInChoice(current:(DeclInChoice) `<Id typeId>`, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes) =
-	"seq(<typeId>, <abstracts>)"
+str compileDeclInChoice(current:(DeclInChoice) `<Id typeId>`, Id parentId, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
+	"seq(<typeId>(base + \"<parentId>.<typeId>\"), <abstracts>)"
 	when abstracts := ((size(abstractIds) == 0)?"EMPTY":intercalate(", ", ["let(\"<aid>\",last(ref(\"<typeId>.<aid>\")))" | aid <- abstractIds]));
 	
-str compileDeclInChoice(current:(DeclInChoice) `<Id typeId> (<{Expr ","}* args>)`, list[str] abstractIds, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
+str compileDeclInChoice(current:(DeclInChoice) `<Id typeId> (<{Expr ","}* args>)`, Id parentId, list[str] abstractIds, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
 	"seq(<typeId><exprs>, <abstracts>)"
 	when abstracts := ((size(abstractIds) == 0)?"EMPTY":intercalate(", ", ["let(\"<aid>\",last(ref(\"<typeId>.<aid>\")))" | aid <- abstractIds])),
-		 exprs := ((_ <- args)?"(<intercalate(", ", [compile(a, parentId, tokenExps, useDefs, types, index, scopes, defines) | a <- args])>)":"");
+		 exprs := ((_ <- args)?"(<intercalate(", ", ["base + \"<parentId>.<typeId>\""] +[compile(a, parentId, tokenExps, useDefs, types, index, scopes, defines) | a <- args])>)":"");
 	
 	
 
