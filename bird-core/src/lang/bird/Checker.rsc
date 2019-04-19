@@ -344,7 +344,9 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
 
 void collectSideCondition(Type ty, DId id, current:(SideCondition) `? ( <Expr e>)`, Collector c){
 	c.enterScope(current);
-	c.define("this", variableId(), newFieldNameId(id, id@\loc), defType(ty));
+	// TODO Why did I get rid of this code but still works?
+	//c.define("this", variableId(), newFieldNameId(id, id@\loc), defType(ty));
+	c.define("this", variableId(), id, defType(ty));
 	collect(e, c);
 	c.require("side condition", current, [e], void (Solver s) {
 		s.requireEqual(s.getType(e), boolType(), error(current, "Side condition must be boolean"));
