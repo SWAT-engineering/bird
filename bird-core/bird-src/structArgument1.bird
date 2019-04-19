@@ -1,0 +1,35 @@
+module structArgument1
+
+struct A {
+	u8 x
+}
+
+struct B(A a, int y) {
+	u8 x ?(== a.x)
+}
+
+struct S {
+	A a
+	int x = a.x
+	B b(a, x)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
