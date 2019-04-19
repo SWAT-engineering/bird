@@ -86,7 +86,7 @@ public class ScopeTest {
 		};
 
 		final Token S = seq("S", seq("a", A, EMPTY), let("x", ref("a.A.x")),
-				seq("b", B.apply(new StructWrapperExpression("S.a", new String[] { "x"}, new ValueExpression[] {ref("S.a.A.x")}), ref("S.x")), EMPTY), EMPTY); 
+				seq("b", B.apply(new StructWrapperExpression(new String[] { "x"}, new ValueExpression[] {ref("S.a.A.x")}), ref("S.x")), EMPTY), EMPTY); 
 		
 		final Optional<ParseState> result = S.parse(env(stream(0, 0), enc()));
 		assertTrue(result.isPresent());
@@ -114,27 +114,59 @@ public class ScopeTest {
 	 * }
 	 * 
 	 */
-	public void structArgument2() {
+	
+	public void structArgument2b() {
 		
 		final Function<String, Token> A = base -> seq("A", def("x", con(1)), EMPTY);
 		final Function<String, StructWrapperExpression> A_ = (base) ->
-			new StructWrapperExpression(base +"A.", new String[] { "x" }, new ValueExpression[] {ref(base + "A.x")}); 
+			new StructWrapperExpression(new String[] { "x" }, new ValueExpression[] {ref(base + "A.x")}); 
+
+		final TriFunction<String, StructWrapperExpression, ValueExpression, Token> B = (String base, StructWrapperExpression a, ValueExpression y) -> 
+			seq("B", def("x", con(1), eq(a.getField("x"))), EMPTY);
+			;
+			
+		final Function<String, StructWrapperExpression> B_ = (base) ->
+			new StructWrapperExpression(new String[] { "x" }, new ValueExpression[] {
+					ref(base + "B.x") 
+			} );
+		
+		final Function<String, StructWrapperExpression> S_ = (base) ->
+			new StructWrapperExpression(new String[] {"a", "x", "b"}, new ValueExpression[] {
+					A_.apply(base + "S.a."), ref(base + "S.x"), B_.apply(base + "S.b.")});
+			
+		final Function<String, Token> S = base -> seq("S", seq("a", A.apply(base + "S.a."), EMPTY), let("x", A_.apply(base+"S.a.").getField("x")),
+				seq("b", B.apply(base + "S.b.", A_.apply(base+"S.a."), ref(base + "S.x")), EMPTY), EMPTY);
+		
+		
+		final Optional<ParseState> result = S.apply("").parse(env(stream(0, 0), enc()));
+		assertTrue(result.isPresent());
+		
+		System.out.println("parseGraphWithAdditionSameType");
+		System.out.println("-------------------------------");
+		ParseGraphSerializer.println(result.get().order);
+		System.out.println();
+	}
+	public void structArgument2a() {
+		
+		final Function<String, Token> A = base -> seq("A", def("x", con(1)), EMPTY);
+		final Function<String, StructWrapperExpression> A_ = (base) ->
+			new StructWrapperExpression(new String[] { "x" }, new ValueExpression[] {ref(base + "A.x")}); 
 
 		final TriFunction<String, StructWrapperExpression, ValueExpression, Token> B = (String base, StructWrapperExpression a, ValueExpression y) -> 
 			seq("B", def("x", con(1), eq(a.getField("x"))), EMPTY);
 			;
 			
 		final TriFunction<String, StructWrapperExpression, ValueExpression, StructWrapperExpression> B_ = (base, a, y) ->
-			new StructWrapperExpression(base + "B.", new String[] { "a", "y", "x" }, new ValueExpression[] {
+			new StructWrapperExpression(new String[] { "a", "y", "x" }, new ValueExpression[] {
 					a, y, ref(base + "B.x") 
 			} );
 		
 		final Function<String, StructWrapperExpression> S_ = (base) ->
-			new StructWrapperExpression(base + "S.", new String[] {"a", "x", "b"}, new ValueExpression[] {
-					A_.apply(base + "S."), ref(base + "S.x"), B_.apply(base + "S.", A_.apply(base+"S.a."), ref(base + "S.x"))});
+			new StructWrapperExpression(new String[] {"a", "x", "b"}, new ValueExpression[] {
+					A_.apply(base + "S.a."), ref(base + "S.x"), B_.apply(base + "S.b.", A_.apply(base+"S.a."), ref(base + "S.x"))});
 			
 		final Function<String, Token> S = base -> seq("S", seq("a", A.apply(base + "S.a."), EMPTY), let("x", A_.apply(base+"S.a.").getField("x")),
-				seq("b", B.apply(base + "S.", A_.apply(base+"S.a."), ref(base + "S.x")), EMPTY), EMPTY);
+				seq("b", B.apply(base + "S.b.", A_.apply(base+"S.a."), ref(base + "S.x")), EMPTY), EMPTY);
 		
 		
 		final Optional<ParseState> result = S.apply("").parse(env(stream(0, 0), enc()));
@@ -152,17 +184,17 @@ public class ScopeTest {
 		
 		final Function<String, Token> A = base -> seq("A", def("x", con(1)), EMPTY);
 		final Function<String, StructWrapperExpression> A_ = (base) ->
-			new StructWrapperExpression(base +"A.", new String[] { "x" }, new ValueExpression[] {ref(base + "A.x")}); 
+			new StructWrapperExpression(new String[] { "x" }, new ValueExpression[] {ref(base + "A.x")}); 
 
 		final TriFunction<String, StructWrapperExpression, ValueExpression, Token> B = (String base, StructWrapperExpression a, ValueExpression y) -> 
 			seq("B", def("y", con(1), eq(a.getField("x"))), EMPTY);
 			;
 			
 		final Function<String, StructWrapperExpression> B_ = (base) ->
-			new StructWrapperExpression(base + "B.", new String[] {}, new ValueExpression[] {} );
+			new StructWrapperExpression(new String[] {}, new ValueExpression[] {} );
 		
 		final Function<String, StructWrapperExpression> S_ = (base) ->
-			new StructWrapperExpression(base + "S.", new String[] {"a", "x", "b"}, new ValueExpression[] {
+			new StructWrapperExpression(new String[] {"a", "x", "b"}, new ValueExpression[] {
 					A_.apply(base + "S."), ref(base + ".S.x"), B_.apply(base + "S.")});
 			
 		final Function<String, Token> S = base -> seq("S", seq("a", A.apply(base + "S.a."), EMPTY), let("x", ref(base + "S.a.A.x")),
@@ -170,7 +202,7 @@ public class ScopeTest {
 		
 		
 		final Function<String, StructWrapperExpression> Z_ = (base) ->
-			new StructWrapperExpression(base + "Z.", new String[] {"s", "x"}, new ValueExpression[] {
+			new StructWrapperExpression(new String[] {"s", "x"}, new ValueExpression[] {
 				S_.apply(base + "Z."), ref(base + "Z.x")});
 		
 		final Function<String, Token> Z = base -> seq("Z", seq("s", S.apply(base + "Z.s."), EMPTY),EMPTY);
