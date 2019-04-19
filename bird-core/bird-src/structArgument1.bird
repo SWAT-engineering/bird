@@ -8,13 +8,27 @@ struct B(A a, int y) {
 	u8 x ?(== a.x)
 }
 
-struct S {
+struct B2(A a, int y) {
+	u8 x ?(== y)
+}
+
+struct S1 {
 	A a
 	int x = a.x
 	B b(a, x)
 }
 
+struct S2 {
+	A a
+	int x = a.x
+	B b(a, x + 1)
+}
 
+struct S3 {
+	A a
+	int x = a.x
+	B2 b(a, x + 1)
+}
 
 
 

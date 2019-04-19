@@ -26,5 +26,7 @@
 	"scopes1.S1" : ["onetwo.txt"],
     "scopes1.S2" : ["onetwo.txt"],
     "scopes1.S3" : ["onetwo.txt"],
-	"structArgument1.S" : ["zerozero.txt"],
+	"structArgument1.S1" : ["zerozero.txt"],
+	"structArgument1.S2" : ["zerozero.txt"],
+	"structArgument1.S3" : ["zeroone.txt"],
 }
