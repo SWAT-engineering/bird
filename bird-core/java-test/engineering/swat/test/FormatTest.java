@@ -5,7 +5,8 @@ import static io.parsingdata.metal.util.ParseStateFactory.stream;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -41,12 +42,12 @@ public class FormatTest extends ParameterizedParse {
     			String[] formatAndTokenStart = format.split("\\.");
     			try {
 					Class clz = Class.forName("engineering.swat.formats." + formatAndTokenStart[0]);
-					Field f = clz.getField(formatAndTokenStart[1]);
+					Method f = clz.getMethod(formatAndTokenStart[1], String.class);
 					String fileName = json.getJSONArray(format).getString(i);
 					long fileSize = getFileSize("/" + fileName);
-					list.add(new Object[]{ format, (Token) f.get(null), parseState(formatAndTokenStart[0], "/" + fileName), 
+					list.add(new Object[]{ format, (Token) f.invoke(null, ""), parseState(formatAndTokenStart[0], "/" + fileName), 
 							enc(), true,  formatAndTokenStart[0], fileName, fileSize});
-				} catch (ClassNotFoundException | SecurityException  | NoSuchFieldException | IllegalArgumentException | IllegalAccessException | JSONException e) {
+				} catch (ClassNotFoundException | SecurityException  | IllegalArgumentException | IllegalAccessException | JSONException | InvocationTargetException | NoSuchMethodException e) {
 					e.printStackTrace();
 				} 
     		}
