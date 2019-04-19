@@ -10,13 +10,11 @@ import io.parsingdata.metal.expression.value.Value;
 import io.parsingdata.metal.expression.value.ValueExpression;
 
 public class StructWrapperExpression implements ValueExpression {
-	private String base;
 	private SortedMap<String, ValueExpression> fields;
 	
 
-	public StructWrapperExpression(String base, String[] names, ValueExpression[] ves) {
+	public StructWrapperExpression(String[] names, ValueExpression[] ves) {
 		super();
-		this.base = base;
 		this.fields = new TreeMap<String, ValueExpression>();
 		for (int i = 0; i < names.length; i ++) {
 			fields.put(names[i], ves[i]);
