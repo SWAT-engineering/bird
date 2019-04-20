@@ -169,7 +169,7 @@ syntax Type
 	| UInt
 	| SInt
 	| AnonStruct
-	| Id TypeActuals 
+	| Id id TypeActuals actuals
 	| Type "[" "]"
 	;
 	

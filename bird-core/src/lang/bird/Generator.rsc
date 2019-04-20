@@ -265,13 +265,14 @@ str compileDeclInChoice((DeclInChoice) `struct { <DeclInStruct* decls>}`, Id par
 		 ;
 
 str compileDeclInChoice(current:(DeclInChoice) `<Id typeId>`, Id parentId, list[str] abstractIds, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-	"seq(<typeId>(base + \"<parentId>.<typeId>\"), <abstracts>)"
-	when abstracts := ((size(abstractIds) == 0)?"EMPTY":intercalate(", ", ["let(\"<aid>\",last(ref(\"<typeId>.<aid>\")))" | aid <- abstractIds]));
+	"seq(<typeId>(base + \"<parentId>.\"), <abstracts>)"
+	when abstracts := ((size(abstractIds) == 0)?"EMPTY":intercalate(", ", 
+		["let(\"<aid>\",ref(base + \"<parentId>.<typeId>.<aid>\"))" | aid <- abstractIds]));
 	
 str compileDeclInChoice(current:(DeclInChoice) `<Id typeId> (<{Expr ","}* args>)`, Id parentId, list[str] abstractIds, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
 	"seq(<typeId><exprs>, <abstracts>)"
-	when abstracts := ((size(abstractIds) == 0)?"EMPTY":intercalate(", ", ["let(\"<aid>\",last(ref(\"<typeId>.<aid>\")))" | aid <- abstractIds])),
-		 exprs := ((_ <- args)?"(<intercalate(", ", ["base + \"<parentId>.<typeId>\""] +[compile(a, parentId, tokenExps, useDefs, types, index, scopes, defines) | a <- args])>)":"");
+	when abstracts := ((size(abstractIds) == 0)?"EMPTY":intercalate(", ", ["let(\"<aid>\",ref(base + \"<parentId>.<typeId>.<aid>\"))" | aid <- abstractIds])),
+		 exprs := ((_ <- args)?"(<intercalate(", ", ["base + \"<parentId>.\""] +[compile(a, parentId, tokenExps, useDefs, types, index, scopes, defines) | a <- args])>)":"");
 	
 	
 
@@ -516,32 +517,7 @@ default str compilePath(current: (Expr) `<Expr e>.<Id id>`, Id parentId, map[str
 str compile(current: (Expr) `<Expr e>.<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
     compilePath(current, parentId, tokenExps, useDefs, types, index, scopes, defines);
      
-
-str compile(current: (Expr) `<Id id1>.<Id id2>.<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-    "last(ref(\"<initialId>.<id2>.<id>\"))"
-    when lo := ([l | l <- useDefs[id1@\loc]])[0],
-	 	 fixedLo := (("<id1>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-		 srcId := "<index(fixedLo)>",
-		 initialId := (("<id1>" in tokenExps)?tokenExps["<id1>"]:makeSafeId("<srcId>", fixedLo));
-
-str compile(current: (Expr) `<Id id1>.<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-   	"fold(ref(\"<initialId>.<tid>.<id>.<id>\"), Shorthand::cat)"
-    when t:listType(_) := types[current@\loc],
-    	 !t.bounded,
-    	 lo := ([l | l <- useDefs[id1@\loc]])[0],
-         fixedLo := (("<id1>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-         srcId := "<index(fixedLo)>",
-         structType(tid, _) := types[fixedLo],
-         initialId := ("<id1>" in tokenExps?tokenExps["<id1>"]:makeSafeId("<srcId>", fixedLo));    
-         
-str compile(current: (Expr) `<Id id1>.<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-    "last(ref(\"<initialId>.<tid>.<id>\"))" 
-    when //listType(_) !:= types[current@\loc],
-    	 lo := ([l | l <- useDefs[id1@\loc]])[0],
-         fixedLo := (("<id1>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-         srcId := "<index(fixedLo)>",
-         structType(tid, _) := types[fixedLo],
-         initialId := ("<id1>" in tokenExps?tokenExps["<id1>"]:makeSafeId("<srcId>", fixedLo));              
+        
          
 //str compile(current: (Expr) `<Id id1>.<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
 //    "seq(let(\"<newId>\", <initialExp>),last(ref(\"<newId>.<tid>.<id>\")))" 
