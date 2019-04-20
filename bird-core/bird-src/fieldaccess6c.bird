@@ -1,0 +1,23 @@
+module fieldaccess6c
+
+struct A {
+	 u8 a ?(== "1")
+	 str parsed = a
+}
+
+struct B {
+    u8 b ?(=="0")
+    str parsed = b
+}
+
+choice AorB {
+	abstract str parsed
+    A
+    B
+}
+
+struct S{
+	AorB abs
+	u8 _ ?(abs.parsed == "0")
+}
+

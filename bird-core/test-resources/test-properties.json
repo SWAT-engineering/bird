@@ -8,6 +8,7 @@
     "fieldaccess4.S" : ["zero.txt"],
     "fieldaccess5.S" : ["fivezeros.txt"],
     "fieldaccess6.S" : ["fivezeros.txt"],
+    "fieldaccess6c.S" : ["zeroone.txt"],
     "fieldaccess7.S" : ["fivezeros.txt"],
     "fieldaccess8.S" : ["fivezeros.txt"],
     "fieldaccess9.S" : ["fivezeros.txt"],
