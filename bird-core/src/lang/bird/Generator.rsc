@@ -178,7 +178,7 @@ str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Fo
    '	return <compiledDecls>;
    '}"           	
 	when map[str, str] tokenExps := (()|it + (extractId(d):
-		 										(((DeclInStruct) `<Type t> <Id i> = <Expr e>` := d)?compile(e, it, useDefs, types, index, scopes, defines) :extractId(d))
+		 										(((DeclInStruct) `<Type t> <Id i> = <Expr e>` := d)?compile(e, id, it, useDefs, types, index, scopes, defines) :extractId(d))
 		 									  )|d <- decls, 
 		 							"_" !:= extractId(d),
 		 							bprintln("type of <d> is <types[extractIdLoc(d)]>"),
