@@ -195,9 +195,11 @@ str compile(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Fo
 		 	((declsNumber ==  1)? "seq(\"<id>\",  <([compile(d, id, tokenExps, useDefs , types, index, scopes, defines) | d <-decls])[0]>, EMPTY)": "seq(<intercalate(", ", ["\"<id>\""] + [compile(d, id, tokenExps, useDefs, types, index, scopes, defines) | d <-decls])>)"))
 		 ;		 
 
+// TODO Fix ugly workaround to pass an empty condition
 str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> byparsing (<Expr e>)`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-	"tie(\"<safeId>\", <compile(ty, parentId, tokenExps, useDefs, types, index, scopes, defines)>, <compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines)>)"    
+	"tie(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, emptyCondition, parentId, tokenExps, useDefs, types, index, scopes, defines)>, <compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines)>)"    
 	when safeId := makeSafeId("<id>", id@\loc),
+		 emptyCondition := ([DeclInStruct] "<ty> <id> <args>").sideCondition,
 		 bprintln("current in tie: <current>")
 		;
 
@@ -207,7 +209,7 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> <Side
 		;
 		
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-	"repn(\"<safeId>\", def(\"<safeId>\", con(<size/8>)), first(<compile(n, tokenExps, useDefs, types, index, scopes, defines)>))"
+	"repn(\"<safeId>\", def(\"<safeId>\", con(<size/8>)), first(<compile(n, parentId, tokenExps, useDefs, types, index, scopes, defines)>))"
 	 //"def(\"<safeId>\", last(mul(con(<size/8>), <compile(n, tokenExps, useDefs, types, index, scopes, defines)>))<condStr>)"
 	when AType aty := types[ty@\loc],
 		 isSimpleByteType(aty),
@@ -218,7 +220,7 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) = 
 	//"def(\"<safeId>\", last(mul(<compileDeclInStruct(current, ty, id, args, cond, tokenExps, useDefs, types, index, scopes, defines)>, <compile(n, tokenExps, useDefs, types, index, scopes, defines)>))<condStr>)"
-	"repn(\"<safeId>\", <compile(ty, tokenExps, useDefs, types, index, scopes, defines)>, first(<compile(n, tokenExps, useDefs, types, index, scopes, defines)>))"
+	"repn(\"<safeId>\", <compileDeclInStruct(current, ty, id, args, cond, parentId, tokenExps, useDefs, types, index, scopes, defines)>, first(<compile(n, parentId, tokenExps, useDefs, types, index, scopes, defines)>))"
 	when AType aty := types[ty@\loc], 
 		 !isSimpleByteType(aty),
 		 safeId := makeSafeId("<id>", id@\loc),
