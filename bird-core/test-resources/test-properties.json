@@ -3,7 +3,7 @@
     "generics.T" : ["fivezeros.txt"],
     "fieldaccess.S" : ["zero.txt"],
     "fieldaccess2.S" : ["onezero.txt"],
-    "fieldaccesschoice.S" : ["onezero.txt"],
+    "fieldaccesschoice.S" : ["zero.txt"],
     "fieldaccess3.S" : ["onezero.txt"],
     "fieldaccess4.S" : ["zero.txt"],
     "fieldaccess5.S" : ["fivezeros.txt"],
