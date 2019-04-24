@@ -397,49 +397,11 @@ str compile(current: (Expr) `<Expr e1> (+) <Expr e2>`, Id parentId, map[str, str
     "<getInfixOperator("(+)")>(<compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines)>, <compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)>)";    
         
 
-str compile(current:(Expr)`<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
+/*str compile(current:(Expr)`<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
 	"fold(ref(\"<id>.<id>\"), Shorthand::cat)"
 	when t:listType(_) := types[current@\loc],
 	     !t.bounded;
-
-/*
-str compile(current: (Expr) `<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) = 
-	"last(ref(\"<makeSafeId("<srcId>", fixedLo)>\"))"
-	when //listType(_) !:= types[current@\loc],
-		 lo := ([l | l <- useDefs[id@\loc]])[0],
-	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-		 srcId := index(fixedLo),
-		 Formal f !:= srcId;
-*/
-
-/* 
-
-str compile(current: (Expr) `this`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-	"ref(base + \"<parentId>.<srcId>\")"
-	//"__<ty>(base + \"<parentId>.<id>\")"
-
-	when srcLoc := getOneFrom(useDefs[current@\loc]),
-		 bprintln(srcLoc),
-		 srcId := "<index(srcLoc)>",
-		 structType(_, _) !:= types[current@\loc]
-		 ;
-		 	 
-str compile(current: (Expr) `this`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-	"__<ty>(base + \"<parentId>.<srcId>.\")"
-	when srcLoc := getOneFrom(useDefs[current@\loc]),
-	 	 structType(ty, actuals) := types[srcLoc]
-	 	 srcId := "<index(srcLoc)>"
-	 	 
-
-str compile(current: (Expr) `this`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
-	"__<ty>(base + \"<parentId>.<srcId>.\")"
-	when srcLoc := getOneFrom(useDefs[current@\loc]),
-	 	 bprintln(types[srcLoc]),
-	 	 srcId := "<index(srcLoc)>",
-	 	 structType(ty, actuals) := types[srcLoc],
-		 <_, _, paramId(), _, _> !:= defines[srcLoc];
 */		 
-		 
 
 str compile(current: (Expr) `<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
 	compileRef("<id>", srcLoc, parentId, tokenExps, useDefs, types, index, scopes, defines)
@@ -452,11 +414,18 @@ str compile(current: (Expr) `this`, Id parentId, map[str, str] tokenExps, rel[lo
 		 srcId := "<index(srcLoc)>";		 
 		 
 str compileRef(str id, loc srcLoc, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) {
+	println("reference for <id>");
 	if (srcLoc in defines && <_, _, paramId(), _, _> := defines[srcLoc]) {
 		return id;
 	}
 	else if (structType(ty, _) := types[srcLoc]) {
 		return compileUserDefinedRef(ty, id, parentId);
+	}
+	else if (t:listType(_) := types[srcLoc]) {
+		if (t.bounded)
+			return compileArrayRef(id, parentId);
+		else
+			throw "Referencing unbounded arrays is not yet implemented";	
 	}
 	else {
 		return compileSimpleRef(id, parentId);
@@ -464,64 +433,12 @@ str compileRef(str id, loc srcLoc, Id parentId, map[str, str] tokenExps, rel[loc
 		
 }
 		 
-/*		 
-str compile(current: (Expr) `<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) = 
-	"<id>" 
-	when  "<id>" notin {"this"},
-		 //listType(_) !:= types[current@\loc],
-		 lo := ([l | l <- useDefs[id@\loc]])[0],
-	 	 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-	 	 //alias Define  = tuple[loc scope, str id, IdRole idRole, loc defined, DefInfo defInfo];
-	 	 <_, _, paramId(), _, _> := defines[fixedLo];  
-*/	 	 		 
-		 
-//str compileArrayRef() = ;
+str compileArrayRef(str id, Id parentId) = "fold(ref(base + \"<parentId>.<id>.<id>\"), Shorthand::cat)";
 		  
 str compileSimpleRef(str id, Id parentId) = "ref(base + \"<parentId>.<id>\")";
 
 str compileUserDefinedRef(str ty, str id, Id parentId) = "__<ty>(base + \"<parentId>.<id>.\")";
 
-/*		 		 
-str compilePath(current: (Expr) `this`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) = 
-	"__<ty>(base + \"<parentId>.<srcId>.\")"
-	when structType(ty, _) := types[current@\loc],
-		 srcLoc := index(current@\loc),
-		 srcId := "<index(srcLoc)>",
-	 	 bprintln(types[current@\loc]);	 	 
-		 
-str compilePath(current: (Expr) `<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) = 
-	"__<ty>(base + \"<parentId>.<id>.\")"
-	when "<id>" notin {"this"},
-		 structType(ty, _) := types[id@\loc],
-		 lo := ([l | l <- useDefs[id@\loc]])[0],
-		 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-	 	 srcId := index(fixedLo),
-	 	 bprintln(types[fixedLo]),
-	 	 structType(ty, actuals) := types[fixedLo],
-		 <_, _, paramId(), _, _> !:= defines[fixedLo];  
-		 
-str compilePath(current: (Expr) `<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) = 
-	"<id>"
-	when "<id>" notin {"this"},
-		 structType(ty, _) := types[id@\loc],
-		 lo := ([l | l <- useDefs[id@\loc]])[0],
-		 fixedLo := (("<id>" in {"this", "it"}) ? (lo[length=lo.length-1][end=<lo.end.line, lo.end.column-1>]) : lo),
-	 	 srcId := index(fixedLo),
-	 	 bprintln(types[fixedLo]),
-	 	 structType(ty, actuals) := types[fixedLo],
-		 <_, _, paramId(), _, _> := defines[fixedLo];
-
-
-str compilePath(current: (Expr) `<Expr e>.<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) = 
-	"<compilePath(e, parentId, tokenExps, useDefs, types, index, scopes, defines)>.getField(\"<id>\")"
-	when structType(ty, _) := types[e@\loc];
-	
-default str compilePath(current: (Expr) `<Expr e>.<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) {
-	throw "Not yet implemented";
-}
-*/
-
-		 
 str compile(current: (Expr) `<Expr e>.<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
     "<compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines)>.getField(\"<id>\")"
 	when structType(ty, _) := types[e@\loc];
