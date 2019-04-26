@@ -1,10 +1,11 @@
-package engineering.swat.nest.core.tokens;
+package engineering.swat.nest.core.tokens.operations;
 
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
+import engineering.swat.nest.core.tokens.Token;
 
 public class Choice {
 

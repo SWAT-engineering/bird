@@ -38,6 +38,14 @@ public class TokenList<T extends Token> extends Token {
 		}
 		return new TokenList<>(result);
 	}
+
+	public static <T extends Token> TokenList<T> times(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser, int times) {
+		List<T> result = new ArrayList<>(times);
+		for (int i = 0; i < times; i++) {
+			result.add(parser.apply(source, ctx));
+		}
+		return new TokenList<>(result);
+	}
 	
 	public static <T extends Token> TokenList<T> of(T... nestedTokens) {
 		return new TokenList<T>(Arrays.asList(nestedTokens));
@@ -52,5 +60,6 @@ public class TokenList<T extends Token> extends Token {
 	public long size() {
 		return fullSize;
 	}
+
 
 }
