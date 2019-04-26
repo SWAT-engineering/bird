@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.source.ByteWindowBuilder;
-import engineering.swat.nest.example.png.PNG;
 
 public class PNGTest {
 	

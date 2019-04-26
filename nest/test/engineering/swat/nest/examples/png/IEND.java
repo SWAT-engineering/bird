@@ -1,4 +1,4 @@
-package engineering.swat.nest.example.png;
+package engineering.swat.nest.examples.png;
 
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
