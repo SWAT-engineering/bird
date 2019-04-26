@@ -18,7 +18,7 @@ public class ByteWindowBuilder  {
 		return wrap(ByteBuffer.wrap(result.toByteArray()), source);
 	}
 
-	private static ByteWindow wrap(ByteBuffer bytes, URI source) {
+	public static ByteWindow wrap(ByteBuffer bytes, URI source) {
 		return new ByteWindow() {
 			final int size = bytes.capacity();
 			@Override

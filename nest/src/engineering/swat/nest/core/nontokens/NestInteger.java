@@ -20,6 +20,10 @@ public class NestInteger extends NonToken {
 		}
 	}
 
+	public NestInteger(long value) {
+		this.value = value;
+	}
+
 	@Override
 	public BytesView getBytes() {
 		throw new RuntimeException("Unsupported operation");
