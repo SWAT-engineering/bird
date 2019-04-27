@@ -32,6 +32,7 @@ public class JPEG  {
         private Format() {}
 
 		public static Format parse(ByteStream source, Context ctx) {
+			ctx = ctx.setByteOrder(ByteOrder.BIG_ENDIAN);
 			Format result = new Format();
 			result.$dummy1 = Header.parse(source, ctx);
 			result.$dummy2 = TokenList.untilParseFailure(source, ctx, (s, c) -> SizedScan.parse(s, c));
@@ -122,7 +123,7 @@ public class JPEG  {
 			if (!(result.identifier.asInteger().getValue() < 0xD8L || result.identifier.asInteger().getValue() > 0xDAL)) {
 				throw new ParseError("SizedSegment.identifier", result.identifier);
 			}
-			result.length = source.readUnsigned(2, ctx.setByteOrder(ByteOrder.BIG_ENDIAN));
+			result.length = source.readUnsigned(2, ctx);
 			result.payload = source.readUnsigned(result.length.asInteger().getValue() - 2, ctx);
 			return result;
 		}
@@ -228,7 +229,7 @@ public class JPEG  {
 			if (!(result.identifier.asInteger().getValue() == 0xDA)) {
 				throw new ParseError("ScanSegment.identifier", result.identifier);
 			}
-			result.length = source.readUnsigned(2, ctx.setByteOrder(ByteOrder.BIG_ENDIAN));
+			result.length = source.readUnsigned(2, ctx);
 			result.payload = source.readUnsigned(result.length.asInteger().getValue() - 2, ctx);
 			result.choices = TokenList.untilParseFailure(source, ctx, ScanEscape::parse);
 			return result;
