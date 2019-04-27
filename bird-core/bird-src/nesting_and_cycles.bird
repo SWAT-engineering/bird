@@ -18,7 +18,7 @@ choice Loop(Node n) {
 }
 
 
-struct Start {
+struct Start @(encoding = Encoding.ASCII) {
     u8 header ?(=="H")
     Node initial
     Loop loop(initial)

@@ -59,4 +59,12 @@ public class UnsignedBytes extends PrimitiveToken {
 	public String toString() {
 		return "read bytes: " + Arrays.toString(data);
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof NestValue) {
+			return sameBytes((NestValue) obj);
+		}
+		return false;
+	}
 }

@@ -7,6 +7,13 @@ import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.source.ByteWindowBuilder;
 
 public class CommonTestHelper {
+	public static ByteStream wrap(byte... bytes) {
+		try {
+			return new ByteStream(ByteWindowBuilder.wrap(ByteBuffer.wrap(bytes), new URI("tmp:///test")) );
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+	}
 	public static ByteStream wrap(int... bytes) {
 		byte[] data = new byte[bytes.length];
 		for (int i = 0; i < data.length; i++)  {
