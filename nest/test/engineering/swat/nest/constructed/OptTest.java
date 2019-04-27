@@ -1,6 +1,6 @@
 package engineering.swat.nest.constructed;
 
-import static engineering.swat.nest.constructed.CommonTestHelper.wrap;
+import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;

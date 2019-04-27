@@ -1,6 +1,6 @@
 package engineering.swat.nest.constructed;
 
-import static engineering.swat.nest.constructed.CommonTestHelper.wrap;
+import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.Assert.assertEquals;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;

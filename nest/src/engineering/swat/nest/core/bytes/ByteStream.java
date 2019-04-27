@@ -18,11 +18,11 @@ public class ByteStream {
 		this.window = window;
 	}
 
-	public UnsignedBytes readUnsigned(int size, Context ctx) {
+	public UnsignedBytes readUnsigned(long size, Context ctx) {
 		if (offset + size > limit) {
 			throw new EOSError();
 		}
-		TrackedByte[] data = new TrackedByte[size];
+		TrackedByte[] data = new TrackedByte[Math.toIntExact(size)];
 		for (int i = 0; i < size; i++) {
 			data[i] = window.read(offset++);
 		}
@@ -35,6 +35,10 @@ public class ByteStream {
 
 	public void setOffset(long offset) {
 		this.offset = offset;
+	}
+	
+	public boolean hasBytesRemaining() {
+		return offset < limit;
 	}
 
 
