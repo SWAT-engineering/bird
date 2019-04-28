@@ -1,8 +1,7 @@
 package engineering.swat.nest.core.tokens;
 
-import java.util.Arrays;
 import engineering.swat.nest.core.bytes.TrackedBytesView;
-import engineering.swat.nest.core.bytes.source.TrackedByte;
+import java.util.Arrays;
 
 public abstract class UserDefinedToken extends Token {
 	

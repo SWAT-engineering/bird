@@ -19,42 +19,7 @@ public class ByteWindowBuilder  {
 	}
 
 	public static ByteWindow wrap(ByteBuffer bytes, URI source) {
-		return new ByteWindow() {
-			final int size = bytes.capacity();
-			@Override
-			public long size() {
-				return size;
-			}
-			
-			@Override
-			public TrackedByte read(long index) {
-				if (index >= size) {
-					throw new IndexOutOfBoundsException();
-				}
-				return new TrackedByte() {
-					
-					@Override
-					public int getValue() {
-						return bytes.get((int)index) & 0xFF;
-					}
-					
-					@Override
-					public URI getSource() {
-						return source;
-					}
-					
-					@Override
-					public long getOffset() {
-						return index;
-					}
-
-					@Override
-					public String toString() {
-						return String.format("0x%02X@%s:%d", getValue(), getSource(),  getOffset());
-					}
-				};
-			}
-		};
+		return new ByteBufferWindow(bytes, 0, bytes.limit(), source);
 	}
 
 }

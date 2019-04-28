@@ -30,8 +30,8 @@ public class NonTokenBytes extends NonToken {
 			}
 			
 			@Override
-			public int byteAt(long index) {
-				return bytes[Math.toIntExact(index)] & 0xFF;
+			public byte get(long index) {
+				return bytes[Math.toIntExact(index)];
 			}
 		};
 	}

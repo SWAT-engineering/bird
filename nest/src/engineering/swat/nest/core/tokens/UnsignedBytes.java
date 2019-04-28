@@ -1,30 +1,30 @@
 package engineering.swat.nest.core.tokens;
 
-import java.net.URI;
-import java.util.Arrays;
 import engineering.swat.nest.core.NestValue;
+import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.BytesView;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedBytesView;
-import engineering.swat.nest.core.bytes.source.TrackedByte;
-import engineering.swat.nest.core.nontokens.NonToken;
+import engineering.swat.nest.core.bytes.source.ByteWindow;
+import engineering.swat.nest.core.nontokens.NestInteger;
+import java.nio.ByteBuffer;
 
 public class UnsignedBytes extends PrimitiveToken {
 
-	private final TrackedByte[] data;
+	private final ByteWindow slice;
 
-	public UnsignedBytes(TrackedByte[] data, Context ctx) {
+	public UnsignedBytes(ByteWindow slice, Context ctx) {
 		super(ctx);
-		this.data = data;
+		this.slice = slice;
 	}
 
 	public boolean sameBytes(NestValue other) {
 		BytesView otherBytes = other.getBytes();
-		if (otherBytes.size() != data.length) {
+		if (otherBytes.size() != slice.size()) {
 			return false;
 		}
-		for (int i=0; i < data.length; i++) {
-			if (otherBytes.byteAt(i) != data[i].getValue()) {
+		for (int i=0; i < slice.size(); i++) {
+			if (otherBytes.get(i) != slice.get(i)) {
 				return false;
 			}
 		}
@@ -33,31 +33,17 @@ public class UnsignedBytes extends PrimitiveToken {
 
 	@Override
 	public TrackedBytesView getTrackedBytes() {
-		return new TrackedBytesView() {
-			@Override
-			public long size() {
-				return data.length;
-			}
-
-			@Override
-			public TrackedByte getOriginal(long index) {
-				if (index >= data.length) {
-					throw new IllegalArgumentException("" + index + " is after: " + data.length);
-				}
-				return data[(int) index];
-			}
-
-		};
+		return slice;
 	}
 	
 	@Override
 	public long size() {
-		return data.length;
+		return slice.size();
 	}
 	
 	@Override
 	public String toString() {
-		return "read bytes: " + Arrays.toString(data);
+		return "Unsiged bytes:" + slice;
 	}
 	
 	@Override
@@ -66,5 +52,27 @@ public class UnsignedBytes extends PrimitiveToken {
 			return sameBytes((NestValue) obj);
 		}
 		return false;
+	}
+
+	@Override
+	public NestInteger asInteger() {
+		long size = slice.size();
+		if (size == 1) {
+			return new NestInteger( slice.get(0) & 0xFF);
+		}
+		ByteBuffer buf = ByteBuffer.allocate(Math.toIntExact(size));
+		for (int i = 0; i < size; i++) {
+			buf.put(slice.get(i));
+		}
+		buf.flip();
+		buf.order(ctx.getByteOrder());
+		long result;
+		switch (Math.toIntExact(size)) {
+			case 2: result = buf.getShort() & 0xFFFFL; break;
+			case 4: result = buf.getInt() & 0xFFFF_FFFFL; break;
+			case 8: result = buf.getLong(); break; // TODO: this is actually not an unsigned long
+			default: throw new RuntimeException("Non standard int size (" + size + ") not implemented");
+		}
+		return new NestInteger(result);
 	}
 }

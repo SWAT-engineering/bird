@@ -11,7 +11,7 @@ public class UserDefinedPNG {
 		CRC32 hasher = new CRC32();
 		BytesView bytes = data.getBytes();
 		for (long i = 0; i < bytes.size(); i++) {
-			hasher.update(bytes.byteAt(i));
+			hasher.update(bytes.get(i) & 0xFF);
 		}
 		return hasher.getValue();
 	}

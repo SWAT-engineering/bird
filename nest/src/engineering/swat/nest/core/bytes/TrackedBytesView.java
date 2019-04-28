@@ -1,13 +1,7 @@
 package engineering.swat.nest.core.bytes;
 
-import java.net.URI;
-import engineering.swat.nest.core.bytes.source.TrackedByte;
+import engineering.swat.nest.core.bytes.source.ByteOrigin;
 
 public interface TrackedBytesView extends BytesView {
-	TrackedByte getOriginal(long index);
-
-	@Override
-	default int byteAt(long index) {
-		return getOriginal(index).getValue();
-	}
+	ByteOrigin getOrigin(long index);
 }

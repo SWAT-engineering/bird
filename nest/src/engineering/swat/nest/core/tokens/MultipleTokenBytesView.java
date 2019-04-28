@@ -1,17 +1,17 @@
 package engineering.swat.nest.core.tokens;
 
-import java.util.List;
 import engineering.swat.nest.core.bytes.TrackedBytesView;
-import engineering.swat.nest.core.bytes.source.TrackedByte;
+import engineering.swat.nest.core.bytes.source.ByteOrigin;
+import java.util.List;
 
 final class MultipleTokenBytesView<T extends Token> implements TrackedBytesView {
 	private final List<T> contents;
-	private final long[] sizes;
+	private final long[] offsets;
 	private final long fullSize;
 
-	public MultipleTokenBytesView(List<T> contents, long[] sizes, long fullSize) {
+	public MultipleTokenBytesView(List<T> contents, long[] offsets, long fullSize) {
 		this.contents = contents;
-		this.sizes = sizes;
+		this.offsets = offsets;
 		this.fullSize = fullSize;
 	}
 
@@ -21,18 +21,24 @@ final class MultipleTokenBytesView<T extends Token> implements TrackedBytesView 
 	}
 
 	@Override
-	public TrackedByte getOriginal(long index) {
-		if (index >= fullSize) {
-			throw new IndexOutOfBoundsException();
+	public byte get(long index) {
+	    int entry = findEntry(index);
+	    return contents.get(entry).getTrackedBytes().get(index - offsets[entry]);
+	}
+
+	private int findEntry(long index) {
+		for (int i = 0; i < offsets.length; i++) {
+			if (offsets[i] > index) {
+				return i - 1;
+			}
 		}
-		long skipped = 0;
-		int subsetIndex = 0;
-		while (skipped <= index) {
-			skipped += sizes[subsetIndex++];
-		}
-		if (skipped > 0) {
-			skipped -= sizes[--subsetIndex]; // rewind the last skipped, since we found our block
-		}
-		return contents.get(subsetIndex).getTrackedBytes().getOriginal(index - skipped);
+		return offsets.length - 1;
+	}
+
+
+	@Override
+	public ByteOrigin getOrigin(long index) {
+		int entry = findEntry(index);
+		return contents.get(entry).getTrackedBytes().getOrigin(index - offsets[entry]);
 	}
 }

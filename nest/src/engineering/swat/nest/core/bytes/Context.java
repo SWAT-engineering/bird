@@ -17,7 +17,7 @@ public class Context {
 		this.endianness = endianness;
 	}
 	
-	public static Context DEFAULT_CONTEXT = new Context(StandardCharsets.US_ASCII, ByteOrder.LITTLE_ENDIAN);
+	public static Context DEFAULT_CONTEXT = new Context(StandardCharsets.US_ASCII, ByteOrder.BIG_ENDIAN);
 
 	public Context setEncoding(Charset encoding) {
 		return new Context(encoding, endianness);
@@ -33,5 +33,9 @@ public class Context {
 
 	public NestString createString(BytesView bytes) {
 		return new NestString(bytes, encoding);
+	}
+
+	public ByteOrder getByteOrder() {
+	    return this.endianness;
 	}
 }

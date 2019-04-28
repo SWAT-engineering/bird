@@ -14,13 +14,18 @@ public class TokenList<T extends Token> extends Token {
 
 
 	private final List<T> contents;
-	private final long[] sizes;
-	private final long fullSize;
+	private final MultipleTokenBytesView<T> byteView;
 
 	private TokenList(List<T> contents) {
-		this.contents = contents; 
-		this.sizes = contents.stream().mapToLong(Token::size).toArray();
-		this.fullSize = Arrays.stream(sizes).sum();
+		this.contents = contents;
+		long[] offsets = new long[contents.size()];
+		long currentOffset = 0;
+		for (int i = 0; i < offsets.length; i++) {
+			offsets[i] = currentOffset;
+			long currentSize = contents.get(i).size();
+			currentOffset += currentSize;
+		}
+		byteView = new MultipleTokenBytesView<>(contents, offsets, currentOffset);
 	}
 
 	public static <T extends Token> TokenList<T> untilParseFailure(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser) {
@@ -54,12 +59,12 @@ public class TokenList<T extends Token> extends Token {
 
 	@Override
 	public TrackedBytesView getTrackedBytes() {
-		return new MultipleTokenBytesView<>(contents, sizes, fullSize );
+	    return byteView;
 	}
 
 	@Override
 	public long size() {
-		return fullSize;
+	    return byteView.size();
 	}
 
 }

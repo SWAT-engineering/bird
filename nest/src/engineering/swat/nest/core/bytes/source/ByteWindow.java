@@ -1,6 +1,7 @@
 package engineering.swat.nest.core.bytes.source;
 
-public interface ByteWindow {
-	long size();
-	TrackedByte read(long index);
+import engineering.swat.nest.core.bytes.TrackedBytesView;
+
+public interface ByteWindow extends TrackedBytesView {
+    ByteWindow slice(long offset, long size);
 }

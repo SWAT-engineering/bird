@@ -1,13 +1,11 @@
 package engineering.swat.nest.core.tokens;
 
-import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.BooleanSupplier;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedBytesView;
-import engineering.swat.nest.core.bytes.source.TrackedByte;
+import engineering.swat.nest.core.bytes.source.ByteOrigin;
+import java.util.function.BiFunction;
 
 public class OptionalToken<T extends Token> extends Token {
 	
@@ -18,12 +16,12 @@ public class OptionalToken<T extends Token> extends Token {
 	}
 	
 	public static <T extends Token> OptionalToken<T> optional(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parse) {
-		long startOffset = source.getOffset();
+		ByteStream backup = source.fork();
 		try {
 			return new OptionalToken<>(parse.apply(source, ctx));
 		}
 		catch (ParseError e) {
-			source.setOffset(startOffset);
+			source.sync(backup); // restore after failure
 			return new OptionalToken<>(null);
 		}
 	}
@@ -32,14 +30,18 @@ public class OptionalToken<T extends Token> extends Token {
 	public TrackedBytesView getTrackedBytes() {
 		if (token == null) {
 			return new TrackedBytesView() {
-				
+				@Override
+				public ByteOrigin getOrigin(long index) {
+					throw new IndexOutOfBoundsException();
+				}
+
 				@Override
 				public long size() {
 					return 0;
 				}
-				
+
 				@Override
-				public TrackedByte getOriginal(long index) {
+				public byte get(long index) {
 					throw new IndexOutOfBoundsException();
 				}
 			};

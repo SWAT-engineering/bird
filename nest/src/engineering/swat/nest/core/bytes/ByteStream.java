@@ -1,9 +1,7 @@
 package engineering.swat.nest.core.bytes;
 
-import java.io.InputStream;
 import engineering.swat.nest.core.EOSError;
 import engineering.swat.nest.core.bytes.source.ByteWindow;
-import engineering.swat.nest.core.bytes.source.TrackedByte;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 
 public class ByteStream {
@@ -13,8 +11,12 @@ public class ByteStream {
 	private final ByteWindow window;
 
 	public ByteStream(ByteWindow window) {
-		offset = 0;
-		limit = window.size();
+		this(0, window.size(), window);
+	}
+
+	private ByteStream(long offset, long limit, ByteWindow window) {
+		this.offset = offset;
+		this.limit = limit;
 		this.window = window;
 	}
 
@@ -22,11 +24,12 @@ public class ByteStream {
 		if (offset + size > limit) {
 			throw new EOSError();
 		}
-		TrackedByte[] data = new TrackedByte[Math.toIntExact(size)];
-		for (int i = 0; i < size; i++) {
-			data[i] = window.read(offset++);
+		try {
+			return new UnsignedBytes(window.slice(offset, offset + size), ctx);
 		}
-		return new UnsignedBytes(data, ctx);
+		finally {
+			offset += size;
+		}
 	}
 
 	public long getOffset() {
@@ -39,6 +42,17 @@ public class ByteStream {
 	
 	public boolean hasBytesRemaining() {
 		return offset < limit;
+	}
+
+	public ByteStream fork() {
+		return new ByteStream(offset, limit, window);
+	}
+
+	public void sync(ByteStream other) {
+		if (other.window != window) {
+			throw new IllegalArgumentException("These byte streams did not fork at some point");
+		}
+		this.offset = other.offset;
 	}
 
 
