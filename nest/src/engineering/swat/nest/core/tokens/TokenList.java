@@ -8,7 +8,7 @@ import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedBytesView;
-import engineering.swat.nest.examples.jpeg.JPEG.ScanEscape;
+import engineering.swat.nest.examples.formats.jpeg.JPEG.ScanEscape;
 
 public class TokenList<T extends Token> extends Token {
 

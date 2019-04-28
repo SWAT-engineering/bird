@@ -1,4 +1,4 @@
-package engineering.swat.nest.examples.png;
+package engineering.swat.nest.examples.formats.png;
 
 import java.util.zip.CRC32;
 import engineering.swat.nest.core.bytes.BytesView;

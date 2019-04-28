@@ -1,4 +1,4 @@
-package engineering.swat.nest.examples.png;
+package engineering.swat.nest.examples.formats.png;
 
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;

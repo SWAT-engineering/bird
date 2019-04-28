@@ -1,4 +1,4 @@
-package engineering.swat.nest.examples.jpeg;
+package engineering.swat.nest.examples.formats.jpeg;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
