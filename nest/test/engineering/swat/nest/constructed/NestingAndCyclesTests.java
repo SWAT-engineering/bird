@@ -19,7 +19,7 @@ public class NestingAndCyclesTests {
 	@Test
 	void checkCyclicNestingWorks() {
 		byte[] input = "Hcdcdeefdeggh0".getBytes(StandardCharsets.US_ASCII);
-		assertEquals(input.length, Start.parse(wrap(input), Context.DEFAULT_CONTEXT).size());
+		assertEquals(input.length, Start.parse(wrap(input), Context.DEFAULT).size());
 		
 	}
 

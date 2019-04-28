@@ -26,7 +26,7 @@ public class PNGTest  {
 	@MethodSource("pngProvider")
 	public void pngFilesSucceed(Path pngFile) throws IOException, URISyntaxException {
 		ByteStream stream = new ByteStream(ByteSliceBuilder.convert(Files.newInputStream(pngFile), pngFile.toUri()));
-		assertNotNull(PNG.PNG$.parse(stream, Context.DEFAULT_CONTEXT));
+		assertNotNull(PNG.PNG$.parse(stream, Context.DEFAULT));
 		assertFalse(stream.hasBytesRemaining(), "Did not consume the whole file: " + stream.getOffset() + " of " + Files.size(pngFile));
 	}
 	

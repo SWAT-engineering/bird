@@ -16,7 +16,7 @@ public class Context {
 		this.endianness = endianness;
 	}
 	
-	public static Context DEFAULT_CONTEXT = new Context(StandardCharsets.US_ASCII, ByteOrder.BIG_ENDIAN);
+	public static Context DEFAULT = new Context(StandardCharsets.US_ASCII, ByteOrder.BIG_ENDIAN);
 
 	public Context setEncoding(Charset encoding) {
 		return new Context(encoding, endianness);

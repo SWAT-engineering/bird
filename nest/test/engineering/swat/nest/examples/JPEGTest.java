@@ -20,7 +20,7 @@ public class JPEGTest  {
 	@MethodSource("jpegProvider")
 	public void jpegFilesSucceed(Path jpegFile) throws IOException, URISyntaxException {
 		ByteStream stream = new ByteStream(ByteSliceBuilder.convert(Files.newInputStream(jpegFile), jpegFile.toUri()));
-		assertNotNull(JPEG.Format.parse(stream, Context.DEFAULT_CONTEXT));
+		assertNotNull(JPEG.Format.parse(stream, Context.DEFAULT));
 		assertFalse(stream.hasBytesRemaining(), "Did not consume the whole file: " + stream.getOffset() + " of " + Files.size(jpegFile));
 	}
 	

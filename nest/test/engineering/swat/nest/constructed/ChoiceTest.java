@@ -21,19 +21,19 @@ import engineering.swat.nest.core.tokens.operations.Choice.Case;
 public class ChoiceTest {
 	@Test
 	void testChoiceAParses() throws URISyntaxException {
-		assertEquals(2, AorB.parse(wrap(1), Context.DEFAULT_CONTEXT).virtualField.getValue());
+		assertEquals(2, AorB.parse(wrap(1), Context.DEFAULT).virtualField.getValue());
 	}
 
 	@Test
 	void testChoiceBParses() throws URISyntaxException {
-		assertEquals(4, AorB.parse(wrap(2), Context.DEFAULT_CONTEXT).virtualField.getValue());
-		assertEquals(2, AorB.parse(wrap(2), Context.DEFAULT_CONTEXT).x.asInteger().getValue());
+		assertEquals(4, AorB.parse(wrap(2), Context.DEFAULT).virtualField.getValue());
+		assertEquals(2, AorB.parse(wrap(2), Context.DEFAULT).x.asInteger().getValue());
 	}
 
 	@Test
 	void testChoiceFails() throws URISyntaxException {
 		assertThrows(ParseError.class, () -> {
-			AorB.parse(wrap(3), Context.DEFAULT_CONTEXT).virtualField.getValue();
+			AorB.parse(wrap(3), Context.DEFAULT).virtualField.getValue();
 		});
 	}
 

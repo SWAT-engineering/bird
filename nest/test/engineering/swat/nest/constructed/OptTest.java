@@ -14,17 +14,17 @@ public class OptTest {
 
 	@Test
 	void testOptSingleEmpty() {
-		assertFalse(OptionalToken.optional(wrap(2), Context.DEFAULT_CONTEXT, A::parse).isPresent());
+		assertFalse(OptionalToken.optional(wrap(2), Context.DEFAULT, A::parse).isPresent());
 	}
 	@Test
 	void testOptSingle() {
-		assertTrue(OptionalToken.optional(wrap(1), Context.DEFAULT_CONTEXT, A::parse).isPresent());
+		assertTrue(OptionalToken.optional(wrap(1), Context.DEFAULT, A::parse).isPresent());
 	}
 	
 	@Test
 	void testOptNested() {
-		ABA aa = ABA.parse(wrap(1,1), Context.DEFAULT_CONTEXT);
-		ABA aba = ABA.parse(wrap(1,2,1), Context.DEFAULT_CONTEXT);
+		ABA aa = ABA.parse(wrap(1,1), Context.DEFAULT);
+		ABA aba = ABA.parse(wrap(1,2,1), Context.DEFAULT);
 		assertFalse(aa.b.isPresent());
 		assertTrue(aba.b.isPresent());
 	}
