@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedBytesView;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.tokens.OptionalToken;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 
@@ -48,7 +48,7 @@ public class OptTest {
 		}
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return buildTrackedView(a, b, a2);
 		}
 

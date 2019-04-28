@@ -1,20 +1,19 @@
 package engineering.swat.nest.core.bytes;
 
 import engineering.swat.nest.core.EOSError;
-import engineering.swat.nest.core.bytes.source.ByteWindow;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 
 public class ByteStream {
 	
 	private long offset;
 	private final long limit;
-	private final ByteWindow window;
+	private final TrackedByteSlice window;
 
-	public ByteStream(ByteWindow window) {
+	public ByteStream(TrackedByteSlice window) {
 		this(0, window.size(), window);
 	}
 
-	private ByteStream(long offset, long limit, ByteWindow window) {
+	private ByteStream(long offset, long limit, TrackedByteSlice window) {
 		this.offset = offset;
 		this.limit = limit;
 		this.window = window;

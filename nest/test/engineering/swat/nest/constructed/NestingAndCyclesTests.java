@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedBytesView;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
@@ -46,7 +46,7 @@ public class NestingAndCyclesTests {
 		}
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return buildTrackedView(header, initial, loop);
 		}
 
@@ -71,7 +71,7 @@ public class NestingAndCyclesTests {
 		}
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return buildTrackedView(a, b);
 		}
 
@@ -112,7 +112,7 @@ public class NestingAndCyclesTests {
 
 
 			@Override
-			public TrackedBytesView getTrackedBytes() {
+			public TrackedByteSlice getTrackedBytes() {
 				return $dummy1.getTrackedBytes();
 			}
 
@@ -155,7 +155,7 @@ public class NestingAndCyclesTests {
 			
 
 			@Override
-			public TrackedBytesView getTrackedBytes() {
+			public TrackedByteSlice getTrackedBytes() {
 				return buildTrackedView(aRef, n1, n2, l);
 			}
 
@@ -167,7 +167,7 @@ public class NestingAndCyclesTests {
 		}
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return entry.getTrackedBytes();
 		}
 

@@ -1,7 +1,7 @@
 package engineering.swat.nest.core;
 
-import engineering.swat.nest.core.bytes.BytesView;
+import engineering.swat.nest.core.bytes.ByteSlice;
 
 public interface NestValue {
-	BytesView getBytes();
+	ByteSlice getBytes();
 }

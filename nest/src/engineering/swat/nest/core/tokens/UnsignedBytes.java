@@ -1,25 +1,23 @@
 package engineering.swat.nest.core.tokens;
 
 import engineering.swat.nest.core.NestValue;
-import engineering.swat.nest.core.ParseError;
-import engineering.swat.nest.core.bytes.BytesView;
+import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedBytesView;
-import engineering.swat.nest.core.bytes.source.ByteWindow;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestInteger;
 import java.nio.ByteBuffer;
 
 public class UnsignedBytes extends PrimitiveToken {
 
-	private final ByteWindow slice;
+	private final TrackedByteSlice slice;
 
-	public UnsignedBytes(ByteWindow slice, Context ctx) {
+	public UnsignedBytes(TrackedByteSlice slice, Context ctx) {
 		super(ctx);
 		this.slice = slice;
 	}
 
 	public boolean sameBytes(NestValue other) {
-		BytesView otherBytes = other.getBytes();
+		ByteSlice otherBytes = other.getBytes();
 		if (otherBytes.size() != slice.size()) {
 			return false;
 		}
@@ -32,7 +30,7 @@ public class UnsignedBytes extends PrimitiveToken {
 	}
 
 	@Override
-	public TrackedBytesView getTrackedBytes() {
+	public TrackedByteSlice getTrackedBytes() {
 		return slice;
 	}
 	

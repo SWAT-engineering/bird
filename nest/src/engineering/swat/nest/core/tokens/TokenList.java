@@ -7,14 +7,13 @@ import java.util.function.BiFunction;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedBytesView;
-import engineering.swat.nest.examples.formats.jpeg.JPEG.ScanEscape;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 
 public class TokenList<T extends Token> extends Token {
 
 
 	private final List<T> contents;
-	private final MultipleTokenBytesView<T> byteView;
+	private final MultipleTokenByteSlice<T> byteView;
 
 	private TokenList(List<T> contents) {
 		this.contents = contents;
@@ -25,7 +24,7 @@ public class TokenList<T extends Token> extends Token {
 			long currentSize = contents.get(i).size();
 			currentOffset += currentSize;
 		}
-		byteView = new MultipleTokenBytesView<>(contents, offsets, currentOffset);
+		byteView = new MultipleTokenByteSlice<>(contents, offsets, currentOffset);
 	}
 
 	public static <T extends Token> TokenList<T> untilParseFailure(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser) {
@@ -58,7 +57,7 @@ public class TokenList<T extends Token> extends Token {
 	}
 
 	@Override
-	public TrackedBytesView getTrackedBytes() {
+	public TrackedByteSlice getTrackedBytes() {
 	    return byteView;
 	}
 

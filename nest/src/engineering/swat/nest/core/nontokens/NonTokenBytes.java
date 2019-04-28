@@ -1,6 +1,6 @@
 package engineering.swat.nest.core.nontokens;
 
-import engineering.swat.nest.core.bytes.BytesView;
+import engineering.swat.nest.core.bytes.ByteSlice;
 
 public class NonTokenBytes extends NonToken {
 
@@ -21,8 +21,8 @@ public class NonTokenBytes extends NonToken {
 	}
 
 	@Override
-	public BytesView getBytes() {
-		return new BytesView() {
+	public ByteSlice getBytes() {
+		return new ByteSlice() {
 			
 			@Override
 			public long size() {
@@ -31,6 +31,9 @@ public class NonTokenBytes extends NonToken {
 			
 			@Override
 			public byte get(long index) {
+				if (index > bytes.length) {
+					throw new IndexOutOfBoundsException();
+				}
 				return bytes[Math.toIntExact(index)];
 			}
 		};

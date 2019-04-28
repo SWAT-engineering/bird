@@ -2,13 +2,13 @@ package engineering.swat.nest.core.nontokens;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import engineering.swat.nest.core.bytes.BytesView;
+import engineering.swat.nest.core.bytes.ByteSlice;
 
 public class NestInteger extends NonToken {
 
 	private final long value;
 
-	public NestInteger(BytesView bytes, ByteOrder endianness) {
+	public NestInteger(ByteSlice bytes, ByteOrder endianness) {
 		ByteBuffer buf = ByteBuffer.wrap(bytes.allBytes());
 		buf.order(endianness);
 		switch (buf.remaining()) {
@@ -25,7 +25,7 @@ public class NestInteger extends NonToken {
 	}
 
 	@Override
-	public BytesView getBytes() {
+	public ByteSlice getBytes() {
 		throw new RuntimeException("Unsupported operation");
 	}
 

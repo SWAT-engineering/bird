@@ -1,6 +1,5 @@
 package engineering.swat.nest.core.tokens;
 
-import engineering.swat.nest.core.bytes.BytesView;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.nontokens.NestInteger;
 import engineering.swat.nest.core.nontokens.NestString;

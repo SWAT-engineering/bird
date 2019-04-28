@@ -1,16 +1,17 @@
 package engineering.swat.nest.core.bytes.source;
 
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import java.net.URI;
 import java.nio.ByteBuffer;
 
-public class ByteBufferWindow implements ByteWindow {
+public class ByteBufferSlice implements TrackedByteSlice {
 
     private final ByteBuffer source;
     private final int offset;
     private final int limit;
     private final URI origin;
 
-    public ByteBufferWindow(ByteBuffer source, int offset, int limit, URI origin) {
+    public ByteBufferSlice(ByteBuffer source, int offset, int limit, URI origin) {
         this.source = source;
         this.offset = offset;
         this.limit = limit;
@@ -18,8 +19,8 @@ public class ByteBufferWindow implements ByteWindow {
     }
 
     @Override
-    public ByteWindow slice(long offset, long size) {
-        return new ByteBufferWindow(source, Math.toIntExact( this.offset + offset), Math.toIntExact(this.offset + size), origin);
+    public TrackedByteSlice slice(long offset, long size) {
+        return new ByteBufferSlice(source, Math.toIntExact( this.offset + offset), Math.toIntExact(this.offset + size), origin);
     }
 
     @Override

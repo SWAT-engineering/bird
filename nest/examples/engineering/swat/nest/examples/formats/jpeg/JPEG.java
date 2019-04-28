@@ -3,7 +3,7 @@ package engineering.swat.nest.examples.formats.jpeg;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedBytesView;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.TokenList;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
@@ -33,7 +33,7 @@ public class JPEG  {
 		}
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return buildTrackedView($dummy1, $dummy2, $dummy3);
 		}
 
@@ -64,7 +64,7 @@ public class JPEG  {
 		}
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return buildTrackedView(marker, identifier);
 		}
 
@@ -90,7 +90,7 @@ public class JPEG  {
 		}
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return entry.getTrackedBytes();
 		}
 
@@ -130,7 +130,7 @@ public class JPEG  {
 		
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return buildTrackedView(marker, identifier, length, payload);
 		}
 
@@ -168,7 +168,7 @@ public class JPEG  {
 			}
 
 			@Override
-			public TrackedBytesView getTrackedBytes() {
+			public TrackedByteSlice getTrackedBytes() {
 				return scanData.getTrackedBytes();
 			}
 
@@ -193,7 +193,7 @@ public class JPEG  {
 			}
 
 			@Override
-			public TrackedBytesView getTrackedBytes() {
+			public TrackedByteSlice getTrackedBytes() {
 				return escape.getTrackedBytes();
 			}
 
@@ -203,7 +203,7 @@ public class JPEG  {
 			}
 		}
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return entry.getTrackedBytes();
 		}
 
@@ -246,7 +246,7 @@ public class JPEG  {
 		}
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return buildTrackedView(marker, identifier, length, payload, choices);
 		}
 
@@ -277,7 +277,7 @@ public class JPEG  {
 		}
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return buildTrackedView(marker, identifier);
 		}
 

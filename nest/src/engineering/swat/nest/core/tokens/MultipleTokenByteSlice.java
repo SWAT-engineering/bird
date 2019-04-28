@@ -1,15 +1,15 @@
 package engineering.swat.nest.core.tokens;
 
-import engineering.swat.nest.core.bytes.TrackedBytesView;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
 import java.util.List;
 
-final class MultipleTokenBytesView<T extends Token> implements TrackedBytesView {
+final class MultipleTokenByteSlice<T extends Token> implements TrackedByteSlice {
 	private final List<T> contents;
 	private final long[] offsets;
 	private final long fullSize;
 
-	public MultipleTokenBytesView(List<T> contents, long[] offsets, long fullSize) {
+	public MultipleTokenByteSlice(List<T> contents, long[] offsets, long fullSize) {
 		this.contents = contents;
 		this.offsets = offsets;
 		this.fullSize = fullSize;

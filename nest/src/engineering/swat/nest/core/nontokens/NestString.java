@@ -1,13 +1,13 @@
 package engineering.swat.nest.core.nontokens;
 
 import java.nio.charset.Charset;
-import engineering.swat.nest.core.bytes.BytesView;
+import engineering.swat.nest.core.bytes.ByteSlice;
 
 public class NestString extends NonToken {
 
 	private final String value;
 
-	public NestString(BytesView bytes, Charset encoding) {
+	public NestString(ByteSlice bytes, Charset encoding) {
 		this(new String(bytes.allBytes(), encoding));
 	}
 
@@ -16,7 +16,7 @@ public class NestString extends NonToken {
 	}
 
 	@Override
-	public BytesView getBytes() {
+	public ByteSlice getBytes() {
 		throw new RuntimeException("Unsupported");
 	}
 	

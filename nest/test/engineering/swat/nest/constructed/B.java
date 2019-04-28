@@ -3,7 +3,7 @@ package engineering.swat.nest.constructed;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedBytesView;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestInteger;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
@@ -26,7 +26,7 @@ class B extends UserDefinedToken {
 	}
 
 	@Override
-	public TrackedBytesView getTrackedBytes() {
+	public TrackedByteSlice getTrackedBytes() {
 		return buildTrackedView(x);
 	}
 

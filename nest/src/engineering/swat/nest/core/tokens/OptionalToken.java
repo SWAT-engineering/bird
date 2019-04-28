@@ -3,7 +3,7 @@ package engineering.swat.nest.core.tokens;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedBytesView;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
 import java.util.function.BiFunction;
 
@@ -27,9 +27,9 @@ public class OptionalToken<T extends Token> extends Token {
 	}
 
 	@Override
-	public TrackedBytesView getTrackedBytes() {
+	public TrackedByteSlice getTrackedBytes() {
 		if (token == null) {
-			return new TrackedBytesView() {
+			return new TrackedByteSlice() {
 				@Override
 				public ByteOrigin getOrigin(long index) {
 					throw new IndexOutOfBoundsException();

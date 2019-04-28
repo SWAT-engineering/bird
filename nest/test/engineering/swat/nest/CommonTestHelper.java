@@ -20,12 +20,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 import engineering.swat.nest.core.bytes.ByteStream;
-import engineering.swat.nest.core.bytes.source.ByteWindowBuilder;
+import engineering.swat.nest.core.bytes.source.ByteSliceBuilder;
 
 public class CommonTestHelper {
 	public static ByteStream wrap(byte... bytes) {
 		try {
-			return new ByteStream(ByteWindowBuilder.wrap(ByteBuffer.wrap(bytes), new URI("tmp:///test")) );
+			return new ByteStream(ByteSliceBuilder.wrap(ByteBuffer.wrap(bytes), new URI("tmp:///test")) );
 		} catch (URISyntaxException e) {
 			throw new RuntimeException(e);
 		}
@@ -36,7 +36,7 @@ public class CommonTestHelper {
 			data[i] = (byte)bytes[i];
 		}
 		try {
-			return new ByteStream(ByteWindowBuilder.wrap(ByteBuffer.wrap(data), new URI("tmp:///test")) );
+			return new ByteStream(ByteSliceBuilder.wrap(ByteBuffer.wrap(data), new URI("tmp:///test")) );
 		} catch (URISyntaxException e) {
 			throw new RuntimeException(e);
 		}

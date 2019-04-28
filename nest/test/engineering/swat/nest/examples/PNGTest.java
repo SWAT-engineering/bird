@@ -14,9 +14,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import engineering.swat.nest.CommonTestHelper;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.source.ByteWindowBuilder;
+import engineering.swat.nest.core.bytes.source.ByteSliceBuilder;
 import engineering.swat.nest.examples.formats.png.PNG;
-import engineering.swat.nest.examples.formats.png.PNG.PNG$;
 
 public class PNGTest  {
 	@Test
@@ -26,7 +25,7 @@ public class PNGTest  {
 	@ParameterizedTest
 	@MethodSource("pngProvider")
 	public void pngFilesSucceed(Path pngFile) throws IOException, URISyntaxException {
-		ByteStream stream = new ByteStream(ByteWindowBuilder.convert(Files.newInputStream(pngFile), pngFile.toUri()));
+		ByteStream stream = new ByteStream(ByteSliceBuilder.convert(Files.newInputStream(pngFile), pngFile.toUri()));
 		assertNotNull(PNG.PNG$.parse(stream, Context.DEFAULT_CONTEXT));
 		assertFalse(stream.hasBytesRemaining(), "Did not consume the whole file: " + stream.getOffset() + " of " + Files.size(pngFile));
 	}

@@ -2,7 +2,6 @@ package engineering.swat.nest.core.bytes;
 
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import engineering.swat.nest.core.nontokens.NestInteger;
 import engineering.swat.nest.core.nontokens.NestString;
@@ -27,11 +26,11 @@ public class Context {
 		return new Context(encoding, endianness);
 	}
 
-	public NestInteger createInteger(BytesView bytes) {
+	public NestInteger createInteger(ByteSlice bytes) {
 		return new NestInteger(bytes, endianness);
 	}
 
-	public NestString createString(BytesView bytes) {
+	public NestString createString(ByteSlice bytes) {
 		return new NestString(bytes, encoding);
 	}
 

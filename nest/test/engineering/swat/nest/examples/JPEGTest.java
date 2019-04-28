@@ -7,22 +7,19 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
-import org.junit.Ignore;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import engineering.swat.nest.CommonTestHelper;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.source.ByteWindowBuilder;
+import engineering.swat.nest.core.bytes.source.ByteSliceBuilder;
 import engineering.swat.nest.examples.formats.jpeg.JPEG;
-import engineering.swat.nest.examples.formats.jpeg.JPEG.Format;
 
 public class JPEGTest  {
 	@ParameterizedTest
 	@MethodSource("jpegProvider")
 	public void jpegFilesSucceed(Path jpegFile) throws IOException, URISyntaxException {
-		ByteStream stream = new ByteStream(ByteWindowBuilder.convert(Files.newInputStream(jpegFile), jpegFile.toUri()));
+		ByteStream stream = new ByteStream(ByteSliceBuilder.convert(Files.newInputStream(jpegFile), jpegFile.toUri()));
 		assertNotNull(JPEG.Format.parse(stream, Context.DEFAULT_CONTEXT));
 		assertFalse(stream.hasBytesRemaining(), "Did not consume the whole file: " + stream.getOffset() + " of " + Files.size(jpegFile));
 	}

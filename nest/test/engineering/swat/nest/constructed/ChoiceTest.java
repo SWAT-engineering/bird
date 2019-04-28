@@ -3,16 +3,14 @@ package engineering.swat.nest.constructed;
 import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import java.net.URI;
+
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedBytesView;
-import engineering.swat.nest.core.bytes.source.ByteWindowBuilder;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
@@ -67,7 +65,7 @@ public class ChoiceTest {
 		}
 
 		@Override
-		public TrackedBytesView getTrackedBytes() {
+		public TrackedByteSlice getTrackedBytes() {
 			return entry.getTrackedBytes();
 		}
 

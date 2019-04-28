@@ -3,7 +3,7 @@ package engineering.swat.nest.examples.formats.png;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedBytesView;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestString;
 import engineering.swat.nest.core.nontokens.NonTokenBytes;
 import engineering.swat.nest.core.tokens.TokenList;
@@ -34,7 +34,7 @@ public class PNG {
         }
 
         @Override
-        public TrackedBytesView getTrackedBytes() {
+        public TrackedByteSlice getTrackedBytes() {
             return buildTrackedView($dummy1, chunks, $dummy2);
         }
 
@@ -74,7 +74,7 @@ public class PNG {
         }
         
         @Override
-        public TrackedBytesView getTrackedBytes() {
+        public TrackedByteSlice getTrackedBytes() {
             return buildTrackedView($dummy1, $dummy2, $dummy3);
         }
         
@@ -115,7 +115,7 @@ public class PNG {
         }
 
         @Override
-        public TrackedBytesView getTrackedBytes() {
+        public TrackedByteSlice getTrackedBytes() {
             return buildTrackedView(length, type, data, crc);
         }
         
@@ -156,7 +156,7 @@ public class PNG {
         }
 
         @Override
-        public TrackedBytesView getTrackedBytes() {
+        public TrackedByteSlice getTrackedBytes() {
             return buildTrackedView(length, type, crc);
         }
 
