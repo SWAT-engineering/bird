@@ -9,18 +9,20 @@ import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 
 class B extends UserDefinedToken {
-	public NestInteger virtualField;
-	public UnsignedBytes x;
-	private B() {}
+	public final NestInteger virtualField;
+	public final UnsignedBytes x;
+	private B(NestInteger virtualField, UnsignedBytes x) {
+		this.virtualField = virtualField;
+		this.x = x;
+	}
 	
 	public static B parse(ByteStream source, Context ctx) {
-		B result = new B();
-		result.x = source.readUnsigned(1, ctx);
-		if (!(result.x.asInteger().getValue() == 2)) {
-			throw new ParseError("A.x", result.x);
+		UnsignedBytes x = source.readUnsigned(1, ctx);
+		if (!(x.asInteger().getValue() == 2)) {
+			throw new ParseError("A.x", x);
 		}
-		result.virtualField = new NestInteger(2 * result.x.asInteger().getValue());
-		return result;
+		NestInteger virtualField = new NestInteger(2 * x.asInteger().getValue());
+		return new B(virtualField, x);
 	}
 
 	@Override

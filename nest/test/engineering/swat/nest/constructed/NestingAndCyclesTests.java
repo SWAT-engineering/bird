@@ -24,22 +24,25 @@ public class NestingAndCyclesTests {
 	}
 
 	// translation of nesting_and_cycles.bird
-	private static final class Start extends UserDefinedToken {
-		public UnsignedBytes header;
-		public Node initial;
-		public Loop loop;
-		private Start() {}
+	public static final class Start extends UserDefinedToken {
+		public final UnsignedBytes header;
+		public final Node initial;
+		public final Loop loop;
+		private Start(UnsignedBytes header, Node initial, Loop loop) {
+			this.header = header;
+			this.initial = initial;
+			this.loop = loop;
+		}
 
 		public static Start parse(ByteStream source, Context ctx) {
 			ctx = ctx.setEncoding(StandardCharsets.US_ASCII);
-			Start result = new Start();
-			result.header = source.readUnsigned(1, ctx);
-			if (!result.header.asString().equals("H")) {
-				throw new ParseError("Start.header", result.header);
+			UnsignedBytes header = source.readUnsigned(1, ctx);
+			if (!header.asString().equals("H")) {
+				throw new ParseError("Start.header", header);
 			}
-			result.initial = Node.parse(source, ctx);
-			result.loop = Loop.parse(source, ctx, result.initial);
-			return result;
+			Node initial = Node.parse(source, ctx);
+			Loop loop = Loop.parse(source, ctx, initial);
+			return new Start(header, initial, loop);
 		}
 
 		@Override
@@ -53,16 +56,18 @@ public class NestingAndCyclesTests {
 		}
 	}
 	
-	private static final class Node extends UserDefinedToken {
-		public UnsignedBytes a;
-		public UnsignedBytes b;
-		private Node() {}
+	public static final class Node extends UserDefinedToken {
+		public final UnsignedBytes a;
+		public final UnsignedBytes b;
+		private Node(UnsignedBytes a, UnsignedBytes b) { 
+			this.a = a;
+			this.b = b;
+		}
 		
 		public static Node parse(ByteStream source, Context ctx) {
-			final Node result = new Node();
-			result.a = source.readUnsigned(1, ctx);
-			result.b = source.readUnsigned(1, ctx);
-			return result;
+			UnsignedBytes a = source.readUnsigned(1, ctx);
+			UnsignedBytes b = source.readUnsigned(1, ctx);
+			return new Node(a, b);
 		}
 
 		@Override
@@ -76,30 +81,33 @@ public class NestingAndCyclesTests {
 		}
 	}
 	
-	private static final class Loop extends UserDefinedToken{
-		public Token entry;
+	public static final class Loop extends UserDefinedToken{
+		public final Token entry;
 
-		private Loop() {}
+		private Loop(Token entry) { this.entry = entry; }
 		
 		public static Loop parse(ByteStream source, Context ctx, Node n) {
-			Loop result = new Loop();
-			result.entry = Choice.between(source, ctx, 
+			Token entry = Choice.between(source, ctx, 
 					Case.of((s, c) -> Loop$1.parse(s, c, n), x -> {}),
 					Case.of((s, c) -> Loop$2.parse(s, c, n), x -> {})
 			);
-			return result;
+			return new Loop(entry);
 		}
 		
 		private static final class Loop$1 extends UserDefinedToken {
-			private UnsignedBytes $dummy1;
+			private final UnsignedBytes $dummy1;
 			
+			public Loop$1(UnsignedBytes $dummy1) {
+				this.$dummy1 = $dummy1;
+			}
+
+
 			public static Loop$1 parse(ByteStream source, Context ctx, Node n) {
-				Loop$1 result = new Loop$1();
-				result.$dummy1 = source.readUnsigned(1, ctx);
-				if (!(result.$dummy1.asString().equals("0"))) {
-					throw new ParseError("Loop$1._", result.$dummy1);
+				UnsignedBytes $dummy1 = source.readUnsigned(1, ctx);
+				if (!($dummy1.asString().equals("0"))) {
+					throw new ParseError("Loop$1._", $dummy1);
 				}
-				return result;
+				return new Loop$1($dummy1);
 			}
 
 
@@ -115,27 +123,34 @@ public class NestingAndCyclesTests {
 		}
 
 		private static final class Loop$2 extends UserDefinedToken {
-			public UnsignedBytes aRef;
-			public Node n1;
-			public Node n2;
-			public Loop l;
+			public final UnsignedBytes aRef;
+			public final Node n1;
+			public final Node n2;
+			public final Loop l;
 			
+			private Loop$2(UnsignedBytes aRef, Node n1, Node n2, Loop l) {
+				this.aRef = aRef;
+				this.n1 = n1;
+				this.n2 = n2;
+				this.l = l;
+			}
+
+
 			public static Loop$2 parse(ByteStream source, Context ctx, Node n) {
-				Loop$2 result = new Loop$2();
-				result.aRef = source.readUnsigned(1, ctx);
-				if (!(result.aRef.equals(n.a))) {
-					throw new ParseError("Loop$2.aRef", result.aRef);
+				UnsignedBytes aRef = source.readUnsigned(1, ctx);
+				if (!(aRef.equals(n.a))) {
+					throw new ParseError("Loop$2.aRef", aRef);
 				}
-				result.n1 = Node.parse(source, ctx);
-				if (!result.n1.a.equals(n.b)) {
-					throw new ParseError("Loop$2.n1", result.n1);
+				Node n1 = Node.parse(source, ctx);
+				if (!n1.a.equals(n.b)) {
+					throw new ParseError("Loop$2.n1", n1);
 				}
-				result.n2 = Node.parse(source, ctx);
-				if (!result.n2.a.equals(result.n1.b)) {
-					throw new ParseError("Loop$2.n2", result.n2);
+				Node n2 = Node.parse(source, ctx);
+				if (!n2.a.equals(n1.b)) {
+					throw new ParseError("Loop$2.n2", n2);
 				}
-				result.l = Loop.parse(source, ctx, result.n1);
-				return result;
+				Loop l = Loop.parse(source, ctx, n1);
+				return new Loop$2(aRef, n1, n2, l);
 			}
 			
 

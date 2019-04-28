@@ -1,7 +1,5 @@
 package engineering.swat.nest.examples.formats.png;
 
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
@@ -11,6 +9,8 @@ import engineering.swat.nest.core.nontokens.NonTokenBytes;
 import engineering.swat.nest.core.tokens.TokenList;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 
 public class PNG {
     public final static class PNG$ extends UserDefinedToken {

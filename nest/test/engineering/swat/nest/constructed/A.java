@@ -8,19 +8,21 @@ import engineering.swat.nest.core.nontokens.NestInteger;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 
-class A extends UserDefinedToken {
-    public NestInteger virtualField;
-    public UnsignedBytes x;
-    private A() {}
+public class A extends UserDefinedToken {
+    public final NestInteger virtualField;
+    public final UnsignedBytes x;
+    private A(NestInteger virtualField, UnsignedBytes x) {
+        this.virtualField = virtualField;
+        this.x = x;
+    }
     
     public static A parse(ByteStream source, Context ctx) {
-        A result = new A();
-        result.x = source.readUnsigned(1, ctx);
-        if (!(result.x.asInteger().getValue() == 1)) {
-            throw new ParseError("A.x", result.x);
+        UnsignedBytes x = source.readUnsigned(1, ctx);
+        if (!(x.asInteger().getValue() == 1)) {
+            throw new ParseError("A.x", x);
         }
-        result.virtualField = new NestInteger(2 * result.x.asInteger().getValue());
-        return result;
+        NestInteger virtualField = new NestInteger(2 * x.asInteger().getValue());
+        return new A(virtualField, x);
     }
 
     @Override

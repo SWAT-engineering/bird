@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
@@ -40,24 +41,29 @@ public class ChoiceTest {
 
 	
 	private static final class AorB extends UserDefinedToken {
-		public NestInteger virtualField;
-		public UnsignedBytes x;
-		public Token entry;
-		private AorB() {}
+		public final NestInteger virtualField;
+		public final UnsignedBytes x;
+		public final Token entry;
+		private AorB(Token entry, NestInteger virtualField, UnsignedBytes x) {
+			this.entry = entry;
+			this.virtualField = virtualField;
+			this.x = x;
+		}
 		
 		public static AorB parse(ByteStream source, Context ctx) {
-			final AorB result = new AorB();
-			result.entry = Choice.between(source, ctx,
+			final AtomicReference<NestInteger> virtualField = new AtomicReference<>();
+			final AtomicReference<UnsignedBytes> x = new AtomicReference<>();
+			Token entry = Choice.between(source, ctx,
 					Case.of((s, c) -> A.parse(s, c), a -> {
-						result.virtualField = a.virtualField;
-						result.x = a.x;
+						virtualField.set(a.virtualField);
+						x.set(a.x);
 					}),
 					Case.of((s, c) -> B.parse(s, c), b -> {
-						result.virtualField = b.virtualField;
-						result.x = b.x;
+						virtualField.set(b.virtualField);
+						x.set(b.x);
 					})
 			);
-			return result;
+			return new AorB(entry, virtualField.get(), x.get());
 		}
 
 		@Override

@@ -1,27 +1,16 @@
 package engineering.swat.nest.examples.formats.jpeg;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.ByteOrder;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import engineering.swat.nest.CommonTestHelper;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedBytesView;
-import engineering.swat.nest.core.bytes.source.ByteWindowBuilder;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.TokenList;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
 import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import java.nio.ByteOrder;
 
 public class JPEG  {
 	

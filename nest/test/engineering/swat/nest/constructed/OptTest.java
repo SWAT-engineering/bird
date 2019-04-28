@@ -4,12 +4,10 @@ import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
-import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedBytesView;
 import engineering.swat.nest.core.tokens.OptionalToken;
-import engineering.swat.nest.core.tokens.TokenList;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 
 public class OptTest {
@@ -32,18 +30,21 @@ public class OptTest {
 	}
 	
 	private static final class ABA extends UserDefinedToken {
-		public A a;
-		public OptionalToken<B> b;
-		public A a2;
+		public final A a;
+		public final OptionalToken<B> b;
+		public final A a2;
 		
-		private ABA() {}
+		private ABA(A a, OptionalToken<B> b, A a2) {
+			this.a = a;
+			this.b = b;
+			this.a2 = a2;
+		}
 		
 		public static ABA parse(ByteStream source, Context ctx) {
-			ABA result = new ABA();
-			result.a = A.parse(source, ctx);
-			result.b = OptionalToken.optional(source, ctx, B::parse);
-			result.a2 = A.parse(source, ctx);
-			return result;
+			A a = A.parse(source, ctx);
+			OptionalToken<B> b = OptionalToken.optional(source, ctx, B::parse);
+			A a2 = A.parse(source, ctx);
+			return new ABA(a, b, a2);
 		}
 
 		@Override
