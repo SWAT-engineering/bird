@@ -1,0 +1,31 @@
+image: adoptopenjdk/maven-openjdk8:latest
+
+stages:
+  - nest-test
+  - nest-qa
+
+cache:
+  paths:
+    - .m2/
+
+variables:
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=false -DdeployAtEnd=false"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2 -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+
+
+nest-build-and-test:
+  stage: nest-test
+  script:
+    - cd nest/ && mvn clean test
+  artifacts:
+    reports:
+      junit:
+        - 'nest/target/surefire-reports/TEST-*.xml'
+
+nest-qa-checker-framework:
+  stage: nest-qa
+  script: "cd nest && mvn clean compile -Pchecker-framework"
+
+nest-qa-error-prone:
+  stage: nest-qa
+  script: "cd nest && mvn clean compile -Perror-prone"
