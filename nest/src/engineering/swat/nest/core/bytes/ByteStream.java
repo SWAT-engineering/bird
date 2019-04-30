@@ -2,6 +2,7 @@ package engineering.swat.nest.core.bytes;
 
 import engineering.swat.nest.core.EOSError;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 
 public class ByteStream {
@@ -12,6 +13,10 @@ public class ByteStream {
 
 	public ByteStream(TrackedByteSlice window) {
 		this(NestBigInteger.ZERO, window.size(), window);
+	}
+
+	public ByteStream(Token source) {
+		this(source.getTrackedBytes());
 	}
 
 	private ByteStream(NestBigInteger offset, NestBigInteger limit, TrackedByteSlice window) {
