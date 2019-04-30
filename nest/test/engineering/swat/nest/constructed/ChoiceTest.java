@@ -12,7 +12,6 @@ import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
-import engineering.swat.nest.core.nontokens.NestInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
@@ -40,17 +39,17 @@ public class ChoiceTest {
 
 	
 	private static final class AorB extends UserDefinedToken {
-		public final NestInteger virtualField;
+		public final NestBigInteger virtualField;
 		public final UnsignedBytes x;
 		public final Token entry;
-		private AorB(Token entry, NestInteger virtualField, UnsignedBytes x) {
+		private AorB(Token entry, NestBigInteger virtualField, UnsignedBytes x) {
 			this.entry = entry;
 			this.virtualField = virtualField;
 			this.x = x;
 		}
 		
 		public static AorB parse(ByteStream source, Context ctx) {
-			final AtomicReference<NestInteger> virtualField = new AtomicReference<>();
+			final AtomicReference<NestBigInteger> virtualField = new AtomicReference<>();
 			final AtomicReference<UnsignedBytes> x = new AtomicReference<>();
 			Token entry = Choice.between(source, ctx,
 					Case.of((s, c) -> A.parse(s, c), a -> {

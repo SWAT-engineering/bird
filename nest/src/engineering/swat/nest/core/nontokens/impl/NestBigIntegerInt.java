@@ -1,11 +1,9 @@
 package engineering.swat.nest.core.nontokens.impl;
 
-import engineering.swat.nest.core.bytes.source.ByteOrigin;
+import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
-import engineering.swat.nest.core.nontokens.NestInteger;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 class NestBigIntegerInt implements NestBigInteger {
@@ -221,13 +219,8 @@ class NestBigIntegerInt implements NestBigInteger {
     }
 
     @Override
-    public byte[] getBytes(ByteOrder order) {
-        if (order == ByteOrder.BIG_ENDIAN) {
-            return getBigEndianBytes();
-        }
-        else {
-            return getLittleEndianBytes();
-        }
+    public ByteSlice getBytes(ByteOrder order) {
+        return ByteSlice.wrap(order == ByteOrder.BIG_ENDIAN ? getBigEndianBytes() : getLittleEndianBytes());
     }
 
     private byte[] getLittleEndianBytes() {

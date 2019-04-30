@@ -9,7 +9,7 @@ public class UserDefinedPNG {
 
 	public static long crc32(Token data) {
 		CRC32 hasher = new CRC32();
-		ByteSlice bytes = data.getBytes();
+		ByteSlice bytes = data.getTrackedBytes();
 		NestBigInteger size = bytes.size();
 		for (NestBigInteger i = NestBigInteger.ZERO; i.compareTo(size)  < 0; i = i.add(NestBigInteger.ONE)) {
 			hasher.update(bytes.get(i) & 0xFF);

@@ -1,6 +1,6 @@
 package engineering.swat.nest.core.nontokens;
 
-import engineering.swat.nest.core.bytes.source.ByteOrigin;
+import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.nontokens.impl.NestBigIntegerImplementations;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
@@ -32,8 +32,7 @@ public interface NestBigInteger extends Comparable<NestBigInteger> {
     boolean fitsInt();
     boolean fitsLong();
 
-    byte[] getBytes(ByteOrder order);
-
+    ByteSlice getBytes(ByteOrder order);
     BigInteger toBigInteger();
 
     NestBigInteger ZERO = of(0);

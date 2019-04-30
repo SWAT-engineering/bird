@@ -5,14 +5,13 @@ import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
-import engineering.swat.nest.core.nontokens.NestInteger;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 
 class B extends UserDefinedToken {
-	public final NestInteger virtualField;
+	public final NestBigInteger virtualField;
 	public final UnsignedBytes x;
-	private B(NestInteger virtualField, UnsignedBytes x) {
+	private B(NestBigInteger virtualField, UnsignedBytes x) {
 		this.virtualField = virtualField;
 		this.x = x;
 	}
@@ -22,7 +21,7 @@ class B extends UserDefinedToken {
 		if (!(x.getByteAt(NestBigInteger.ZERO) == 2)) {
 			throw new ParseError("A.x", x);
 		}
-		NestInteger virtualField = new NestInteger(x.asInteger().getBigInteger().multiply(NestBigInteger.TWO));
+		NestBigInteger virtualField = x.asInteger().multiply(NestBigInteger.TWO);
 		return new B(virtualField, x);
 	}
 

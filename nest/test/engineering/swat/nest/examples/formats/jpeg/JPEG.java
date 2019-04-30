@@ -125,7 +125,7 @@ public class JPEG  {
 				throw new ParseError("SizedSegment.identifier", identifier);
 			}
 			UnsignedBytes length = source.readUnsigned(2, ctx);
-			UnsignedBytes payload = source.readUnsigned(length.asInteger().getBigInteger().subtract(NestBigInteger.TWO), ctx);
+			UnsignedBytes payload = source.readUnsigned(length.asInteger().subtract(NestBigInteger.TWO), ctx);
 			return new SizedSegment(marker, identifier, length, payload);
 		}
 		
@@ -186,9 +186,9 @@ public class JPEG  {
 			
 			public static ScanEscape$2 parse(ByteStream source, Context ctx) {
 				UnsignedBytes escape = source.readUnsigned(2, ctx);
-				if (!(escape.asInteger().getBigInteger().equals(NestBigInteger.of(0xFF00)) ||
-						(escape.asInteger().getBigInteger().compareTo(NestBigInteger.of(0xFFCF)) > 0 &&
-								escape.asInteger().getBigInteger().compareTo(NestBigInteger.of(0xFFD8)) < 0))) {
+				if (!(escape.asInteger().equals(NestBigInteger.of(0xFF00)) ||
+						(escape.asInteger().compareTo(NestBigInteger.of(0xFFCF)) > 0 &&
+								escape.asInteger().compareTo(NestBigInteger.of(0xFFD8)) < 0))) {
 					throw new ParseError("ScanEscape$2.escape", escape);
 				}
 				return new ScanEscape$2(escape);
@@ -242,7 +242,7 @@ public class JPEG  {
 				throw new ParseError("ScanSegment.identifier", identifier);
 			}
 			UnsignedBytes length = source.readUnsigned(2, ctx);
-			UnsignedBytes payload = source.readUnsigned(length.asInteger().getBigInteger().subtract(NestBigInteger.TWO), ctx);
+			UnsignedBytes payload = source.readUnsigned(length.asInteger().subtract(NestBigInteger.TWO), ctx);
 			TokenList<ScanEscape> choices = TokenList.untilParseFailure(source, ctx, ScanEscape::parse);
 			return new ScanSegment(marker, identifier, length, payload, choices);
 		}

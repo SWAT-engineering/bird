@@ -1,5 +1,6 @@
 package engineering.swat.nest.core.nontokens.impl;
 
+import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.ByteUtils;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.math.BigInteger;
@@ -107,12 +108,12 @@ public class NestBigIntegerFull implements NestBigInteger {
     }
 
     @Override
-    public byte[] getBytes(ByteOrder order) {
+    public ByteSlice getBytes(ByteOrder order) {
         byte[] bytes = value.toByteArray();
         if (order == ByteOrder.LITTLE_ENDIAN) {
             ByteUtils.reverseBytes(bytes);
         }
-        return bytes;
+        return ByteSlice.wrap(bytes);
     }
 
     @Override

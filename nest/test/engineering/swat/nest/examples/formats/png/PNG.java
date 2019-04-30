@@ -1,11 +1,11 @@
 package engineering.swat.nest.examples.formats.png;
 
 import engineering.swat.nest.core.ParseError;
+import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
-import engineering.swat.nest.core.nontokens.NonTokenBytes;
 import engineering.swat.nest.core.tokens.TokenList;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
@@ -67,7 +67,7 @@ public class PNG {
             }
 
             UnsignedBytes $dummy3 = source.readUnsigned(4, ctx);
-            if (!($dummy3.sameBytes(NonTokenBytes.of(0x0d, 0x0a, 0x1a, 0x0a)))) {
+            if (!($dummy3.sameBytes(ByteSlice.wrap(new byte[] {0x0d, 0x0a, 0x1a, 0x0a})))) {
                 throw new ParseError("Signature.$dummy3", $dummy3);
             }
             return new Signature($dummy1, $dummy2, $dummy3);
@@ -106,7 +106,7 @@ public class PNG {
             if (!(!type.sameBytes(ctx.getStringBytes("IEND")))) {
                 throw new ParseError("Chunk.type");
             }
-            UnsignedBytes data = source.readUnsigned(length.asInteger().getBigInteger(), ctx);
+            UnsignedBytes data = source.readUnsigned(length.asInteger(), ctx);
             UnsignedBytes crc = source.readUnsigned(4, ctx);
             if (!(UserDefinedPNG.crc32(TokenList.of(type, data)) == crc.asInteger().longValueExact())) {
                 throw new ParseError("Chunk.crc");
@@ -139,7 +139,7 @@ public class PNG {
 
         public static IEND parse(ByteStream source, Context ctx) {
             UnsignedBytes length = source.readUnsigned(4, ctx);
-            if (!(length.asInteger().getBigInteger().equals(NestBigInteger.ZERO))) {
+            if (!(length.asInteger().equals(NestBigInteger.ZERO))) {
                 throw new ParseError("IED.length", length);
             }
             
@@ -149,7 +149,7 @@ public class PNG {
             }
             
             UnsignedBytes crc = source.readUnsigned(4, ctx);
-            if (!crc.sameBytes(NonTokenBytes.of(0xae, 0x42, 0x60, 0x82))) {
+            if (!crc.sameBytes(ByteSlice.wrap(new byte[] {(byte) 0xae, 0x42, 0x60, (byte) 0x82}))) {
                 throw new ParseError("IED.crc", crc);
             }
             return new IEND(length, type, crc);

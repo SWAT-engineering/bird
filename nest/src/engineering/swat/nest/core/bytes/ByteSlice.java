@@ -2,8 +2,11 @@ package engineering.swat.nest.core.bytes;
 
 
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import java.util.Arrays;
 
 public interface ByteSlice {
+
+
 	NestBigInteger size();
 	byte get(NestBigInteger index);
 	default int getUnsigned(NestBigInteger index) {
@@ -37,5 +40,30 @@ public interface ByteSlice {
 			result[i] = get(NestBigInteger.of(i));
 		}
 		return result;
+	}
+
+	static ByteSlice wrap(byte[] bytes) {
+	    return new ByteSlice() {
+			@Override
+			public NestBigInteger size() {
+				return NestBigInteger.of(bytes.length);
+			}
+
+			@Override
+			public byte get(NestBigInteger index) {
+				int pos = index.intValueExact();
+				if (pos > bytes.length) {
+					throw new IndexOutOfBoundsException();
+				}
+				return bytes[pos];
+			}
+
+			@Override
+			public byte[] allBytes() {
+				byte[] copy = new byte[bytes.length];
+				System.arraycopy(bytes, 0, copy, 0, bytes.length);
+				return copy;
+			}
+		};
 	}
 }

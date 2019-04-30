@@ -1,12 +1,10 @@
 package engineering.swat.nest.core.bytes;
 
-import engineering.swat.nest.core.NestValue;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import engineering.swat.nest.core.nontokens.NestInteger;
 
 public class Context {
 
@@ -32,9 +30,9 @@ public class Context {
 	    return this.endianness;
 	}
 
-	public NestValue getStringBytes(String value) {
+	public ByteSlice getStringBytes(String value) {
 	    ByteBuffer bytes = encoding.encode(value);
-		return () -> new ByteSlice() {
+		return new ByteSlice() {
 			@Override
 			public NestBigInteger size() {
 			    return NestBigInteger.of(bytes.limit());
