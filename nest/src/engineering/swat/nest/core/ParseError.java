@@ -13,4 +13,13 @@ public class ParseError extends RuntimeException {
 
 	}
 
+	// avoid building a stack trace in most cases
+	@Override
+	public synchronized Throwable fillInStackTrace() {
+		return null;
+	}
+
+	public Throwable reallyFillInStackTrace() {
+		return super.fillInStackTrace();
+	}
 }
