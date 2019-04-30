@@ -3,6 +3,7 @@ package engineering.swat.nest.constructed;
 import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.ParseError;
@@ -20,7 +21,7 @@ public class NestingAndCyclesTests {
 	@Test
 	void checkCyclicNestingWorks() {
 		byte[] input = "Hcdcdeefdeggh0".getBytes(StandardCharsets.US_ASCII);
-		assertEquals(input.length, Start.parse(wrap(input), Context.DEFAULT).size());
+		assertEquals(input.length, Start.parse(wrap(input), Context.DEFAULT).size().intValueExact());
 		
 	}
 
@@ -38,7 +39,7 @@ public class NestingAndCyclesTests {
 		public static Start parse(ByteStream source, Context ctx) {
 			ctx = ctx.setEncoding(StandardCharsets.US_ASCII);
 			UnsignedBytes header = source.readUnsigned(1, ctx);
-			if (!header.asString().equals("H")) {
+			if (!header.sameBytes(ctx.getStringBytes("H"))) {
 				throw new ParseError("Start.header", header);
 			}
 			Node initial = Node.parse(source, ctx);
@@ -52,8 +53,8 @@ public class NestingAndCyclesTests {
 		}
 
 		@Override
-		public long size() {
-			return header.size() + initial.size() + loop.size();
+		public NestBigInteger size() {
+			return header.size().add(initial.size().add(loop.size()));
 		}
 	}
 	
@@ -77,8 +78,8 @@ public class NestingAndCyclesTests {
 		}
 
 		@Override
-		public long size() {
-			return a.size() + b.size();
+		public NestBigInteger size() {
+			return a.size().add(b.size());
 		}
 	}
 	
@@ -105,7 +106,7 @@ public class NestingAndCyclesTests {
 
 			public static Loop$1 parse(ByteStream source, Context ctx, Node n) {
 				UnsignedBytes $dummy1 = source.readUnsigned(1, ctx);
-				if (!($dummy1.asString().equals("0"))) {
+				if (!($dummy1.sameBytes(ctx.getStringBytes ("0")))) {
 					throw new ParseError("Loop$1._", $dummy1);
 				}
 				return new Loop$1($dummy1);
@@ -118,7 +119,7 @@ public class NestingAndCyclesTests {
 			}
 
 			@Override
-			public long size() {
+			public NestBigInteger size() {
 				return $dummy1.size();
 			}
 		}
@@ -161,8 +162,8 @@ public class NestingAndCyclesTests {
 			}
 
 			@Override
-			public long size() {
-				return aRef.size() + n1.size() + n2.size() + l.size();
+			public NestBigInteger size() {
+				return aRef.size().add(n1.size()).add(n2.size()).add(l.size());
 			}
 			
 		}
@@ -173,7 +174,7 @@ public class NestingAndCyclesTests {
 		}
 
 		@Override
-		public long size() {
+		public NestBigInteger size() {
 			return entry.size();
 		}
 	}

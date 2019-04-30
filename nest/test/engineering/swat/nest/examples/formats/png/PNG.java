@@ -4,7 +4,7 @@ import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
-import engineering.swat.nest.core.nontokens.NestString;
+import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NonTokenBytes;
 import engineering.swat.nest.core.tokens.TokenList;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
@@ -39,8 +39,8 @@ public class PNG {
         }
 
         @Override
-        public long size() {
-            return $dummy1.size() + chunks.size() + $dummy2.size();
+        public NestBigInteger size() {
+            return $dummy1.size().add(chunks.size()).add($dummy2.size());
         }
     }
 
@@ -57,12 +57,12 @@ public class PNG {
         
         public static Signature parse(ByteStream source, Context ctx) throws ParseError {
             UnsignedBytes $dummy1 = source.readUnsigned(1, ctx);
-            if (!($dummy1.asInteger().getValue() == 0x89)) {
+            if (!($dummy1.getByteAt(NestBigInteger.ZERO) == 0x89)) {
                 throw new ParseError("Signature.$dummy1", $dummy1);
             }
 
             UnsignedBytes $dummy2 = source.readUnsigned(3, ctx);
-            if (!($dummy2.asString().equals(new NestString("PNG")))) {
+            if (!($dummy2.sameBytes(ctx.getStringBytes("PNG")))) {
                 throw new ParseError("Signature.$dummy2", $dummy2);
             }
 
@@ -79,8 +79,8 @@ public class PNG {
         }
         
         @Override
-        public long size() {
-            return $dummy1.size() + $dummy2.size() + $dummy3.size();
+        public NestBigInteger size() {
+            return $dummy1.size().add($dummy2.size()).add($dummy3.size());
         }
         
 
@@ -103,12 +103,12 @@ public class PNG {
         public static Chunk parse(ByteStream source, Context ctx)  {
             UnsignedBytes length = source.readUnsigned(4, ctx);
             UnsignedBytes type = source.readUnsigned(4, ctx);
-            if (!(!type.asString().equals("IEND"))) {
+            if (!(!type.sameBytes(ctx.getStringBytes("IEND")))) {
                 throw new ParseError("Chunk.type");
             }
-            UnsignedBytes data = source.readUnsigned(Math.toIntExact(length.asInteger().getValue()), ctx);
+            UnsignedBytes data = source.readUnsigned(length.asInteger().getBigInteger(), ctx);
             UnsignedBytes crc = source.readUnsigned(4, ctx);
-            if (!(UserDefinedPNG.crc32(TokenList.of(type, data)) == crc.asInteger().getValue())) {
+            if (!(UserDefinedPNG.crc32(TokenList.of(type, data)) == crc.asInteger().longValueExact())) {
                 throw new ParseError("Chunk.crc");
             }
             return new Chunk(length, type, data, crc);
@@ -120,8 +120,8 @@ public class PNG {
         }
         
         @Override
-        public long size() {
-            return length.size() + type.size() + data.size() + crc.size();
+        public NestBigInteger size() {
+            return length.size().add(type.size()).add(data.size()).add(crc.size());
         }
 
     }
@@ -139,12 +139,12 @@ public class PNG {
 
         public static IEND parse(ByteStream source, Context ctx) {
             UnsignedBytes length = source.readUnsigned(4, ctx);
-            if (!(length.asInteger().getValue() == 0)) {
+            if (!(length.asInteger().getBigInteger().equals(NestBigInteger.ZERO))) {
                 throw new ParseError("IED.length", length);
             }
             
             UnsignedBytes type = source.readUnsigned(4, ctx);
-            if (!type.asString().equals(new NestString("IEND"))) {
+            if (!type.sameBytes(ctx.getStringBytes("IEND"))) {
                 throw new ParseError("IED.type", type);
             }
             
@@ -161,8 +161,8 @@ public class PNG {
         }
 
         @Override
-        public long size() {
-            return length.size() + type.size() + crc.size();
+        public NestBigInteger size() {
+            return length.size().add(type.size()).add(crc.size());
         }
 
     }

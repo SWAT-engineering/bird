@@ -3,6 +3,8 @@ package engineering.swat.nest.constructed;
 import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import engineering.swat.nest.core.nontokens.NestBigInteger;
 import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
@@ -53,8 +55,8 @@ public class OptTest {
 		}
 
 		@Override
-		public long size() {
-			return a.size() + b.size() + a2.size();
+		public NestBigInteger size() {
+			return a.size().add(b.size()).add(a2.size());
 		}
 	}
 

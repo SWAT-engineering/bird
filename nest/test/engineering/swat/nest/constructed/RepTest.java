@@ -13,17 +13,17 @@ public class RepTest {
 
 	@Test
 	void testUnbounded() {
-		assertEquals(4, TokenList.untilParseFailure(wrap(1,1,1,1), Context.DEFAULT, A::parse).size());
+		assertEquals(4, TokenList.untilParseFailure(wrap(1,1,1,1), Context.DEFAULT, A::parse).size().intValueExact());
 	}
 
 	@Test
 	void testUnboundedStops() {
-		assertEquals(4, TokenList.untilParseFailure(wrap(1,1,1,1,2), Context.DEFAULT, A::parse).size());
+		assertEquals(4, TokenList.untilParseFailure(wrap(1,1,1,1,2), Context.DEFAULT, A::parse).size().intValueExact());
 	}
 
 	@Test
 	void testBoundedStops() {
-		assertEquals(3, TokenList.times(wrap(1,1,1,1), Context.DEFAULT, A::parse, 3).size());
+		assertEquals(3, TokenList.times(wrap(1,1,1,1), Context.DEFAULT, A::parse, 3).size().intValueExact());
 	}
 
 	@Test
@@ -34,8 +34,8 @@ public class RepTest {
 	@Test
 	void testBoundedContinuesAtRightPosition() {
 		ByteStream source = wrap(1,1,2);
-		assertEquals(2, TokenList.times(source, Context.DEFAULT, A::parse, 2).size());
-		assertEquals(1, TokenList.times(source, Context.DEFAULT, B::parse, 1).size());
+		assertEquals(2, TokenList.times(source, Context.DEFAULT, A::parse, 2).size().intValueExact());
+		assertEquals(1, TokenList.times(source, Context.DEFAULT, B::parse, 1).size().intValueExact());
 	}
 }
 

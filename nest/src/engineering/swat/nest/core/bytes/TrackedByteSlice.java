@@ -1,32 +1,33 @@
 package engineering.swat.nest.core.bytes;
 
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
+import engineering.swat.nest.core.nontokens.NestBigInteger;
 
 public interface TrackedByteSlice extends ByteSlice {
-	ByteOrigin getOrigin(long index);
-	default TrackedByteSlice slice(long offset, long size) {
+	ByteOrigin getOrigin(NestBigInteger index);
+	default TrackedByteSlice slice(NestBigInteger offset, NestBigInteger size) {
 		final TrackedByteSlice base = this;
-		final long currentOffset = offset;
+		final NestBigInteger currentOffset = offset;
 		return new TrackedByteSlice() {
 			@Override
-			public ByteOrigin getOrigin(long index) {
-				return base.getOrigin(currentOffset + index);
+			public ByteOrigin getOrigin(NestBigInteger index) {
+				return base.getOrigin(currentOffset.add(index));
 			}
 
 			@Override
-			public long size() {
+			public NestBigInteger size() {
 				return size;
 			}
 
 			@Override
-			public byte get(long index) {
-				return base.get(currentOffset + index);
+			public byte get(NestBigInteger index) {
+				return base.get(currentOffset.add(index));
 			}
 
 			@Override
-			public TrackedByteSlice slice(long offset, long size) {
+			public TrackedByteSlice slice(NestBigInteger offset, NestBigInteger size) {
 			    // avoid extra nesting
-				return base.slice(currentOffset + offset, size);
+				return base.slice(currentOffset.add(offset), size);
 			}
 		};
 	}

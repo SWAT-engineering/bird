@@ -2,10 +2,14 @@ package engineering.swat.nest.core.tokens;
 
 import engineering.swat.nest.core.NestValue;
 import engineering.swat.nest.core.bytes.ByteSlice;
+import engineering.swat.nest.core.bytes.ByteUtils;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
+import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestInteger;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class UnsignedBytes extends PrimitiveToken {
@@ -17,12 +21,17 @@ public class UnsignedBytes extends PrimitiveToken {
 		this.slice = slice;
 	}
 
+	public int getByteAt(NestBigInteger position) {
+	    return slice.getUnsigned(position);
+	}
+
 	public boolean sameBytes(NestValue other) {
 		ByteSlice otherBytes = other.getBytes();
-		if (otherBytes.size() != slice.size()) {
+		if (!otherBytes.size().equals(slice.size())) {
 			return false;
 		}
-		for (int i=0; i < slice.size(); i++) {
+		NestBigInteger size = slice.size();
+		for (NestBigInteger i = NestBigInteger.ZERO; i.compareTo(size) < 0; i = i.add(NestBigInteger.ONE)) {
 			if (otherBytes.get(i) != slice.get(i)) {
 				return false;
 			}
@@ -36,7 +45,7 @@ public class UnsignedBytes extends PrimitiveToken {
 	}
 	
 	@Override
-	public long size() {
+	public NestBigInteger size() {
 		return slice.size();
 	}
 	
@@ -55,23 +64,46 @@ public class UnsignedBytes extends PrimitiveToken {
 
 	@Override
 	public NestInteger asInteger() {
-		long size = slice.size();
-		if (size == 1) {
-			return new NestInteger( slice.get(0) & 0xFF);
+		int size = slice.size().intValueExact();
+		if (ctx.getByteOrder() == ByteOrder.BIG_ENDIAN) {
+			switch (size) {
+				case 1:
+					return new NestInteger(slice.get(NestBigInteger.ZERO) & 0xFF);
+				case 2:
+					return new NestInteger(
+							(slice.get(NestBigInteger.ZERO) & 0xFF) << 8 |
+									(slice.get(NestBigInteger.ONE) & 0xFF)
+					);
+				case 3:
+					return new NestInteger(
+							(slice.get(NestBigInteger.ZERO) & 0xFF) << 16 |
+									(slice.get(NestBigInteger.ONE) & 0xFF) << 8 |
+									(slice.get(NestBigInteger.TWO) & 0xFF)
+					);
+				default:
+					return new NestInteger(new BigInteger(1, slice.allBytes()));
+			}
 		}
-		ByteBuffer buf = ByteBuffer.allocate(Math.toIntExact(size));
-		for (int i = 0; i < size; i++) {
-			buf.put(slice.get(i));
+		else {
+			switch (size) {
+				case 1:
+					return new NestInteger(slice.get(NestBigInteger.ZERO) & 0xFF);
+				case 2:
+					return new NestInteger(
+							(slice.get(NestBigInteger.ZERO) & 0xFF)  |
+									(slice.get(NestBigInteger.ONE) & 0xFF) << 8
+					);
+				case 3:
+					return new NestInteger(
+							(slice.get(NestBigInteger.ZERO) & 0xFF) |
+									(slice.get(NestBigInteger.ONE) & 0xFF) << 8 |
+									(slice.get(NestBigInteger.TWO) & 0xFF) << 16
+					);
+				default:
+					byte[] bytes = slice.allBytes();
+					ByteUtils.reverseBytes(bytes);
+					return new NestInteger(new BigInteger(1, bytes));
+			}
 		}
-		buf.flip();
-		buf.order(ctx.getByteOrder());
-		long result;
-		switch (Math.toIntExact(size)) {
-			case 2: result = buf.getShort() & 0xFFFFL; break;
-			case 4: result = buf.getInt() & 0xFFFF_FFFFL; break;
-			case 8: result = buf.getLong(); break; // TODO: this is actually not an unsigned long
-			default: throw new RuntimeException("Non standard int size (" + size + ") not implemented");
-		}
-		return new NestInteger(result);
 	}
 }
