@@ -6,6 +6,7 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestInteger;
 import java.nio.ByteBuffer;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class UnsignedBytes extends PrimitiveToken {
 
@@ -45,7 +46,7 @@ public class UnsignedBytes extends PrimitiveToken {
 	}
 	
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (obj instanceof NestValue) {
 			return sameBytes((NestValue) obj);
 		}

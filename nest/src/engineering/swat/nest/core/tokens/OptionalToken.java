@@ -6,12 +6,14 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
 import java.util.function.BiFunction;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class OptionalToken<T extends Token> extends Token {
 	
-	private final T token;
+	private final @Nullable T token;
 
-	private OptionalToken(T token) {
+	private OptionalToken(@Nullable T token) {
 		this.token = token;
 	}
 	

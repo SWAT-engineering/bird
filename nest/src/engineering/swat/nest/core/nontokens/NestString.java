@@ -2,6 +2,7 @@ package engineering.swat.nest.core.nontokens;
 
 import java.nio.charset.Charset;
 import engineering.swat.nest.core.bytes.ByteSlice;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class NestString extends NonToken {
 
@@ -21,7 +22,7 @@ public class NestString extends NonToken {
 	}
 	
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (obj == null) {
 			return false;
 		}
