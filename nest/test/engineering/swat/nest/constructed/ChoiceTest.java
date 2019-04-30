@@ -1,7 +1,7 @@
 package engineering.swat.nest.constructed;
 
 import static engineering.swat.nest.CommonTestHelper.wrap;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URISyntaxException;
