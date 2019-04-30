@@ -39,12 +39,12 @@ public class TypeParameterTest {
 
         @Override
         public TrackedByteSlice getTrackedBytes() {
-            return field1.getTrackedBytes();
+            return buildTrackedView(field1, field2);
         }
 
         @Override
         public NestBigInteger size() {
-            return field1.size();
+            return field1.size().add(field2.size());
         }
     }
 
