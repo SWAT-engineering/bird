@@ -4,6 +4,7 @@ import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
+import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.TokenList;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
@@ -38,8 +39,8 @@ public class JPEG  {
 		}
 
 		@Override
-		public long size() {
-			return $dummy1.size() + $dummy2.size() + $dummy3.size();
+		public NestBigInteger size() {
+			return $dummy1.size().add($dummy2.size()).add($dummy3.size());
 		}
 	}
 	
@@ -53,11 +54,11 @@ public class JPEG  {
 		
 		public static Header parse(ByteStream source, Context ctx) {
 			UnsignedBytes marker = source.readUnsigned(1, ctx);
-			if (!(marker.asInteger().getValue() == 0xFF)) {
+			if (!(marker.getByteAt(NestBigInteger.ZERO) == 0xFF)) {
 				throw new ParseError("Header.marker", marker);
 			}
 			UnsignedBytes identifier = source.readUnsigned(1, ctx);
-			if (!(identifier.asInteger().getValue() == 0xD8)) {
+			if (!(identifier.getByteAt(NestBigInteger.ZERO) == 0xD8)) {
 				throw new ParseError("Header.identifier", identifier);
 			}
 			return new Header(marker, identifier);
@@ -69,8 +70,8 @@ public class JPEG  {
 		}
 
 		@Override
-		public long size() {
-			return marker.size() + identifier.size();
+		public NestBigInteger size() {
+			return marker.size().add(identifier.size());
 		}
 	}
 
@@ -95,7 +96,7 @@ public class JPEG  {
 		}
 
 		@Override
-		public long size() {
+		public NestBigInteger size() {
 			return entry.size();
 		}
 
@@ -116,15 +117,15 @@ public class JPEG  {
 
 		public static SizedSegment parse(ByteStream source, Context ctx) {
 			UnsignedBytes marker = source.readUnsigned(1, ctx);
-			if (!(marker.asInteger().getValue() == 0xFF)) {
+			if (!(marker.getByteAt(NestBigInteger.ZERO) == 0xFF)) {
 				throw new ParseError("SizedSegment.marker", marker);
 			}
 			UnsignedBytes identifier = source.readUnsigned(1, ctx);
-			if (!(identifier.asInteger().getValue() < 0xD8L || identifier.asInteger().getValue() > 0xDAL)) {
+			if (!(identifier.getByteAt(NestBigInteger.ZERO) < 0xD8 || identifier.getByteAt(NestBigInteger.ZERO) > 0xDA)) {
 				throw new ParseError("SizedSegment.identifier", identifier);
 			}
 			UnsignedBytes length = source.readUnsigned(2, ctx);
-			UnsignedBytes payload = source.readUnsigned(length.asInteger().getValue() - 2, ctx);
+			UnsignedBytes payload = source.readUnsigned(length.asInteger().getBigInteger().subtract(NestBigInteger.TWO), ctx);
 			return new SizedSegment(marker, identifier, length, payload);
 		}
 		
@@ -135,8 +136,8 @@ public class JPEG  {
 		}
 
 		@Override
-		public long size() {
-			return marker.size() + identifier.size() + length.size() + payload.size();
+		public NestBigInteger size() {
+			return marker.size().add(identifier.size()).add(length.size()).add(payload.size());
 		}
 	}
 
@@ -161,7 +162,7 @@ public class JPEG  {
 			
 			public static ScanEscape$1 parse(ByteStream source, Context ctx) {
 				UnsignedBytes scanData = source.readUnsigned(1, ctx);
-				if (!(scanData.asInteger().getValue() != 0xFF)) {
+				if (!(scanData.getByteAt(NestBigInteger.ZERO) != 0xFF)) {
 					throw new ParseError("ScanEscape$1.scanData", scanData);
 				}
 				return new ScanEscape$1(scanData);
@@ -173,7 +174,7 @@ public class JPEG  {
 			}
 
 			@Override
-			public long size() {
+			public NestBigInteger size() {
 				return scanData.size();
 			}
 		}
@@ -185,8 +186,9 @@ public class JPEG  {
 			
 			public static ScanEscape$2 parse(ByteStream source, Context ctx) {
 				UnsignedBytes escape = source.readUnsigned(2, ctx);
-				if (!(escape.asInteger().getValue() == 0xFF00 ||
-						(escape.asInteger().getValue() > 0xFFCF && escape.asInteger().getValue() < 0xFFD8))) {
+				if (!(escape.asInteger().getBigInteger().equals(NestBigInteger.of(0xFF00)) ||
+						(escape.asInteger().getBigInteger().compareTo(NestBigInteger.of(0xFFCF)) > 0 &&
+								escape.asInteger().getBigInteger().compareTo(NestBigInteger.of(0xFFD8)) < 0))) {
 					throw new ParseError("ScanEscape$2.escape", escape);
 				}
 				return new ScanEscape$2(escape);
@@ -198,7 +200,7 @@ public class JPEG  {
 			}
 
 			@Override
-			public long size() {
+			public NestBigInteger size() {
 				return escape.size();
 			}
 		}
@@ -208,7 +210,7 @@ public class JPEG  {
 		}
 
 		@Override
-		public long size() {
+		public NestBigInteger size() {
 			return entry.size();
 		}
 	}
@@ -232,15 +234,15 @@ public class JPEG  {
 		
 		public static ScanSegment parse(ByteStream source, Context ctx) {
 			UnsignedBytes marker = source.readUnsigned(1, ctx);
-			if (!(marker.asInteger().getValue() == 0xFF)) {
+            if (!(marker.getByteAt(NestBigInteger.ZERO) == 0xFF)) {
 				throw new ParseError("ScanSegment.marker", marker);
 			}
 			UnsignedBytes identifier = source.readUnsigned(1, ctx);
-			if (!(identifier.asInteger().getValue() == 0xDA)) {
+			if (!(identifier.getByteAt(NestBigInteger.ZERO) == 0xDA)) {
 				throw new ParseError("ScanSegment.identifier", identifier);
 			}
 			UnsignedBytes length = source.readUnsigned(2, ctx);
-			UnsignedBytes payload = source.readUnsigned(length.asInteger().getValue() - 2, ctx);
+			UnsignedBytes payload = source.readUnsigned(length.asInteger().getBigInteger().subtract(NestBigInteger.TWO), ctx);
 			TokenList<ScanEscape> choices = TokenList.untilParseFailure(source, ctx, ScanEscape::parse);
 			return new ScanSegment(marker, identifier, length, payload, choices);
 		}
@@ -251,8 +253,8 @@ public class JPEG  {
 		}
 
 		@Override
-		public long size() {
-			return marker.size() + identifier.size() + length.size() + payload.size() + choices.size();
+		public NestBigInteger size() {
+			return marker.size().add(identifier.size()).add(length.size()).add(payload.size()).add(choices.size());
 		}
 	}
 
@@ -266,11 +268,11 @@ public class JPEG  {
 		
 		public static Footer parse(ByteStream source, Context ctx) {
 			UnsignedBytes marker = source.readUnsigned(1, ctx);
-			if (!(marker.asInteger().getValue() == 0xFF)) {
+			if (!(marker.getByteAt(NestBigInteger.ZERO) == 0xFF)) {
 				throw new ParseError("Footer.marker", marker);
 			}
 			UnsignedBytes identifier = source.readUnsigned(1, ctx);
-			if (!(identifier.asInteger().getValue() == 0xD9)) {
+			if (!(identifier.getByteAt(NestBigInteger.ZERO) == 0xD9)) {
 				throw new ParseError("Footer.identifier", identifier);
 			}
 			return new Footer(marker, identifier);
@@ -282,8 +284,8 @@ public class JPEG  {
 		}
 
 		@Override
-		public long size() {
-			return marker.size() + identifier.size();
+		public NestBigInteger size() {
+			return marker.size().add(identifier.size());
 		}
 		
 	}

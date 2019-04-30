@@ -1,6 +1,7 @@
 package engineering.swat.nest.core.nontokens;
 
 import engineering.swat.nest.core.bytes.ByteSlice;
+import java.nio.ByteOrder;
 
 public class NonTokenBytes extends NonToken {
 
@@ -25,18 +26,23 @@ public class NonTokenBytes extends NonToken {
 		return new ByteSlice() {
 			
 			@Override
-			public long size() {
-				return bytes.length;
+			public NestBigInteger size() {
+				return NestBigInteger.of(bytes.length);
 			}
 			
 			@Override
-			public byte get(long index) {
-				if (index > bytes.length) {
+			public byte get(NestBigInteger index) {
+				int actualIndex = index.intValueExact();
+				if (actualIndex > bytes.length) {
 					throw new IndexOutOfBoundsException();
 				}
-				return bytes[Math.toIntExact(index)];
+				return bytes[actualIndex];
 			}
 		};
 	}
 
+	@Override
+	public ByteSlice getBytes(ByteOrder order) {
+		return getBytes();
+	}
 }

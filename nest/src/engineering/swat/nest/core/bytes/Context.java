@@ -1,10 +1,12 @@
 package engineering.swat.nest.core.bytes;
 
+import engineering.swat.nest.core.NestValue;
+import engineering.swat.nest.core.nontokens.NestBigInteger;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import engineering.swat.nest.core.nontokens.NestInteger;
-import engineering.swat.nest.core.nontokens.NestString;
 
 public class Context {
 
@@ -26,15 +28,22 @@ public class Context {
 		return new Context(encoding, endianness);
 	}
 
-	public NestInteger createInteger(ByteSlice bytes) {
-		return new NestInteger(bytes, endianness);
-	}
-
-	public NestString createString(ByteSlice bytes) {
-		return new NestString(bytes, encoding);
-	}
-
 	public ByteOrder getByteOrder() {
 	    return this.endianness;
+	}
+
+	public NestValue getStringBytes(String value) {
+	    ByteBuffer bytes = encoding.encode(value);
+		return () -> new ByteSlice() {
+			@Override
+			public NestBigInteger size() {
+			    return NestBigInteger.of(bytes.limit());
+			}
+
+			@Override
+			public byte get(NestBigInteger index) {
+			    return bytes.get(index.intValueExact());
+			}
+		};
 	}
 }

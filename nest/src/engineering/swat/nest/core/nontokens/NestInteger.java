@@ -1,36 +1,54 @@
 package engineering.swat.nest.core.nontokens;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import engineering.swat.nest.core.bytes.ByteSlice;
 
-public class NestInteger extends NonToken {
+public class NestInteger extends NonToken  {
 
-	private final long value;
+	private final NestBigInteger value;
 
-	public NestInteger(ByteSlice bytes, ByteOrder endianness) {
-		ByteBuffer buf = ByteBuffer.wrap(bytes.allBytes());
-		buf.order(endianness);
-		switch (buf.remaining()) {
-			case 1: this.value = buf.get() & 0xFFL; break;
-			case 2: this.value = buf.getShort() & 0xFFFFL; break;
-			case 4: this.value = buf.getInt() & 0xFFFF_FFFFL; break;
-			case 8: this.value = buf.getLong(); break;
-			default: throw new IllegalArgumentException("Cannot construct an integer from: " + buf.remaining() + "bytes");
-		}
+	public NestInteger(int value) {
+		this(NestBigInteger.of(value));
 	}
 
-	public NestInteger(long value) {
+	public NestInteger(BigInteger bigInteger) {
+	    this(NestBigInteger.of(bigInteger));
+	}
+	public NestInteger(NestBigInteger value) {
 		this.value = value;
 	}
 
+
 	@Override
-	public ByteSlice getBytes() {
-		throw new RuntimeException("Unsupported operation");
+	public ByteSlice getBytes(ByteOrder order) {
+		byte[] bytes = value.getBytes(order);
+		return new ByteSlice() {
+			@Override
+			public NestBigInteger size() {
+				return NestBigInteger.of(bytes.length);
+			}
+
+			@Override
+			public byte get(NestBigInteger index) {
+				int pos = index.intValueExact();
+				if (pos > bytes.length) {
+					throw new IndexOutOfBoundsException();
+				}
+				return bytes[pos];
+			}
+		};
 	}
 
-	public long getValue() {
+	public NestBigInteger getBigInteger() {
 		return value;
 	}
 
+	public int intValueExact() {
+		return value.intValueExact();
+	}
+	public long longValueExact() {
+		return value.longValueExact();
+	}
 }

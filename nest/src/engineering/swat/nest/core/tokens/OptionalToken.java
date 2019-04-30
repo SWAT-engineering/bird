@@ -5,8 +5,8 @@ import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
+import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.util.function.BiFunction;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class OptionalToken<T extends Token> extends Token {
@@ -33,17 +33,17 @@ public class OptionalToken<T extends Token> extends Token {
 		if (token == null) {
 			return new TrackedByteSlice() {
 				@Override
-				public ByteOrigin getOrigin(long index) {
+				public ByteOrigin getOrigin(NestBigInteger index) {
 					throw new IndexOutOfBoundsException();
 				}
 
 				@Override
-				public long size() {
-					return 0;
+				public NestBigInteger size() {
+					return NestBigInteger.ZERO;
 				}
 
 				@Override
-				public byte get(long index) {
+				public byte get(NestBigInteger index) {
 					throw new IndexOutOfBoundsException();
 				}
 			};
@@ -52,9 +52,9 @@ public class OptionalToken<T extends Token> extends Token {
 	}
 
 	@Override
-	public long size() {
+	public NestBigInteger size() {
 		if (token == null) {
-			return 0;
+			return NestBigInteger.ZERO;
 		}
 		return token.size();
 	}

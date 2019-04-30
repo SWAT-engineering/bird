@@ -1,5 +1,6 @@
 package engineering.swat.nest.core.tokens;
 
+import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -17,27 +18,21 @@ public class TokenList<T extends Token> extends Token {
 
 	private TokenList(List<T> contents) {
 		this.contents = contents;
-		long[] offsets = new long[contents.size()];
-		long currentOffset = 0;
-		for (int i = 0; i < offsets.length; i++) {
-			offsets[i] = currentOffset;
-			long currentSize = contents.get(i).size();
-			currentOffset += currentSize;
-		}
-		byteView = new MultipleTokenByteSlice<>(contents, offsets, currentOffset);
+		byteView = MultipleTokenByteSlice.buildByteView(contents);
 	}
 
+
 	public static <T extends Token> TokenList<T> untilParseFailure(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser) {
-		long consumedOffset = source.getOffset();
+		ByteStream lastSuccess = source.fork();
 		List<T> result = new ArrayList<>();
 		while (true) {
 			try {
 				T newValue = parser.apply(source, ctx);
-				consumedOffset = source.getOffset();
+				lastSuccess = source.fork();
 				result.add(newValue);
 			}
 			catch (ParseError e) {
-				source.setOffset(consumedOffset); // reset the stream to the end of the last succesfull parse
+                source.sync(lastSuccess); // reset the stream to the end of the last succesfull parse
 				break;
 			}
 		}
@@ -62,7 +57,7 @@ public class TokenList<T extends Token> extends Token {
 	}
 
 	@Override
-	public long size() {
+	public NestBigInteger size() {
 	    return byteView.size();
 	}
 

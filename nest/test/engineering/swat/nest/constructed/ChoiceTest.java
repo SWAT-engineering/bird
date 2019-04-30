@@ -4,6 +4,7 @@ import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.net.URISyntaxException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -21,19 +22,19 @@ import engineering.swat.nest.core.tokens.operations.Choice.Case;
 public class ChoiceTest {
 	@Test
 	void testChoiceAParses() throws URISyntaxException {
-		assertEquals(2, AorB.parse(wrap(1), Context.DEFAULT).virtualField.getValue());
+		assertEquals(2, AorB.parse(wrap(1), Context.DEFAULT).virtualField.intValueExact());
 	}
 
 	@Test
 	void testChoiceBParses() throws URISyntaxException {
-		assertEquals(4, AorB.parse(wrap(2), Context.DEFAULT).virtualField.getValue());
-		assertEquals(2, AorB.parse(wrap(2), Context.DEFAULT).x.asInteger().getValue());
+		assertEquals(4, AorB.parse(wrap(2), Context.DEFAULT).virtualField.intValueExact());
+		assertEquals(2, AorB.parse(wrap(2), Context.DEFAULT).x.asInteger().intValueExact());
 	}
 
 	@Test
 	void testChoiceFails() throws URISyntaxException {
 		assertThrows(ParseError.class, () -> {
-			AorB.parse(wrap(3), Context.DEFAULT).virtualField.getValue();
+			AorB.parse(wrap(3), Context.DEFAULT).virtualField.intValueExact();
 		});
 	}
 
@@ -70,7 +71,7 @@ public class ChoiceTest {
 		}
 
 		@Override
-		public long size() {
+		public NestBigInteger size() {
 			return entry.size();
 		}
 	}

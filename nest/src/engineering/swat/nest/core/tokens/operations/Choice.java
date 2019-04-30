@@ -11,18 +11,16 @@ public class Choice {
 
 	@SafeVarargs
 	public static Token between(ByteStream source, Context ctx, Case<? extends Token>... cases) {
-		long startOffset = source.getOffset();
+		ByteStream backup = source.fork();
 		for (Case<?> c: cases) {
 			try {
 				return c.parse(source, ctx);
 			}
 			catch (ParseError e) {
-				source.setOffset(startOffset); // reset stream to begin
-				continue;
+			    source.sync(backup); // reset the stream to before the parse
 			}
 		}
 		throw new ParseError("None of the choices parsed");
-		
 	}
 
 	public static final class Case<T extends Token> {
@@ -37,7 +35,6 @@ public class Choice {
 
 		public static <T extends Token> Case<T> of(BiFunction<ByteStream, Context, T> parse, Consumer<T> successHandler) {
 			return new Case<>(parse, successHandler);
-			
 		}
 
 		public Token parse(ByteStream source, Context ctx) {
