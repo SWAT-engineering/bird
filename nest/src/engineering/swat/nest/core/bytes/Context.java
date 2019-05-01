@@ -44,4 +44,8 @@ public class Context {
 			}
 		};
 	}
+
+	public String toString(ByteSlice slice) {
+		return new String(slice.allBytes(), encoding);
+	}
 }
