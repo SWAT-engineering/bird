@@ -9,6 +9,7 @@ import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
+import java.util.function.Predicate;
 
 public class TokenList<T extends Token> extends Token {
 
@@ -22,6 +23,14 @@ public class TokenList<T extends Token> extends Token {
 	}
 
 
+	/**
+	 *
+	 * @param source
+	 * @param ctx
+	 * @param parser
+	 * @param <T>
+	 * @return
+	 */
 	public static <T extends Token> TokenList<T> untilParseFailure(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser) {
 		ByteStream lastSuccess = source.fork();
 		List<T> result = new ArrayList<>();
@@ -39,6 +48,15 @@ public class TokenList<T extends Token> extends Token {
 		return new TokenList<>(result);
 	}
 
+	/**
+	 *
+	 * @param source
+	 * @param ctx
+	 * @param parser
+	 * @param times
+	 * @param <T>
+	 * @return
+	 */
 	public static <T extends Token> TokenList<T> times(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser, int times) {
 		List<T> result = new ArrayList<>(times);
 		for (int i = 0; i < times; i++) {
@@ -46,7 +64,32 @@ public class TokenList<T extends Token> extends Token {
 		}
 		return new TokenList<>(result);
 	}
-	
+
+	/**
+	 *
+	 * @param source
+	 * @param ctx
+	 * @param parser
+	 * @param whileCondition
+	 * @param <T>
+	 * @return
+	 */
+	public static <T extends Token> TokenList<T> parseWhile(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser, Predicate<T> whileCondition) {
+		List<T> result = new ArrayList<>();
+		while (true) {
+			ByteStream lastSuccess = source.fork();
+			T parsedValue = parser.apply(source, ctx);
+			if (whileCondition.test(parsedValue)) {
+				result.add(parsedValue);
+			}
+			else {
+				source.sync(lastSuccess);
+				break;
+			}
+		}
+		return new TokenList<>(result);
+    }
+
 	public static <T extends Token> TokenList<T> of(T... nestedTokens) {
 		return new TokenList<T>(Arrays.asList(nestedTokens));
 	}
@@ -59,6 +102,11 @@ public class TokenList<T extends Token> extends Token {
 	@Override
 	public NestBigInteger size() {
 	    return byteView.size();
+	}
+
+	public int length() {
+		return contents.size();
+
 	}
 
 }
