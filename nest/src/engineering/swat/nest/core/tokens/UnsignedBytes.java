@@ -103,6 +103,7 @@ public class UnsignedBytes extends PrimitiveToken {
 		}
 	}
 
+	@Override
 	public String asString() {
 		return ctx.buildString(slice);
 	}

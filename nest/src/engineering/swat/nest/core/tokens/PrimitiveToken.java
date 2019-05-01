@@ -11,4 +11,5 @@ public abstract class PrimitiveToken extends Token {
 	}
 
 	public abstract NestBigInteger asInteger();
+	public abstract String asString();
 }
