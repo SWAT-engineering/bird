@@ -6,6 +6,9 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.function.BiFunction;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -83,31 +86,7 @@ public class TerminatedToken<E extends Token, T extends Token> extends UserDefin
 
     @Override
     public TrackedByteSlice getTrackedBytes() {
-        TrackedByteSlice bodyTracked = body.getTrackedBytes();
-        TrackedByteSlice terminatorTracked = terminator.getTrackedBytes();
-        NestBigInteger bodySize = bodyTracked.size();
-        return new TrackedByteSlice() {
-            @Override
-            public ByteOrigin getOrigin(NestBigInteger index) {
-                if (index.compareTo(bodySize) <= 0) {
-                    return bodyTracked.getOrigin(index);
-                }
-                return terminatorTracked.getOrigin(index.subtract(bodySize));
-            }
-
-            @Override
-            public NestBigInteger size() {
-                return bodySize.add(terminatorTracked.size());
-            }
-
-            @Override
-            public byte get(NestBigInteger index) {
-                if (index.compareTo(bodySize) <= 0) {
-                    return bodyTracked.get(index);
-                }
-                return terminatorTracked.get(index.subtract(bodySize));
-            }
-        };
+        return MultipleTokenByteSlice.buildByteView(Arrays.asList(body, terminator));
     }
 
     @Override
