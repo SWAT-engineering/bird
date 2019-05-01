@@ -12,6 +12,8 @@ import engineering.swat.nest.core.tokens.TerminatedToken;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+import org.checkerframework.checker.nullness.Opt;
 import org.junit.jupiter.api.Test;
 
 public class UntilTest {
@@ -60,9 +62,9 @@ public class UntilTest {
                 (s, c) -> {
                     UnsignedBytes parsedChar = s.readUnsigned(1, c);
                     if (parsedChar.getByteAt(NestBigInteger.ZERO) != 'c') {
-                        throw new ParseError("Failed at c", parsedChar);
+                        return Optional.empty();
                     }
-                    return parsedChar;
+                    return Optional.of(parsedChar);
                 });
     }
 

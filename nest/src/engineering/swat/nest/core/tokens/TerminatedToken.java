@@ -9,6 +9,7 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -49,7 +50,7 @@ public class TerminatedToken<E extends Token, T extends Token> extends UserDefin
     public static <E extends Token, T extends Token> TerminatedToken<E,T> parseUntil(ByteStream source, Context ctx,
             NestBigInteger initialCheck, NestBigInteger stepSize, @Nullable NestBigInteger maxLength,
             BiFunction<TrackedByteSlice, Context, E> entryParser,
-            BiFunction<ByteStream, Context, T> terminatorParser) {
+            BiFunction<ByteStream, Context, Optional<T>> terminatorParser) {
         if (stepSize.isNegative() || stepSize.isZero()) {
             throw new IllegalArgumentException("stepSize should be positive");
         }
@@ -68,17 +69,21 @@ public class TerminatedToken<E extends Token, T extends Token> extends UserDefin
         NestBigInteger terminatorMax = maxLength == null ? null :  source.getOffset().add(maxLength);
         while (terminatorMax == null || terminatorCursor.compareTo(terminatorMax) <= 0) {
             ByteStream terminatorStream = source.fork(terminatorCursor);
+            Optional<T> terminator;
             try {
-                T terminator = terminatorParser.apply(terminatorStream, ctx);
+                terminator = terminatorParser.apply(terminatorStream, ctx);
+            } catch (ParseError e) {
+                terminator = Optional.empty();
+            }
+            if (terminator.isPresent()) {
                 // we have found the terminator, let's now parse E
                 NestBigInteger entrySize = terminatorCursor.subtract(source.getOffset());
                 E entry = entryParser.apply(source.readSlice(entrySize), ctx);
                 // now forward the source stream to after the terminator
                 source.sync(terminatorStream);
-                return new TerminatedToken<>(entry, terminator);
-            } catch (ParseError e) {
-                terminatorCursor = terminatorCursor.add(stepSize);
+                return new TerminatedToken<>(entry, terminator.get());
             }
+            terminatorCursor = terminatorCursor.add(stepSize);
         }
         throw new ParseError("Max reached before we could parse the terminator (" + terminatorCursor + "/" + terminatorMax + ")");
     }
