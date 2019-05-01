@@ -70,6 +70,9 @@ class NestBigIntegerInt implements NestBigInteger {
     public NestBigInteger add(NestBigInteger val) {
         if (val instanceof NestBigIntegerInt) {
             int otherValue = ((NestBigIntegerInt)val).value;
+            if (otherValue == 0) {
+                return this;
+            }
 
             int result = value + otherValue;
             if (((otherValue ^ result) & (value ^ result)) >= 0) {
@@ -84,6 +87,9 @@ class NestBigIntegerInt implements NestBigInteger {
     public NestBigInteger subtract(NestBigInteger val) {
         if (val instanceof NestBigIntegerInt) {
             int otherValue = ((NestBigIntegerInt)val).value;
+            if (otherValue == 0) {
+                return this;
+            }
 
             int result = value - otherValue;
             if (((value ^ otherValue) & (otherValue ^ result)) >= 0) {
@@ -97,6 +103,9 @@ class NestBigIntegerInt implements NestBigInteger {
     public NestBigInteger multiply(NestBigInteger val) {
         if (val instanceof NestBigIntegerInt) {
             int otherValue = ((NestBigIntegerInt)val).value;
+            if (otherValue == 0) {
+                return ofInt(0);
+            }
 
             long result = (long)otherValue * (long)value;
             if ((int)result == result) {
@@ -219,6 +228,21 @@ class NestBigIntegerInt implements NestBigInteger {
     }
 
     @Override
+    public boolean isNegative() {
+        return value < 0;
+    }
+
+    @Override
+    public boolean isPositive() {
+        return value >= 0;
+    }
+
+    @Override
+    public boolean isZero() {
+        return value == 0;
+    }
+
+    @Override
     public ByteSlice getBytes(ByteOrder order) {
         return ByteSlice.wrap(order == ByteOrder.BIG_ENDIAN ? getBigEndianBytes() : getLittleEndianBytes());
     }
@@ -279,6 +303,11 @@ class NestBigIntegerInt implements NestBigInteger {
                     (byte) (value & 0xFF)
             };
         }
+    }
+
+    @Override
+    public String toString() {
+        return Integer.toString(value);
     }
 
 }

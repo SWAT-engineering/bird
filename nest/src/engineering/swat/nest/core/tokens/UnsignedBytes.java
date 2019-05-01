@@ -102,4 +102,8 @@ public class UnsignedBytes extends PrimitiveToken {
 			}
 		}
 	}
+
+	public String asString() {
+		return ctx.buildString(slice);
+	}
 }

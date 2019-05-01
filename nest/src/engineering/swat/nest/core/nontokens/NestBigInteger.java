@@ -45,4 +45,8 @@ public interface NestBigInteger extends Comparable<NestBigInteger> {
     static NestBigInteger of(BigInteger value) {
         return NestBigIntegerImplementations.of(value);
     }
+
+    boolean isNegative();
+    boolean isZero();
+    boolean isPositive();
 }

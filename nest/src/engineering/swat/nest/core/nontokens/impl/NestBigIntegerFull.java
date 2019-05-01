@@ -108,6 +108,21 @@ public class NestBigIntegerFull implements NestBigInteger {
     }
 
     @Override
+    public boolean isNegative() {
+        return value.signum() < 0;
+    }
+
+    @Override
+    public boolean isPositive() {
+        return !isNegative();
+    }
+
+    @Override
+    public boolean isZero() {
+        return value.signum() == 0;
+    }
+
+    @Override
     public ByteSlice getBytes(ByteOrder order) {
         byte[] bytes = value.toByteArray();
         if (order == ByteOrder.LITTLE_ENDIAN) {
@@ -124,5 +139,10 @@ public class NestBigIntegerFull implements NestBigInteger {
     @Override
     public int compareTo(NestBigInteger o) {
         return value.compareTo(o.toBigInteger());
+    }
+
+    @Override
+    public String toString() {
+        return value.toString();
     }
 }

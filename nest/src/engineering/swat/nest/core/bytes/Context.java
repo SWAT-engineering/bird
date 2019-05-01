@@ -44,4 +44,8 @@ public class Context {
 			}
 		};
 	}
+
+	public String buildString(TrackedByteSlice slice) {
+	    return new String(slice.allBytes(), encoding);
+	}
 }
