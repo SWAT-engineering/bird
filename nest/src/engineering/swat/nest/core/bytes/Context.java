@@ -1,10 +1,13 @@
 package engineering.swat.nest.core.bytes;
 
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import engineering.swat.nest.core.nontokens.NestValue;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class Context {
 
@@ -45,7 +48,26 @@ public class Context {
 		};
 	}
 
-	public String toString(ByteSlice slice) {
-		return new String(slice.allBytes(), encoding);
+	public Charset getEncoding() {
+		return encoding;
+	}
+
+
+	@Override
+	public boolean equals(@Nullable Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		Context context = (Context) o;
+		return endianness.equals(context.endianness) &&
+				encoding.equals(context.encoding);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(endianness, encoding);
 	}
 }

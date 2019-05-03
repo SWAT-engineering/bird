@@ -1,7 +1,6 @@
-package engineering.swat.nest.core.nontokens.impl;
+package engineering.swat.nest.core.nontokens;
 
 import engineering.swat.nest.core.bytes.ByteSlice;
-import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -35,16 +34,13 @@ class NestBigIntegerInt implements NestBigInteger {
 
     @Override
     public int hashCode() {
-        return 7 * value;
+        return 9 * value;
     }
 
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof NestBigIntegerInt) {
             return ((NestBigIntegerInt)obj).value == value;
-        }
-        if (obj instanceof NestBigInteger) {
-            return compareTo((NestBigInteger)obj) == 0;
         }
         return false;
     }
@@ -70,6 +66,9 @@ class NestBigIntegerInt implements NestBigInteger {
     public NestBigInteger add(NestBigInteger val) {
         if (val instanceof NestBigIntegerInt) {
             int otherValue = ((NestBigIntegerInt)val).value;
+            if (otherValue == 0) {
+                return this;
+            }
 
             int result = value + otherValue;
             if (((otherValue ^ result) & (value ^ result)) >= 0) {
@@ -84,6 +83,9 @@ class NestBigIntegerInt implements NestBigInteger {
     public NestBigInteger subtract(NestBigInteger val) {
         if (val instanceof NestBigIntegerInt) {
             int otherValue = ((NestBigIntegerInt)val).value;
+            if (otherValue == 0) {
+                return this;
+            }
 
             int result = value - otherValue;
             if (((value ^ otherValue) & (otherValue ^ result)) >= 0) {
@@ -97,6 +99,9 @@ class NestBigIntegerInt implements NestBigInteger {
     public NestBigInteger multiply(NestBigInteger val) {
         if (val instanceof NestBigIntegerInt) {
             int otherValue = ((NestBigIntegerInt)val).value;
+            if (otherValue == 0) {
+                return ofInt(0);
+            }
 
             long result = (long)otherValue * (long)value;
             if ((int)result == result) {
@@ -144,61 +149,6 @@ class NestBigIntegerInt implements NestBigInteger {
     }
 
     @Override
-    public NestBigInteger shr(NestBigInteger val) {
-        if (val instanceof NestBigIntegerInt) {
-            return ofInt(value >> ((NestBigIntegerInt)val).value);
-        }
-        return ofInt(0);
-    }
-
-    private static long INT_BITS = 0xFFFF_FFFFL;
-
-    @Override
-    public NestBigInteger shl(NestBigInteger val) {
-        if (val instanceof NestBigIntegerInt) {
-            int distance = ((NestBigIntegerInt) val).value;
-            if (distance <= 31) {
-                // we might fit
-                long result = value << distance;
-                if ((result & INT_BITS) == result) {
-                    return ofInt((int)(result & INT_BITS));
-                }
-            }
-            return NestBigIntegerImplementations.of(toBigInteger().shiftLeft(distance));
-        }
-        throw new IllegalArgumentException("Cannot shift more than int bits");
-    }
-
-    @Override
-    public NestBigInteger and(NestBigInteger val) {
-        if (val instanceof NestBigIntegerInt) {
-            return ofInt(value & ((NestBigIntegerInt) val).value);
-        }
-        return val.add(this);
-    }
-
-    @Override
-    public NestBigInteger or(NestBigInteger val) {
-        if (val instanceof NestBigIntegerInt) {
-            return ofInt(value | ((NestBigIntegerInt) val).value);
-        }
-        return val.or(this);
-    }
-
-    @Override
-    public NestBigInteger not() {
-        return ofInt(~value);
-    }
-
-    @Override
-    public NestBigInteger xor(NestBigInteger val) {
-        if (val instanceof NestBigIntegerInt) {
-            return ofInt(value ^ ((NestBigIntegerInt) val).value);
-        }
-        return val.xor(this);
-    }
-
-    @Override
     public int intValueExact() {
         return value;
     }
@@ -219,8 +169,28 @@ class NestBigIntegerInt implements NestBigInteger {
     }
 
     @Override
-    public ByteSlice getBytes(ByteOrder order) {
-        return ByteSlice.wrap(order == ByteOrder.BIG_ENDIAN ? getBigEndianBytes() : getLittleEndianBytes());
+    public boolean isNegative() {
+        return value < 0;
+    }
+
+    @Override
+    public boolean isPositive() {
+        return value >= 0;
+    }
+
+    @Override
+    public boolean isZero() {
+        return value == 0;
+    }
+
+    @Override
+    public byte[] getBytes(ByteOrder order) {
+        return order == ByteOrder.BIG_ENDIAN ? getBigEndianBytes() : getLittleEndianBytes();
+    }
+
+    @Override
+    public ByteSlice getBytesSlice(ByteOrder order) {
+        return ByteSlice.wrap(getBytes(order));
     }
 
     private byte[] getLittleEndianBytes() {
@@ -280,5 +250,12 @@ class NestBigIntegerInt implements NestBigInteger {
             };
         }
     }
+
+    @Override
+    public String toString() {
+        return Integer.toString(value);
+    }
+
+
 
 }

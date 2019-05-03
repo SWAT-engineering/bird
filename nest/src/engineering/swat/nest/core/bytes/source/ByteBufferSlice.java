@@ -1,6 +1,7 @@
 package engineering.swat.nest.core.bytes.source;
 
 import engineering.swat.nest.core.ParseError;
+import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.net.URI;
@@ -48,7 +49,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
 
     @Override
     public NestBigInteger size() {
-        return NestBigInteger.of(limit - offset);
+        return NestBigInteger.of(nativeSize());
     }
 
     @Override
@@ -58,5 +59,36 @@ public class ByteBufferSlice implements TrackedByteSlice {
             throw new IndexOutOfBoundsException();
         }
         return source.get(pos);
+    }
+
+    private int nativeSize() {
+        return limit - offset;
+    }
+
+    @Override
+    public boolean sameBytes(ByteSlice bytes) {
+        if (bytes instanceof ByteBufferSlice) {
+            ByteBufferSlice otherSlice = (ByteBufferSlice) bytes;
+            if (otherSlice.nativeSize() != nativeSize()) {
+                return false;
+            }
+            for (int cursor = 0; cursor < nativeSize(); cursor++) {
+                if (source.get(offset + cursor) != otherSlice.source.get(otherSlice.offset + cursor)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else {
+            if (!bytes.size().equals(size())) {
+                return false;
+            }
+            for (int cursor = 0; cursor < nativeSize(); cursor++) {
+                if (source.get(offset + cursor) != bytes.get(NestBigInteger.of(cursor))) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }

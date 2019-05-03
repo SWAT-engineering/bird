@@ -1,15 +1,14 @@
 package engineering.swat.nest.core.tokens;
 
-import engineering.swat.nest.core.bytes.ByteSlice;
-import engineering.swat.nest.core.bytes.ByteUtils;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
-import java.math.BigInteger;
-import java.nio.ByteOrder;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import engineering.swat.nest.core.nontokens.NestValue;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-public class UnsignedBytes extends PrimitiveToken {
+public class UnsignedBytes extends PrimitiveToken implements Iterable<UnsignedByte> {
 
 	private final TrackedByteSlice slice;
 
@@ -20,19 +19,6 @@ public class UnsignedBytes extends PrimitiveToken {
 
 	public int getByteAt(NestBigInteger position) {
 	    return slice.getUnsigned(position);
-	}
-
-	public boolean sameBytes(ByteSlice other) {
-		if (!other.size().equals(slice.size())) {
-			return false;
-		}
-		NestBigInteger size = slice.size();
-		for (NestBigInteger i = NestBigInteger.ZERO; i.compareTo(size) < 0; i = i.add(NestBigInteger.ONE)) {
-			if (other.get(i) != slice.get(i)) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	@Override
@@ -47,59 +33,31 @@ public class UnsignedBytes extends PrimitiveToken {
 	
 	@Override
 	public String toString() {
-		return "Unsiged bytes:" + slice;
+		return "u8[]:" + slice;
 	}
-	
-	@Override
-	public boolean equals(@Nullable Object obj) {
-		if (obj instanceof Token) {
-			return sameBytes(((Token) obj).getTrackedBytes());
+
+
+	public List<UnsignedByte> bytes() {
+		NestBigInteger size = slice.size();
+	    List<UnsignedByte> result = new ArrayList<>(size.intValueExact());
+	    for (NestBigInteger c = NestBigInteger.ZERO; c.compareTo(size) < 0; c = c.add(NestBigInteger.ONE)) {
+	    	result.add(new UnsignedByte(slice.slice(c, NestBigInteger.ONE), ctx));
 		}
-		return false;
+	    return result;
 	}
 
 	@Override
-	public NestBigInteger asInteger() {
-		int size = slice.size().intValueExact();
-		if (ctx.getByteOrder() == ByteOrder.BIG_ENDIAN) {
-			switch (size) {
-				case 1:
-					return NestBigInteger.of(slice.get(NestBigInteger.ZERO) & 0xFF);
-				case 2:
-					return NestBigInteger.of(
-							(slice.get(NestBigInteger.ZERO) & 0xFF) << 8 |
-									(slice.get(NestBigInteger.ONE) & 0xFF)
-					);
-				case 3:
-					return NestBigInteger.of(
-							(slice.get(NestBigInteger.ZERO) & 0xFF) << 16 |
-									(slice.get(NestBigInteger.ONE) & 0xFF) << 8 |
-									(slice.get(NestBigInteger.TWO) & 0xFF)
-					);
-				default:
-					return NestBigInteger.of(new BigInteger(1, slice.allBytes()));
-			}
-		}
-		else {
-			switch (size) {
-				case 1:
-					return NestBigInteger.of(slice.get(NestBigInteger.ZERO) & 0xFF);
-				case 2:
-					return NestBigInteger.of(
-							(slice.get(NestBigInteger.ZERO) & 0xFF)  |
-									(slice.get(NestBigInteger.ONE) & 0xFF) << 8
-					);
-				case 3:
-					return NestBigInteger.of(
-							(slice.get(NestBigInteger.ZERO) & 0xFF) |
-									(slice.get(NestBigInteger.ONE) & 0xFF) << 8 |
-									(slice.get(NestBigInteger.TWO) & 0xFF) << 16
-					);
-				default:
-					byte[] bytes = slice.allBytes();
-					ByteUtils.reverseBytes(bytes);
-					return NestBigInteger.of(new BigInteger(1, bytes));
-			}
-		}
+	public NestValue asValue() {
+		return new NestValue(slice, ctx);
+	}
+
+	@Override
+	public String asString() {
+		return new String(slice.allBytes(), ctx.getEncoding());
+	}
+
+	@Override
+	public Iterator<UnsignedByte> iterator() {
+	    return bytes().iterator();
 	}
 }

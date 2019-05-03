@@ -8,6 +8,7 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
+import engineering.swat.nest.core.tokens.UnsignedByte;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import java.util.function.BiFunction;
@@ -17,9 +18,9 @@ public class TypeParameterTest {
 
     @Test
     void twoByteDoubleParseWithT() {
-        GenT<UnsignedBytes> parsed = GenT.parse(wrap(1, 2), Context.DEFAULT, (s,c) -> s.readUnsigned(1, c));
-        assertEquals(1, parsed.field1.asInteger().intValueExact());
-        assertEquals(2, parsed.field2.asInteger().intValueExact());
+        GenT<UnsignedByte> parsed = GenT.parse(wrap(1, 2), Context.DEFAULT, (s,c) -> s.readUnsigned(c));
+        assertEquals(1, parsed.field1.get());
+        assertEquals(2, parsed.field2.get());
     }
 
 

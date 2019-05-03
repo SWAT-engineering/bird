@@ -4,7 +4,10 @@ import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import engineering.swat.nest.core.nontokens.NestValue;
+import engineering.swat.nest.core.tokens.UnsignedByte;
 import java.net.URISyntaxException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -27,7 +30,7 @@ public class ChoiceTest {
 	@Test
 	void testChoiceBParses() throws URISyntaxException {
 		assertEquals(4, AorB.parse(wrap(2), Context.DEFAULT).virtualField.intValueExact());
-		assertEquals(2, AorB.parse(wrap(2), Context.DEFAULT).x.asInteger().intValueExact());
+		assertEquals(2, AorB.parse(wrap(2), Context.DEFAULT).x.get());
 	}
 
 	@Test
@@ -40,9 +43,9 @@ public class ChoiceTest {
 	
 	private static final class AorB extends UserDefinedToken {
 		public final NestBigInteger virtualField;
-		public final UnsignedBytes x;
+		public final UnsignedByte x;
 		public final Token entry;
-		private AorB(Token entry, NestBigInteger virtualField, UnsignedBytes x) {
+		private AorB(Token entry, NestBigInteger virtualField, UnsignedByte x) {
 			this.entry = entry;
 			this.virtualField = virtualField;
 			this.x = x;
@@ -50,7 +53,7 @@ public class ChoiceTest {
 		
 		public static AorB parse(ByteStream source, Context ctx) {
 			final AtomicReference<NestBigInteger> virtualField = new AtomicReference<>();
-			final AtomicReference<UnsignedBytes> x = new AtomicReference<>();
+			final AtomicReference<UnsignedByte> x = new AtomicReference<>();
 			Token entry = Choice.between(source, ctx,
 					Case.of((s, c) -> A.parse(s, c), a -> {
 						virtualField.set(a.virtualField);
