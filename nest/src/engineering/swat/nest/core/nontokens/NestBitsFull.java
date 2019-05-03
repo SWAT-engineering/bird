@@ -6,6 +6,7 @@ import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.BitSet;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 class NestBitsFull implements NestBits {
 
@@ -110,7 +111,7 @@ class NestBitsFull implements NestBits {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable Object obj) {
         if (obj instanceof NestBitsFull) {
             return minByteSize == ((NestBitsFull) obj).minByteSize && value.equals(((NestBitsFull) obj).value);
         }

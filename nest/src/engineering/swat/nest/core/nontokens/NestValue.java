@@ -5,6 +5,7 @@ import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Nest Value automatically translates between implementations depending on the operation
@@ -206,7 +207,7 @@ public class NestValue {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable Object obj) {
         if (obj == this) {
             return true;
         }

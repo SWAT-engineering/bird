@@ -4,6 +4,7 @@ import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.ByteUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 class NestBigIntegerFull implements NestBigInteger {
     private final BigInteger value;
@@ -121,7 +122,7 @@ class NestBigIntegerFull implements NestBigInteger {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable Object obj) {
         if (obj instanceof NestBigIntegerFull) {
             return value.equals(((NestBigIntegerFull) obj).value);
         }

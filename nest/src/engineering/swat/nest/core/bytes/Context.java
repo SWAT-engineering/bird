@@ -7,6 +7,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class Context {
 
@@ -53,7 +54,7 @@ public class Context {
 
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

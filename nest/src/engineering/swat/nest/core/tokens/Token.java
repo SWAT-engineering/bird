@@ -4,6 +4,7 @@ import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.nio.ByteOrder;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public abstract class Token {
 	public abstract TrackedByteSlice getTrackedBytes();
@@ -14,7 +15,7 @@ public abstract class Token {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		throw new UnsupportedOperationException("Do not call equals on tokens, use sameBytes, or compare the slice from getTrackedBytes");
 	}
 }
