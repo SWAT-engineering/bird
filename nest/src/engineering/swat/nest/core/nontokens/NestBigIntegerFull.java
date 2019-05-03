@@ -1,12 +1,11 @@
-package engineering.swat.nest.core.nontokens.impl;
+package engineering.swat.nest.core.nontokens;
 
 import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.ByteUtils;
-import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 
-public class NestBigIntegerFull implements NestBigInteger {
+class NestBigIntegerFull implements NestBigInteger {
     private final BigInteger value;
 
     NestBigIntegerFull(BigInteger value) {
@@ -15,32 +14,32 @@ public class NestBigIntegerFull implements NestBigInteger {
 
     @Override
     public NestBigInteger add(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.add(val.toBigInteger()));
+        return NestBigInteger.of(value.add(val.toBigInteger()));
     }
 
     @Override
     public NestBigInteger subtract(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.subtract(val.toBigInteger()));
+        return NestBigInteger.of(value.subtract(val.toBigInteger()));
     }
 
     @Override
     public NestBigInteger multiply(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.multiply(val.toBigInteger()));
+        return NestBigInteger.of(value.multiply(val.toBigInteger()));
     }
 
     @Override
     public NestBigInteger divide(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.divide(val.toBigInteger()));
+        return NestBigInteger.of(value.divide(val.toBigInteger()));
     }
 
     @Override
     public NestBigInteger mod(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.mod(val.toBigInteger()));
+        return NestBigInteger.of(value.mod(val.toBigInteger()));
     }
 
     @Override
     public NestBigInteger remainder(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.remainder(val.toBigInteger()));
+        return NestBigInteger.of(value.remainder(val.toBigInteger()));
     }
 
     @Override
@@ -49,42 +48,12 @@ public class NestBigIntegerFull implements NestBigInteger {
         if (result == value) {
             return this;
         }
-        return NestBigIntegerImplementations.of(result);
+        return NestBigInteger.of(result);
     }
 
     @Override
     public NestBigInteger negate() {
-        return NestBigIntegerImplementations.of(value.negate());
-    }
-
-    @Override
-    public NestBigInteger shr(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.shiftRight(val.intValueExact()));
-    }
-
-    @Override
-    public NestBigInteger shl(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.shiftLeft(val.intValueExact()));
-    }
-
-    @Override
-    public NestBigInteger and(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.and(val.toBigInteger()));
-    }
-
-    @Override
-    public NestBigInteger xor(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.xor(val.toBigInteger()));
-    }
-
-    @Override
-    public NestBigInteger or(NestBigInteger val) {
-        return NestBigIntegerImplementations.of(value.or(val.toBigInteger()));
-    }
-
-    @Override
-    public NestBigInteger not() {
-        return NestBigIntegerImplementations.of(value.not());
+        return NestBigInteger.of(value.negate());
     }
 
     @Override
@@ -123,12 +92,17 @@ public class NestBigIntegerFull implements NestBigInteger {
     }
 
     @Override
-    public ByteSlice getBytes(ByteOrder order) {
+    public byte[] getBytes(ByteOrder order) {
         byte[] bytes = value.toByteArray();
         if (order == ByteOrder.LITTLE_ENDIAN) {
             ByteUtils.reverseBytes(bytes);
         }
-        return ByteSlice.wrap(bytes);
+        return bytes;
+    }
+
+    @Override
+    public ByteSlice getBytesSlice(ByteOrder order) {
+        return ByteSlice.wrap(getBytes(order));
     }
 
     @Override
@@ -144,5 +118,18 @@ public class NestBigIntegerFull implements NestBigInteger {
     @Override
     public String toString() {
         return value.toString();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof NestBigIntegerFull) {
+            return value.equals(((NestBigIntegerFull) obj).value);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return 7 * value.hashCode();
     }
 }

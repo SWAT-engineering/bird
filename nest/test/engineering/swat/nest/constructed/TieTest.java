@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
+import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.TokenList;
@@ -18,16 +19,16 @@ public class TieTest {
     void tieWorks() {
         Tie1 parsed = Tie1.parse(wrap(1, 2, 3, 4), Context.DEFAULT);
         assertEquals(4, parsed.size().intValueExact());
-        assertEquals(0x01 << 8 | 0x02, parsed.other.data1.asInteger().intValueExact());
-        assertEquals(0x03 << 8 | 0x04, parsed.other.data2.asInteger().intValueExact());
+        assertEquals(0x01 << 8 | 0x02, parsed.other.data1.asValue().asInteger(Sign.UNSIGNED).intValueExact());
+        assertEquals(0x03 << 8 | 0x04, parsed.other.data2.asValue().asInteger(Sign.UNSIGNED).intValueExact());
     }
 
     @Test
     void tieFlipWorks() {
         Tie2 parsed = Tie2.parse(wrap(1, 2, 3, 4), Context.DEFAULT);
         assertEquals(4, parsed.size().intValueExact());
-        assertEquals(0x01 << 8 | 0x02, parsed.data1.asInteger().intValueExact());
-        assertEquals(0x01 << 8 | 0x02, parsed.other.data2.asInteger().intValueExact());
+        assertEquals(0x01 << 8 | 0x02, parsed.data1.asValue().asInteger(Sign.UNSIGNED).intValueExact());
+        assertEquals(0x01 << 8 | 0x02, parsed.other.data2.asValue().asInteger(Sign.UNSIGNED).intValueExact());
     }
 
     private static class Tie1 extends UserDefinedToken {
@@ -73,7 +74,7 @@ public class TieTest {
             UnsignedBytes data1 = source.readUnsigned(2, ctx);
             UnsignedBytes data2 = source.readUnsigned(2, ctx);
             // a tie is just a new bytestream that can start at any token
-            OtherStruct other = OtherStruct.parse(new ByteStream(TokenList.of(data2, data1)), ctx);
+            OtherStruct other = OtherStruct.parse(new ByteStream(TokenList.of(ctx, data2, data1)), ctx);
             return new Tie2(data1, data2, other);
         }
 

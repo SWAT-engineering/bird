@@ -5,8 +5,6 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.util.Arrays;
 
 public interface ByteSlice {
-
-
 	NestBigInteger size();
 	byte get(NestBigInteger index);
 	default int getUnsigned(NestBigInteger index) {
@@ -65,5 +63,18 @@ public interface ByteSlice {
 				return copy;
 			}
 		};
+	}
+
+	default boolean sameBytes(ByteSlice bytes) {
+		NestBigInteger mySize = size();
+		if (!mySize.equals(bytes.size())) {
+			return false;
+		}
+		for (NestBigInteger c = NestBigInteger.ZERO; c.compareTo(mySize) < 0; c = c.add(NestBigInteger.ONE)) {
+			if (get(c) != bytes.get(c)) {
+				return false;
+			}
+		}
+		return true;
 	}
 }

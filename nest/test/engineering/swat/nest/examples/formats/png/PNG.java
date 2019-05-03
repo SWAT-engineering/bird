@@ -1,12 +1,14 @@
 package engineering.swat.nest.examples.formats.png;
 
 import engineering.swat.nest.core.ParseError;
-import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
+import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.TokenList;
+import engineering.swat.nest.core.tokens.UnsignedByte;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import java.nio.ByteOrder;
@@ -14,73 +16,73 @@ import java.nio.charset.StandardCharsets;
 
 public class PNG {
     public final static class PNG$ extends UserDefinedToken {
-        private final Signature $dummy1; // unnamed fields are not available
+        private final Signature $anon1; // unnamed fields are not available
         public final TokenList<Chunk> chunks;
-        private final IEND $dummy2;
+        private final IEND $anon2;
 
-        private PNG$(Signature $dummy1, TokenList<Chunk> chunks, IEND $dummy2) {
-            this.$dummy1 = $dummy1;
+        private PNG$(Signature $anon1, TokenList<Chunk> chunks, IEND $anon2) {
+            this.$anon1 = $anon1;
             this.chunks = chunks;
-            this.$dummy2 = $dummy2;
+            this.$anon2 = $anon2;
         }
         
         public static PNG$ parse(ByteStream source, Context ctx) {
             ctx = ctx.setEncoding(StandardCharsets.US_ASCII);
             ctx = ctx.setByteOrder(ByteOrder.BIG_ENDIAN);
-            Signature $dummy1 = Signature.parse(source, ctx);
+            Signature $anon1 = Signature.parse(source, ctx);
             TokenList<Chunk> chunks = TokenList.untilParseFailure(source, ctx, (s, c) -> Chunk.parse(s, c));
-            IEND $dummy2 = IEND.parse(source, ctx);
-            return new PNG$($dummy1, chunks, $dummy2);
+            IEND $anon2 = IEND.parse(source, ctx);
+            return new PNG$($anon1, chunks, $anon2);
         }
 
         @Override
         public TrackedByteSlice getTrackedBytes() {
-            return buildTrackedView($dummy1, chunks, $dummy2);
+            return buildTrackedView($anon1, chunks, $anon2);
         }
 
         @Override
         public NestBigInteger size() {
-            return $dummy1.size().add(chunks.size()).add($dummy2.size());
+            return $anon1.size().add(chunks.size()).add($anon2.size());
         }
     }
 
     public static final class Signature extends UserDefinedToken {
-        private final UnsignedBytes $dummy1;
-        private final UnsignedBytes $dummy2;
-        private final UnsignedBytes $dummy3;
+        private final UnsignedByte $anon1;
+        private final UnsignedBytes $anon2;
+        private final UnsignedBytes $anon3;
         
-        private Signature(UnsignedBytes $dummy1, UnsignedBytes $dummy2, UnsignedBytes $dummy3) {
-            this.$dummy1 = $dummy1;
-            this.$dummy2 = $dummy2;
-            this.$dummy3 = $dummy3;
+        private Signature(UnsignedByte $anon1, UnsignedBytes $anon2, UnsignedBytes $anon3) {
+            this.$anon1 = $anon1;
+            this.$anon2 = $anon2;
+            this.$anon3 = $anon3;
         }
         
         public static Signature parse(ByteStream source, Context ctx) throws ParseError {
-            UnsignedBytes $dummy1 = source.readUnsigned(1, ctx);
-            if (!($dummy1.getByteAt(NestBigInteger.ZERO) == 0x89)) {
-                throw new ParseError("Signature.$dummy1", $dummy1);
+            UnsignedByte $anon1 = source.readUnsigned( ctx);
+            if (!($anon1.asValue().sameBytes(NestValue.of(0x89, 1)))) {
+                throw new ParseError("Signature.$anon1", $anon1);
             }
 
-            UnsignedBytes $dummy2 = source.readUnsigned(3, ctx);
-            if (!($dummy2.sameBytes(ctx.getStringBytes("PNG")))) {
-                throw new ParseError("Signature.$dummy2", $dummy2);
+            UnsignedBytes $anon2 = source.readUnsigned(3, ctx);
+            if (!($anon2.asString().equals("PNG"))) {
+                throw new ParseError("Signature.$anon2", $anon2);
             }
 
-            UnsignedBytes $dummy3 = source.readUnsigned(4, ctx);
-            if (!($dummy3.sameBytes(ByteSlice.wrap(new byte[] {0x0d, 0x0a, 0x1a, 0x0a})))) {
-                throw new ParseError("Signature.$dummy3", $dummy3);
+            UnsignedBytes $anon3 = source.readUnsigned(4, ctx);
+            if (!($anon3.asValue().sameBytes(NestValue.of(new byte[] {0x0d, 0x0a, 0x1a, 0x0a})))) {
+                throw new ParseError("Signature.$anon3", $anon3);
             }
-            return new Signature($dummy1, $dummy2, $dummy3);
+            return new Signature($anon1, $anon2, $anon3);
         }
         
         @Override
         public TrackedByteSlice getTrackedBytes() {
-            return buildTrackedView($dummy1, $dummy2, $dummy3);
+            return buildTrackedView($anon1, $anon2, $anon3);
         }
         
         @Override
         public NestBigInteger size() {
-            return $dummy1.size().add($dummy2.size()).add($dummy3.size());
+            return $anon1.size().add($anon2.size()).add($anon3.size());
         }
         
 
@@ -103,12 +105,12 @@ public class PNG {
         public static Chunk parse(ByteStream source, Context ctx)  {
             UnsignedBytes length = source.readUnsigned(4, ctx);
             UnsignedBytes type = source.readUnsigned(4, ctx);
-            if (!(!type.sameBytes(ctx.getStringBytes("IEND")))) {
+            if (type.asString().equals("IEND")) {
                 throw new ParseError("Chunk.type");
             }
-            UnsignedBytes data = source.readUnsigned(length.asInteger(), ctx);
+            UnsignedBytes data = source.readUnsigned(length.asValue().asInteger(Sign.UNSIGNED), ctx);
             UnsignedBytes crc = source.readUnsigned(4, ctx);
-            if (!(UserDefinedPNG.crc32(TokenList.of(type, data)) == crc.asInteger().longValueExact())) {
+            if (!(crc.asValue().asInteger(Sign.UNSIGNED).equals(UserDefinedPNG.crc32(TokenList.of(ctx, type, data))))) {
                 throw new ParseError("Chunk.crc");
             }
             return new Chunk(length, type, data, crc);
@@ -139,17 +141,17 @@ public class PNG {
 
         public static IEND parse(ByteStream source, Context ctx) {
             UnsignedBytes length = source.readUnsigned(4, ctx);
-            if (!(length.asInteger().equals(NestBigInteger.ZERO))) {
+            if (!(length.asValue().asInteger(Sign.UNSIGNED).equals(NestBigInteger.ZERO))) {
                 throw new ParseError("IED.length", length);
             }
             
             UnsignedBytes type = source.readUnsigned(4, ctx);
-            if (!type.sameBytes(ctx.getStringBytes("IEND"))) {
+            if (!type.asString().equals("IEND")) {
                 throw new ParseError("IED.type", type);
             }
             
             UnsignedBytes crc = source.readUnsigned(4, ctx);
-            if (!crc.sameBytes(ByteSlice.wrap(new byte[] {(byte) 0xae, 0x42, 0x60, (byte) 0x82}))) {
+            if (!crc.asValue().sameBytes(NestValue.of(new byte[] {(byte) 0xae, 0x42, 0x60, (byte) 0x82}))) {
                 throw new ParseError("IED.crc", crc);
             }
             return new IEND(length, type, crc);

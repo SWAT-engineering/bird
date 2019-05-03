@@ -4,6 +4,7 @@ import engineering.swat.nest.core.EOSError;
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
+import engineering.swat.nest.core.tokens.UnsignedByte;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
 
 public class ByteStream {
@@ -26,9 +27,23 @@ public class ByteStream {
 		this.window = window;
 	}
 
+	public UnsignedByte readUnsigned(Context ctx) {
+		NestBigInteger newOffset = offset.add(NestBigInteger.ONE);
+		if (newOffset.compareTo(limit) > 0) {
+			throw new EOSError();
+		}
+		try {
+			return new UnsignedByte(window.slice(offset, NestBigInteger.ONE), ctx);
+		}
+		finally {
+			offset = newOffset;
+		}
+    }
+
 	public UnsignedBytes readUnsigned(int size, Context ctx) {
 	    return readUnsigned(NestBigInteger.of(size), ctx);
 	}
+
 	public UnsignedBytes readUnsigned(NestBigInteger size, Context ctx) {
 		assert size.compareTo(NestBigInteger.ZERO) >= 0;
 		NestBigInteger newOffset = offset.add(size);
