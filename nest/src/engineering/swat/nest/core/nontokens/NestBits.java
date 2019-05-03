@@ -41,4 +41,5 @@ interface NestBits {
         return new NestBitsFull(result, minByteSize);
     }
 
+    int getMinByteSize();
 }

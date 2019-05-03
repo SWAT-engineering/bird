@@ -61,6 +61,10 @@ public class ByteUtils {
                     copy[i] = bytes[bytes.length - i - 1];
                     copy[copy.length - i - 1] = bytes[i];
                 }
+                if (bytes.length % 2 == 1) {
+                    // copy middle element
+                    copy[bytes.length / 2] = bytes[bytes.length / 2];
+                }
                 break;
         }
         return copy;

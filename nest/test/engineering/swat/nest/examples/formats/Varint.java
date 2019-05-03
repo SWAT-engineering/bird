@@ -15,6 +15,7 @@ import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
 import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import java.nio.ByteOrder;
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -23,26 +24,30 @@ public class Varint {
 
     public static class LEB128 extends UserDefinedToken {
         public final TokenList<UnsignedByte> raw;
+        public final UnsignedByte lastOne;
         public final NestBigInteger value;
 
-        private LEB128(TokenList<UnsignedByte> raw, NestBigInteger value) {
+        private LEB128(TokenList<UnsignedByte> raw, UnsignedByte lastOne,
+                NestBigInteger value) {
             this.raw = raw;
+            this.lastOne = lastOne;
             this.value = value;
         }
 
         public static LEB128 parse(ByteStream source, Context ctx) {
             TokenList<UnsignedByte> raw = TokenList.parseWhile(source, ctx,
                     (s, c) -> s.readUnsigned(c),
-                    it -> (it.asValue().and(NestValue.of(0b1000_0000, 1)).sameBytes(NestValue.of(0, 1)))
+                    it -> !(it.asValue().and(NestValue.of(0b1000_0000, 1)).sameBytes(NestValue.of(0, 1)))
             );
-            NestValue ac = NestValue.of(0, 16);
+            UnsignedByte lastOne = source.readUnsigned(ctx);
+            NestValue ac = lastOne.asValue();
             // reverse slice
             for (int index = raw.length() - 1; index >= 0; index--) {
                 ac = (ac.shl(NestBigInteger.of(7))
                         .or(raw.get(index).asValue().and(NestValue.of(0b0111_1111, 1))));
             }
             NestBigInteger value = ac.asInteger(Sign.UNSIGNED);
-            return new LEB128(raw, value);
+            return new LEB128(raw, lastOne, value);
         }
 
         @Override
@@ -89,7 +94,7 @@ public class Varint {
                 if (!prefixHeader.asValue().and(NestValue.of(0b1, 1)).sameBytes(NestValue.of(0b1, 1))) {
                    throw new ParseError("PrefixVarint$1.prefixHeader", prefixHeader);
                 }
-                NestBigInteger value = prefixHeader.asValue().shr(NestValue.of(1, 1)).asInteger(Sign.UNSIGNED);
+                NestBigInteger value = prefixHeader.asValue().shr(NestBigInteger.ONE).asInteger(Sign.UNSIGNED);
                 return new PrefixVarint$1(prefixHeader, value);
             }
 
@@ -108,36 +113,29 @@ public class Varint {
             public final UnsignedByte prefixHeader;
             public final NestBigInteger prefixLength;
             public final UnsignedBytes rest;
-            public final NestValue restValue;
             public final NestBigInteger value;
 
             private PrefixVarint$2(UnsignedByte prefixHeader,
                     NestBigInteger prefixLength, UnsignedBytes rest,
-                    NestValue restValue, NestBigInteger value) {
+                    NestBigInteger value) {
                 this.prefixHeader = prefixHeader;
                 this.prefixLength = prefixLength;
                 this.rest = rest;
-                this.restValue = restValue;
                 this.value = value;
             }
 
 
             public static PrefixVarint$2 parse(ByteStream source, Context ctx) {
                 UnsignedByte prefixHeader = source.readUnsigned(ctx);
-                if (!(prefixHeader.asValue().sameBytes(NestValue.of(0x00, 1)))) {
+                if (prefixHeader.asValue().sameBytes(NestValue.of(0x00, 1))) {
                     throw new ParseError("PrefixVarint$2.prefixHeader", prefixHeader);
                 }
                 NestBigInteger prefixLength = PrefixVarintUserDefined.trailingZeroes(prefixHeader);
-                UnsignedBytes rest = source.readUnsigned(prefixLength, ctx);
-                NestValue ac = NestValue.of(0, 16);
-                for (UnsignedByte r : rest) {
-                    ac = ac.shl(NestValue.of(8, 1)).or(r.asValue());
-                }
-                NestValue restValue = ac;
-                NestBigInteger value = prefixHeader.asValue().shr(prefixLength.add(NestBigInteger.TWO)).
-                        or(restValue.shl(NestBigInteger.of(8).subtract(prefixLength)))
+                UnsignedBytes rest = source.readUnsigned(prefixLength, ctx.setByteOrder(ByteOrder.LITTLE_ENDIAN));
+                NestBigInteger value = prefixHeader.asValue().shr(prefixLength.add(NestBigInteger.ONE)).
+                        or(rest.asValue().shl(NestBigInteger.of(8).subtract(prefixLength).subtract(NestBigInteger.ONE)))
                         .asInteger(Sign.UNSIGNED);
-                return new PrefixVarint$2(prefixHeader, prefixLength, rest, restValue, value);
+                return new PrefixVarint$2(prefixHeader, prefixLength, rest, value);
             }
 
             @Override

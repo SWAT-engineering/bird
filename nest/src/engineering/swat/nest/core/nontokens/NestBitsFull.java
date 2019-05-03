@@ -4,6 +4,7 @@ import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.ByteUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.BitSet;
 
 class NestBitsFull implements NestBits {
@@ -34,7 +35,7 @@ class NestBitsFull implements NestBits {
         if (remainingSize == 0) {
             return NestBits.of(new BitSet(0), minByteSize);
         }
-        return NestBits.of(value.get(shiftAmount, remainingSize), minByteSize);
+        return NestBits.of(value.get(shiftAmount, shiftAmount + remainingSize + 1), minByteSize);
     }
 
 
@@ -42,7 +43,7 @@ class NestBitsFull implements NestBits {
     public NestBits and(NestBits val) {
         BitSet result = (BitSet) value.clone();
         result.and(getBitSet(val));
-        return NestBits.of(result, Math.max(result.length(), minByteSize));
+        return NestBits.of(result, Math.max(val.getMinByteSize(), minByteSize));
     }
 
     private static BitSet getBitSet(NestBits val) {
@@ -60,14 +61,14 @@ class NestBitsFull implements NestBits {
     public NestBits or(NestBits val) {
         BitSet result = (BitSet) value.clone();
         result.or(getBitSet(val));
-        return NestBits.of(result, Math.max(result.length(), minByteSize));
+        return NestBits.of(result, Math.max(val.getMinByteSize(), minByteSize));
     }
 
     @Override
     public NestBits xor(NestBits val) {
         BitSet result = (BitSet) value.clone();
         result.xor(getBitSet(val));
-        return NestBits.of(result, Math.max(result.length(), minByteSize));
+        return NestBits.of(result, Math.max(val.getMinByteSize(), minByteSize));
     }
 
     @Override
@@ -83,7 +84,16 @@ class NestBitsFull implements NestBits {
         if (order != ByteOrder.LITTLE_ENDIAN) {
             ByteUtils.reverseBytes(bytes);
         }
+
+        if (bytes.length < minByteSize) {
+            bytes = Arrays.copyOfRange(bytes, 0, minByteSize - bytes.length);
+        }
         return bytes;
+    }
+
+    @Override
+    public int getMinByteSize() {
+        return minByteSize;
     }
 
     @Override
@@ -115,5 +125,10 @@ class NestBitsFull implements NestBits {
     @Override
     public boolean isZero() {
         return value.isEmpty();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("NB: %s (%d)", value, minByteSize);
     }
 }

@@ -30,6 +30,9 @@ public class NestValue {
     }
 
     public static NestValue of(int value, int byteSize) {
+        if (value == 0) {
+            return of(new byte[byteSize]);
+        }
         final byte[] bytes;
         switch (byteSize) {
             case 1:
@@ -65,6 +68,9 @@ public class NestValue {
     }
 
     public static NestValue of(long value, int byteSize) {
+        if (value == 0) {
+            return of(new byte[byteSize]);
+        }
         final byte[] bytes;
         switch (byteSize) {
             case 1:
@@ -184,15 +190,15 @@ public class NestValue {
     }
 
     public NestValue and(NestValue val) {
-        return and(val.origin.merge(val.origin), val.getBits());
+        return and(val.origin, val.getBits());
     }
 
     public NestValue or(NestValue val) {
-        return or(val.origin.merge(val.origin), val.getBits());
+        return or(val.origin, val.getBits());
     }
 
     public NestValue xor(NestValue val) {
-        return xor(val.origin.merge(val.origin), val.getBits());
+        return xor(val.origin, val.getBits());
     }
 
     public NestValue not() {
