@@ -157,17 +157,17 @@ public class NestValue {
     }
 
     private NestBits getBits() {
-        return NestBits.of(bytes, ByteOrder.BIG_ENDIAN);
+        return NestBits.of(bytes, context.getByteOrder());
     }
 
 
 
     public NestValue shl(NestBigInteger amount) {
-        return new NestValue(origin, context, getBits().shl(amount).getBytes(ByteOrder.BIG_ENDIAN));
+        return new NestValue(origin, context, getBits().shl(amount).getBytes(context.getByteOrder()));
     }
 
     public NestValue shr(NestBigInteger amount) {
-        return new NestValue(origin,context, getBits().shr(amount).getBytes(ByteOrder.BIG_ENDIAN));
+        return new NestValue(origin,context, getBits().shr(amount).getBytes(context.getByteOrder()));
     }
 
     public NestValue shl(NestValue amount) {
@@ -179,15 +179,15 @@ public class NestValue {
     }
 
     private NestValue and(Origin origin, NestBits val) {
-        return new NestValue(this.origin.merge(origin), context, getBits().and(val).getBytes(ByteOrder.BIG_ENDIAN));
+        return new NestValue(this.origin.merge(origin), context, getBits().and(val).getBytes(context.getByteOrder()));
     }
 
     private NestValue or(Origin origin, NestBits val) {
-        return new NestValue(this.origin.merge(origin), context, getBits().or(val).getBytes(ByteOrder.BIG_ENDIAN));
+        return new NestValue(this.origin.merge(origin), context, getBits().or(val).getBytes(context.getByteOrder()));
     }
 
     private NestValue xor(Origin origin,NestBits val) {
-        return new NestValue(this.origin.merge(origin), context, getBits().xor(val).getBytes(ByteOrder.BIG_ENDIAN));
+        return new NestValue(this.origin.merge(origin), context, getBits().xor(val).getBytes(context.getByteOrder()));
     }
 
     public NestValue and(NestValue val) {
@@ -203,7 +203,7 @@ public class NestValue {
     }
 
     public NestValue not() {
-        return new NestValue(origin, context, getBits().not().getBytes(ByteOrder.BIG_ENDIAN));
+        return new NestValue(origin, context, getBits().not().getBytes(context.getByteOrder()));
     }
 
     @Override
@@ -221,11 +221,26 @@ public class NestValue {
     }
 
     public boolean sameBytes(NestValue of) {
-        return Arrays.equals(getBytes(), of.getBytes());
+        if (of.context.getByteOrder() == context.getByteOrder()) {
+            return Arrays.equals(getBytes(), of.getBytes());
+        }
+        else {
+            int length = bytes.length;
+            byte[] otherBytes = of.getBytes();
+            if (otherBytes.length != length) {
+                return false;
+            }
+            for (int i = 0; i < length; i++ ){
+                if (bytes[i] != otherBytes[(length - i) - 1]) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     public NestBigInteger asInteger(Sign sign) {
-        return NestBigInteger.of(bytes, ByteOrder.BIG_ENDIAN, sign);
+        return NestBigInteger.of(bytes, context.getByteOrder(), sign);
     }
 
     public String asString() {

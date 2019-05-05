@@ -26,11 +26,7 @@ public class JPEGTest  {
 	}
 	
 	private static Stream<Path> jpegProvider() {
-		try {
-			return CommonTestHelper.findResources(".jpg");
-		} catch (IOException | URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+		return CommonTestHelper.findResources(".jpg");
 	}
 	
 

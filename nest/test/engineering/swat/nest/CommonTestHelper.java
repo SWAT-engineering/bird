@@ -41,23 +41,27 @@ public class CommonTestHelper {
 			throw new RuntimeException(e);
 		}
 	}
-	public static Stream<Path> findResources(String extension) throws IOException, URISyntaxException {
+	public static Stream<Path> findResources(String extension) {
         ClassLoader context = Objects.requireNonNull(CommonTestHelper.class.getClassLoader(), "Unexpected missing classloader");
         URL rootDir = context.getResource("test-files/");
         if (rootDir == null) {
-        	throw new IOException("Could not find /test-files/ in " + context);
+        	throw new RuntimeException("Could not find /test-files/ in " + context);
         }
         List<Path> result = new ArrayList<>();
-        walkURL(rootDir, new SimpleFileVisitor<Path>() {
-        	@Override
-        	public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        		if (file.toString().endsWith(extension)) {
-        			result.add(file);
-        		}
-        		return super.visitFile(file, attrs);
-        	}
-        });
-        return result.stream();
+		try {
+			walkURL(rootDir, new SimpleFileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					if (file.toString().endsWith(extension)) {
+						result.add(file);
+					}
+					return super.visitFile(file, attrs);
+				}
+			});
+		} catch (URISyntaxException | IOException e) {
+			throw new RuntimeException(e);
+		}
+		return result.stream();
 	}
 	
     private static void walkURL(URL rootDir, FileVisitor<Path> visitor) throws URISyntaxException, IOException {
