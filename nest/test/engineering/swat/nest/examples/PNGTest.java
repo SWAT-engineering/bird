@@ -27,11 +27,7 @@ public class PNGTest  {
 	}
 	
 	private static Stream<Path> pngProvider() {
-		try {
-			return CommonTestHelper.findResources(".png");
-		} catch (IOException | URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+        return CommonTestHelper.findResources(".png");
 	}
 	
 
