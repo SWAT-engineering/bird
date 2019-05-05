@@ -3,7 +3,6 @@ package engineering.swat.nest.core.nontokens;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -161,21 +160,12 @@ public class NestValue {
     }
 
 
-
     public NestValue shl(NestBigInteger amount) {
         return new NestValue(origin, context, getBits().shl(amount).getBytes(context.getByteOrder()));
     }
 
     public NestValue shr(NestBigInteger amount) {
         return new NestValue(origin,context, getBits().shr(amount).getBytes(context.getByteOrder()));
-    }
-
-    public NestValue shl(NestValue amount) {
-        return shl(amount.asInteger(Sign.UNSIGNED));
-    }
-
-    public NestValue shr(NestValue amount) {
-        return shr(amount.asInteger(Sign.UNSIGNED));
     }
 
     private NestValue and(Origin origin, NestBits val) {
@@ -240,10 +230,10 @@ public class NestValue {
     }
 
     public NestBigInteger asInteger(Sign sign) {
-        return NestBigInteger.of(bytes, context.getByteOrder(), sign);
+        return NestBigInteger.of(origin, bytes, context.getByteOrder(), sign);
     }
 
-    public String asString() {
-        return new String(getBytes(), context.getEncoding());
+    public Tracked<String> asString() {
+        return new Tracked<>(origin, new String(getBytes(), context.getEncoding()));
     }
 }

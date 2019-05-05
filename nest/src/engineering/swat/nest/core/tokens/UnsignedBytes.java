@@ -4,6 +4,8 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
+import engineering.swat.nest.core.nontokens.Origin;
+import engineering.swat.nest.core.nontokens.Tracked;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -52,8 +54,8 @@ public class UnsignedBytes extends PrimitiveToken implements Iterable<UnsignedBy
 	}
 
 	@Override
-	public String asString() {
-		return new String(slice.allBytes(), ctx.getEncoding());
+	public Tracked<String> asString() {
+		return new Tracked<>(Origin.of(slice), new String(slice.allBytes(), ctx.getEncoding()));
 	}
 
 	@Override

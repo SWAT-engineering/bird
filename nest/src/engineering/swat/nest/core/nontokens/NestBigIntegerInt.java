@@ -1,15 +1,16 @@
 package engineering.swat.nest.core.nontokens;
 
-import engineering.swat.nest.core.bytes.ByteSlice;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 class NestBigIntegerInt implements NestBigInteger {
 
+    private final Origin origin;
     private final int value;
 
-    NestBigIntegerInt(int value) {
+    NestBigIntegerInt(Origin origin, int value) {
+        this.origin = origin;
         this.value = value;
     }
 
@@ -20,16 +21,16 @@ class NestBigIntegerInt implements NestBigInteger {
 
     static {
         for (int i = MIN_CACHE_ENTRY; i <= MAX_CACHE_ENTRY; i++) {
-            SMALL_INT_CACHE[i - MIN_CACHE_ENTRY] = new NestBigIntegerInt(i);
+            SMALL_INT_CACHE[i - MIN_CACHE_ENTRY] = new NestBigIntegerInt(Origin.EMPTY, i);
             SMALL_CONVERSION_CACHE[i - MIN_CACHE_ENTRY] = new BigInteger("" + i);
         }
     }
 
-    static NestBigInteger ofInt(int value) {
+    static NestBigInteger ofInt(Origin origin, int value) {
         if (MIN_CACHE_ENTRY < value && value < MAX_CACHE_ENTRY) {
             return SMALL_INT_CACHE[value - MIN_CACHE_ENTRY];
         }
-        return new NestBigIntegerInt(value);
+        return new NestBigIntegerInt(origin, value);
     }
 
     @Override
@@ -62,6 +63,10 @@ class NestBigIntegerInt implements NestBigInteger {
         return BigInteger.valueOf(value);
     }
 
+    private Origin mergeOrigins(NestBigInteger other) {
+        return origin.merge(other.getOrigin());
+    }
+
     @Override
     public NestBigInteger add(NestBigInteger val) {
         if (val instanceof NestBigIntegerInt) {
@@ -73,7 +78,7 @@ class NestBigIntegerInt implements NestBigInteger {
             int result = value + otherValue;
             if (((otherValue ^ result) & (value ^ result)) >= 0) {
                 // no overflow since sign is the same
-                return ofInt(result);
+                return ofInt(mergeOrigins(val), result);
             }
         }
         return val.add(this); // let the other side take care of it, since it is bigger
@@ -89,7 +94,7 @@ class NestBigIntegerInt implements NestBigInteger {
 
             int result = value - otherValue;
             if (((value ^ otherValue) & (otherValue ^ result)) >= 0) {
-                return ofInt(result);
+                return ofInt(mergeOrigins(val), result);
             }
         }
         return val.negate().subtract(this.negate());
@@ -100,12 +105,12 @@ class NestBigIntegerInt implements NestBigInteger {
         if (val instanceof NestBigIntegerInt) {
             int otherValue = ((NestBigIntegerInt)val).value;
             if (otherValue == 0) {
-                return ofInt(0);
+                return ofInt(mergeOrigins(val), 0);
             }
 
             long result = (long)otherValue * (long)value;
             if ((int)result == result) {
-                return ofInt((int)result);
+                return ofInt(mergeOrigins(val), (int)result);
             }
         }
         return val.multiply(this);
@@ -114,7 +119,7 @@ class NestBigIntegerInt implements NestBigInteger {
     @Override
     public NestBigInteger divide(NestBigInteger val) {
         if (val instanceof NestBigIntegerInt) {
-            return ofInt(value / ((NestBigIntegerInt) val).value);
+            return ofInt(mergeOrigins(val), value / ((NestBigIntegerInt) val).value);
         }
         return NestBigInteger.of(toBigInteger().divide(val.toBigInteger()));
     }
@@ -122,7 +127,7 @@ class NestBigIntegerInt implements NestBigInteger {
     @Override
     public NestBigInteger mod(NestBigInteger val) {
         if (val instanceof NestBigIntegerInt) {
-            return ofInt(Math.floorMod(value, ((NestBigIntegerInt) val).value));
+            return ofInt(mergeOrigins(val), Math.floorMod(value, ((NestBigIntegerInt) val).value));
         }
         return NestBigInteger.of(toBigInteger().mod(val.toBigInteger()));
     }
@@ -130,7 +135,7 @@ class NestBigIntegerInt implements NestBigInteger {
     @Override
     public NestBigInteger remainder(NestBigInteger val) {
         if (val instanceof NestBigIntegerInt) {
-            return ofInt(value % ((NestBigIntegerInt) val).value);
+            return ofInt(mergeOrigins(val), value % ((NestBigIntegerInt) val).value);
         }
         return NestBigInteger.of(toBigInteger().remainder(val.toBigInteger()));
     }
@@ -140,12 +145,12 @@ class NestBigIntegerInt implements NestBigInteger {
         if (value >= 0) {
             return this;
         }
-        return ofInt(-value);
+        return ofInt(origin, -value);
     }
 
     @Override
     public NestBigInteger negate() {
-        return ofInt(-value);
+        return ofInt(origin, -value);
     }
 
     @Override
@@ -186,11 +191,6 @@ class NestBigIntegerInt implements NestBigInteger {
     @Override
     public byte[] getBytes(ByteOrder order) {
         return order == ByteOrder.BIG_ENDIAN ? getBigEndianBytes() : getLittleEndianBytes();
-    }
-
-    @Override
-    public ByteSlice getBytesSlice(ByteOrder order) {
-        return ByteSlice.wrap(getBytes(order));
     }
 
     private byte[] getLittleEndianBytes() {
@@ -256,6 +256,8 @@ class NestBigIntegerInt implements NestBigInteger {
         return Integer.toString(value);
     }
 
-
-
+    @Override
+    public Origin getOrigin() {
+        return origin;
+    }
 }
