@@ -21,6 +21,9 @@ class SingleSourceOrigin implements Origin {
         if (other == EMPTY) {
             return this;
         }
+        if (this == EMPTY) {
+            return other;
+        }
         if (other instanceof SingleSourceOrigin) {
             if (((SingleSourceOrigin) other).source == source) {
                 return this;
