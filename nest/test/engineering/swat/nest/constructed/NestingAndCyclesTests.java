@@ -3,20 +3,18 @@ package engineering.swat.nest.constructed;
 import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import engineering.swat.nest.core.nontokens.NestBigInteger;
-import engineering.swat.nest.core.nontokens.NestValue;
-import engineering.swat.nest.core.tokens.UnsignedByte;
-import java.nio.charset.StandardCharsets;
-import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
+import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.UnsignedBytes;
+import engineering.swat.nest.core.tokens.UnsignedByte;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
 import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.Test;
 
 public class NestingAndCyclesTests {
 	
@@ -41,7 +39,7 @@ public class NestingAndCyclesTests {
 		public static Start parse(ByteStream source, Context ctx) {
 			ctx = ctx.setEncoding(StandardCharsets.US_ASCII);
 			UnsignedByte header = source.readUnsigned( ctx);
-			if (!header.asString().equals("H")) {
+			if (!header.asString().get().equals("H")) {
 				throw new ParseError("Start.header", header);
 			}
 			Node initial = Node.parse(source, ctx);
@@ -108,7 +106,7 @@ public class NestingAndCyclesTests {
 
 			public static Loop$1 parse(ByteStream source, Context ctx, Node n) {
 				UnsignedByte $dummy1 = source.readUnsigned( ctx);
-				if (!($dummy1.asString().equals("0"))) {
+				if (!($dummy1.asString().get().equals("0"))) {
 					throw new ParseError("Loop$1._", $dummy1);
 				}
 				return new Loop$1($dummy1);

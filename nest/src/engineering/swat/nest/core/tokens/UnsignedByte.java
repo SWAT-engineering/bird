@@ -1,12 +1,11 @@
 package engineering.swat.nest.core.tokens;
 
-import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.nontokens.Origin;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import engineering.swat.nest.core.nontokens.Tracked;
 
 public class UnsignedByte extends PrimitiveToken {
 
@@ -58,7 +57,7 @@ public class UnsignedByte extends PrimitiveToken {
 	}
 
 	@Override
-	public String asString() {
-		return new String(new byte[] { (byte)value }, ctx.getEncoding());
+	public Tracked<String> asString() {
+		return new Tracked<>(Origin.of(slice), new String(new byte[] { (byte)value }, ctx.getEncoding()));
 	}
 }

@@ -10,10 +10,8 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.TerminatedToken;
 import engineering.swat.nest.core.tokens.UnsignedBytes;
-import engineering.swat.nest.core.tokens.UserDefinedToken;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import org.checkerframework.checker.nullness.Opt;
 import org.junit.jupiter.api.Test;
 
 public class UntilTest {
@@ -23,27 +21,27 @@ public class UntilTest {
 
     @Test
     void abcBasicTest() {
-        assertEquals("ab", cTerminatedToken(wrap(ABC_BYTES), 0, 1, 3 ).getBody().asString());
+        assertEquals("ab", cTerminatedToken(wrap(ABC_BYTES), 0, 1, 3 ).getBody().asString().get());
     }
 
     @Test
     void abcStepSize() {
-        assertEquals("ab", cTerminatedToken(wrap(ABC_BYTES), 0, 2, 3 ).getBody().asString());
+        assertEquals("ab", cTerminatedToken(wrap(ABC_BYTES), 0, 2, 3 ).getBody().asString().get());
     }
 
     @Test
     void abcabcStepSize() {
-        assertEquals("ab", cTerminatedToken(wrap(ABCABC_BYTES), 0, 2, 6).getBody().asString());
+        assertEquals("ab", cTerminatedToken(wrap(ABCABC_BYTES), 0, 2, 6).getBody().asString().get());
     }
 
     @Test
     void abcabcOffset() {
-        assertEquals("abcab", cTerminatedToken(wrap(ABCABC_BYTES), 3, 1, 6 ).getBody().asString());
+        assertEquals("abcab", cTerminatedToken(wrap(ABCABC_BYTES), 3, 1, 6 ).getBody().asString().get());
     }
 
     @Test
     void abcabcSkipFirstTerminator() {
-        assertEquals("abcab", cTerminatedToken(wrap(ABCABC_BYTES), 1, 2, 6 ).getBody().asString());
+        assertEquals("abcab", cTerminatedToken(wrap(ABCABC_BYTES), 1, 2, 6 ).getBody().asString().get());
     }
 
     @Test

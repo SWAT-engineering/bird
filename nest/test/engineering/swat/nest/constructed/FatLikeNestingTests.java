@@ -107,7 +107,7 @@ public class FatLikeNestingTests {
         public static <T extends Token> NestedFiles<T> parse(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> tParser) {
             ctx = ctx.setByteOrder(ByteOrder.LITTLE_ENDIAN);
             UnsignedBytes header = source.readUnsigned(NestBigInteger.of(3), ctx);
-            if (!header.asValue().asString().equals("HDR")) {
+            if (!header.asValue().asString().get().equals("HDR")) {
                 throw new ParseError("NestedFiles.header", header);
             }
             TokenList<NestedFile<T>> files = TokenList.untilParseFailure(source, ctx, (s,c) -> NestedFile.parse(s, c, tParser));

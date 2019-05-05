@@ -1,11 +1,8 @@
 package engineering.swat.nest.core.nontokens;
 
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 public interface Origin {
 
@@ -17,7 +14,7 @@ public interface Origin {
         return new SingleSourceOrigin(source);
     }
 
-    static Origin of(Iterable<TrackedByteSlice> sources) {
+    static Origin of(Collection<TrackedByteSlice> sources) {
         return new MultipleSourceOrigin(sources);
     }
 

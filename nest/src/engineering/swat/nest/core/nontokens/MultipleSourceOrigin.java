@@ -7,12 +7,12 @@ import java.util.Collection;
 import java.util.List;
 
 class MultipleSourceOrigin implements Origin {
-    private final Iterable<TrackedByteSlice> sources;
+    private final Collection<TrackedByteSlice> sources;
     public MultipleSourceOrigin(TrackedByteSlice... sources) {
         this(Arrays.asList(sources));
     }
 
-    public MultipleSourceOrigin(Iterable<TrackedByteSlice> newSources) {
+    public MultipleSourceOrigin(Collection<TrackedByteSlice> newSources) {
         this.sources = newSources;
     }
 
@@ -27,7 +27,7 @@ class MultipleSourceOrigin implements Origin {
             return this;
         }
         List<TrackedByteSlice> newSources = new ArrayList<>();
-        sources.forEach(newSources::add);
+        newSources.addAll(sources);
         other.origins().forEach(newSources::add);
         return new MultipleSourceOrigin(newSources);
     }

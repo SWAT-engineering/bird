@@ -64,7 +64,7 @@ public class PNG {
             }
 
             UnsignedBytes $anon2 = source.readUnsigned(3, ctx);
-            if (!($anon2.asString().equals("PNG"))) {
+            if (!($anon2.asString().get().equals("PNG"))) {
                 throw new ParseError("Signature.$anon2", $anon2);
             }
 
@@ -105,7 +105,7 @@ public class PNG {
         public static Chunk parse(ByteStream source, Context ctx)  {
             UnsignedBytes length = source.readUnsigned(4, ctx);
             UnsignedBytes type = source.readUnsigned(4, ctx);
-            if (type.asString().equals("IEND")) {
+            if (type.asString().get().equals("IEND")) {
                 throw new ParseError("Chunk.type");
             }
             UnsignedBytes data = source.readUnsigned(length.asValue().asInteger(Sign.UNSIGNED), ctx);
@@ -146,7 +146,7 @@ public class PNG {
             }
             
             UnsignedBytes type = source.readUnsigned(4, ctx);
-            if (!type.asString().equals("IEND")) {
+            if (!type.asString().get().equals("IEND")) {
                 throw new ParseError("IED.type", type);
             }
             
