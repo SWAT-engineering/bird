@@ -1,5 +1,6 @@
 package engineering.swat.nest.core.tokens.primitive;
 
+import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
@@ -10,7 +11,6 @@ import engineering.swat.nest.core.nontokens.Origin;
 import engineering.swat.nest.core.nontokens.Tracked;
 import engineering.swat.nest.core.tokens.PrimitiveToken;
 import engineering.swat.nest.core.tokens.Token;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -23,13 +23,13 @@ public class OptionalToken<T extends Token> extends PrimitiveToken {
 		this.token = token;
 	}
 	
-	public static <T extends Token> OptionalToken<T> optional(ByteStream source, Context ctx, BiFunction<ByteStream, Context, Optional<T>> parse) {
+	public static <T extends Token> OptionalToken<T> optional(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parse) {
 		ByteStream backup = source.fork();
-		Optional<T> result = parse.apply(source, ctx);
-		if (result.isPresent()) {
-			return new OptionalToken<>(result.get(), ctx);
+		try {
+			return new OptionalToken<>(parse.apply(source, ctx), ctx);
 		}
-		else {
+		catch (ParseError e) {
+			ctx.fail("[OptionalToken] Parsing failed: {} after {}", e, source);
 			source.sync(backup); // restore after failure
 			return new OptionalToken<>(null, ctx);
 		}

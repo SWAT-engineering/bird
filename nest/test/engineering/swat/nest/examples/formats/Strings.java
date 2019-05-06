@@ -12,9 +12,6 @@ import engineering.swat.nest.core.tokens.UserDefinedToken;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-/**
- * Since we do not have an until concept in the bird language, this example does not have a corresponding bird file
- */
 public class Strings {
 
 
@@ -28,15 +25,11 @@ public class Strings {
             this.value = value;
         }
 
-        public static Optional<ASCIIZeroTerminated> parse(ByteStream source, Context ctx) {
+        public static ASCIIZeroTerminated parse(ByteStream source, Context ctx) {
             ctx = ctx.setEncoding(StandardCharsets.US_ASCII);
-            Optional<TerminatedToken<UnsignedBytes, UnsignedBytes>> contents = terminatedWithChar(source, ctx, new byte[] { 0 });
-            if (!contents.isPresent()) {
-                ctx.fail("ASCIIZeroTerminated.contents missing from {}", source);
-                return Optional.empty();
-            }
-            Tracked<String> value = contents.get().getBody().asString();
-            return Optional.of(new ASCIIZeroTerminated(contents.get(), value));
+            TerminatedToken<UnsignedBytes, UnsignedBytes> contents = terminatedWithChar(source, ctx, new byte[] { 0 });
+            Tracked<String> value = contents.getBody().asString();
+            return new ASCIIZeroTerminated(contents, value);
         }
 
 
@@ -61,15 +54,12 @@ public class Strings {
             this.value = value;
         }
 
-        public static Optional<UTF16ZeroTerminated> parse(ByteStream source, Context ctx) {
+        public static UTF16ZeroTerminated parse(ByteStream source, Context ctx) {
             ctx = ctx.setEncoding(StandardCharsets.UTF_16);
-            Optional<TerminatedToken<UnsignedBytes, UnsignedBytes>> contents = terminatedWithChar(source, ctx, new byte[] { 0, 0 });
-            if (!contents.isPresent()) {
-                ctx.fail("UTF16ZeroTerminated.contents missing from {}", source);
-                return Optional.empty();
-            }
-            Tracked<String> value = contents.get().getBody().asString();
-            return Optional.of(new UTF16ZeroTerminated(contents.get(), value));
+            TerminatedToken<UnsignedBytes, UnsignedBytes> contents = terminatedWithChar(source, ctx, new byte[] { 0 , 0});
+            Tracked<String> value = contents.getBody().asString();
+            return new UTF16ZeroTerminated(contents, value);
+
         }
 
 
@@ -84,10 +74,10 @@ public class Strings {
         }
     }
 
-    private static Optional<TerminatedToken<UnsignedBytes, UnsignedBytes>> terminatedWithChar(ByteStream source, Context ctx, byte[] terminatorChar) {
+    private static TerminatedToken<UnsignedBytes, UnsignedBytes> terminatedWithChar(ByteStream source, Context ctx, byte[] terminatorChar) {
         return TerminatedToken.parseUntil(source, ctx, NestBigInteger.ZERO, NestBigInteger.of(terminatorChar.length), null,
                 (b,c) -> new ByteStream(b).readUnsigned(b.size(), c),
-                (s,c) -> s.readUnsigned(NestBigInteger.of(terminatorChar.length), c)
+                (s,c) -> Optional.of(s.readUnsigned(NestBigInteger.of(terminatorChar.length), c))
                         .filter(u -> u.asValue().sameBytes(NestValue.of(terminatorChar)))
         );
     }

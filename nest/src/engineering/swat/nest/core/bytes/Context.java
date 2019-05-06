@@ -9,8 +9,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class Context {
 
 	private final ByteOrder endianness;
-	private final ParseLogTarget logTarget;
 	private final Charset encoding;
+	private final ParseLogTarget logTarget;
 
 	private Context(Charset encoding, ByteOrder endianness, ParseLogTarget logTarget) {
 		this.encoding = encoding;
@@ -28,16 +28,16 @@ public class Context {
 		return new Context(encoding, endianness, logTarget);
 	}
 
+	public Context setParseLogTarget(ParseLogTarget logTarget) {
+		return new Context(encoding, endianness, logTarget);
+    }
+
 	public ByteOrder getByteOrder() {
 	    return this.endianness;
 	}
 
 	public Charset getEncoding() {
 		return encoding;
-	}
-
-	public Context setLogTarget(ParseLogTarget logTarget) {
-		return new Context(encoding, endianness, logTarget);
 	}
 
 
@@ -60,11 +60,11 @@ public class Context {
 	}
 
 	public void fail(String msg) {
-	    logTarget.fail(msg);
+		logTarget.fail(msg);
 	}
-    public void fail(String msg, @Nullable Object p0) {
+	public void fail(String msg, @Nullable Object p0) {
 		logTarget.fail(msg, p0);
-    }
+	}
 
 	public void fail(String msg, @Nullable Object p0, @Nullable Object p1) {
 		logTarget.fail(msg, p0, p1);
@@ -72,21 +72,6 @@ public class Context {
 
 	public void fail(String msg, @Nullable Object p0, @Nullable Object p1, @Nullable Object p2) {
 		logTarget.fail(msg, p0, p1, p2);
-	}
-
-	public void trace(String msg) {
-		logTarget.trace(msg);
-	}
-	public void trace(String msg, @Nullable Object p0) {
-		logTarget.trace(msg, p0);
-	}
-
-	public void trace(String msg, @Nullable Object p0, @Nullable Object p1) {
-		logTarget.trace(msg, p0, p1);
-	}
-
-	public void trace(String msg, @Nullable Object p0, @Nullable Object p1, @Nullable Object p2) {
-		logTarget.trace(msg, p0, p1, p2);
 	}
 
 }
