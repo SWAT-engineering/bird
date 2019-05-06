@@ -6,25 +6,29 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import engineering.swat.nest.core.nontokens.NestValue;
+import engineering.swat.nest.core.nontokens.Origin;
+import engineering.swat.nest.core.nontokens.Tracked;
 import java.util.function.BiFunction;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class OptionalToken<T extends Token> extends Token {
+public class OptionalToken<T extends Token> extends PrimitiveToken {
 	
 	private final @Nullable T token;
 
-	private OptionalToken(@Nullable T token) {
+	private OptionalToken(@Nullable T token, Context ctx) {
+		super(ctx);
 		this.token = token;
 	}
 	
 	public static <T extends Token> OptionalToken<T> optional(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parse) {
 		ByteStream backup = source.fork();
 		try {
-			return new OptionalToken<>(parse.apply(source, ctx));
+			return new OptionalToken<>(parse.apply(source, ctx), ctx);
 		}
 		catch (ParseError e) {
 			source.sync(backup); // restore after failure
-			return new OptionalToken<>(null);
+			return new OptionalToken<>(null, ctx);
 		}
 	}
 
@@ -61,5 +65,24 @@ public class OptionalToken<T extends Token> extends Token {
 
 	public boolean isPresent() {
 		return token != null;
+	}
+
+	@Override
+	public NestValue asValue() {
+		if (token instanceof PrimitiveToken) {
+			return ((PrimitiveToken) token).asValue();
+        }
+		return super.asValue();
+	}
+
+	@Override
+	public Tracked<String> asString() {
+		if (token instanceof PrimitiveToken) {
+			return ((PrimitiveToken) token).asString();
+		}
+		if (token != null) {
+		    return super.asString();
+		}
+		return new Tracked<>(Origin.EMPTY, "");
 	}
 }

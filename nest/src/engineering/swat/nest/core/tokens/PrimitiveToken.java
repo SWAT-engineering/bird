@@ -1,7 +1,9 @@
 package engineering.swat.nest.core.tokens;
 
 import engineering.swat.nest.core.bytes.Context;
+import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestValue;
+import engineering.swat.nest.core.nontokens.Origin;
 import engineering.swat.nest.core.nontokens.Tracked;
 
 public abstract class PrimitiveToken extends Token {
@@ -11,6 +13,12 @@ public abstract class PrimitiveToken extends Token {
 		this.ctx = ctx;
 	}
 
-	public abstract NestValue asValue();
-	public abstract Tracked<String> asString();
+	public NestValue asValue() {
+		return new NestValue(getTrackedBytes(), ctx);
+	}
+
+	public Tracked<String> asString() {
+		TrackedByteSlice slice = getTrackedBytes();
+		return new Tracked<>(Origin.of(slice), new String(slice.allBytes(), ctx.getEncoding()));
+	}
 }

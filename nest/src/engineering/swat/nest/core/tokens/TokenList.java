@@ -5,7 +5,6 @@ import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
-import engineering.swat.nest.core.nontokens.NestValue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -14,16 +13,15 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
-public class TokenList<T extends Token> extends Token implements Iterable<T> {
+public class TokenList<T extends Token> extends PrimitiveToken implements Iterable<T> {
 
 
 	private final List<T> contents;
 	private final MultipleTokenByteSlice<T> byteView;
-	private final Context ctx;
 
 	private TokenList(List<T> contents, Context ctx) {
+	    super(ctx);
 		this.contents = Collections.unmodifiableList(contents);
-		this.ctx = ctx;
 		byteView = MultipleTokenByteSlice.buildByteView(contents);
 	}
 
@@ -112,10 +110,6 @@ public class TokenList<T extends Token> extends Token implements Iterable<T> {
 	public int length() {
 		return contents.size();
 
-	}
-
-	public NestValue asValue() {
-		return new NestValue(getTrackedBytes(), ctx);
 	}
 
 	public T get(int index) {

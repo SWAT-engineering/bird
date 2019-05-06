@@ -4,21 +4,19 @@ import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
-import engineering.swat.nest.core.bytes.source.ByteOrigin;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class TerminatedToken<E extends Token, T extends Token> extends UserDefinedToken {
+public class TerminatedToken<E extends Token, T extends Token> extends PrimitiveToken {
 
     private final E body;
     private final T terminator;
 
-    private TerminatedToken(E body, T terminator) {
+    private TerminatedToken(E body, T terminator, Context ctx) {
+        super(ctx);
         this.body = body;
         this.terminator = terminator;
     }
@@ -81,7 +79,7 @@ public class TerminatedToken<E extends Token, T extends Token> extends UserDefin
                 E entry = entryParser.apply(source.readSlice(entrySize), ctx);
                 // now forward the source stream to after the terminator
                 source.sync(terminatorStream);
-                return new TerminatedToken<>(entry, terminator.get());
+                return new TerminatedToken<>(entry, terminator.get(), ctx);
             }
             terminatorCursor = terminatorCursor.add(stepSize);
         }
