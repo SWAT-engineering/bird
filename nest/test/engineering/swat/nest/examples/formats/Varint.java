@@ -10,7 +10,6 @@ import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.ByteOrder;
@@ -80,9 +79,27 @@ public class Varint {
         public static Optional<PrefixVarint> parse(ByteStream source, Context ctx) {
             AtomicReference<NestBigInteger> value = new AtomicReference<>();
             Optional<Token> entry = Choice.between(source, ctx,
-                    Case.of(PrefixVarint$1::parse, c -> value.set(c.value)),
-                    Case.of(PrefixVarint$2::parse, c -> value.set(c.value)),
-                    Case.of(PrefixVarint$3::parse, c -> value.set(c.value))
+                    (s,c) -> {
+                        Optional<PrefixVarint$1> result = PrefixVarint$1.parse(s, c);
+                        if(result.isPresent()) {
+                            value.set(result.get().value);
+                        }
+                        return result;
+                    },
+                    (s,c) -> {
+                        Optional<PrefixVarint$2> result = PrefixVarint$2.parse(s, c);
+                        if(result.isPresent()) {
+                            value.set(result.get().value);
+                        }
+                        return result;
+                    },
+                    (s,c) -> {
+                        Optional<PrefixVarint$3> result = PrefixVarint$3.parse(s, c);
+                        if(result.isPresent()) {
+                            value.set(result.get().value);
+                        }
+                        return result;
+                    }
             );
             if (!entry.isPresent()) {
                 ctx.fail("PrefixVarint missing from {}", source);

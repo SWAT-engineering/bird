@@ -10,7 +10,6 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -105,8 +104,8 @@ public class NestingAndCyclesTests {
 		
 		public static Optional<Loop> parse(ByteStream source, Context ctx, Node n) {
 			Optional<Token> entry = Choice.between(source, ctx,
-					Case.of((s, c) -> Loop$1.parse(s, c, n), x -> {}),
-					Case.of((s, c) -> Loop$2.parse(s, c, n), x -> {})
+					(s, c) -> Loop$1.parse(s, c, n),
+					(s, c) -> Loop$2.parse(s, c, n)
 			);
 			if (!entry.isPresent()) {
 				return Optional.empty();

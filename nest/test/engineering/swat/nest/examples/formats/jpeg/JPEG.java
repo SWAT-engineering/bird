@@ -9,7 +9,6 @@ import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.ByteOrder;
@@ -95,8 +94,8 @@ public class JPEG  {
 		
 		public static Optional<SizedScan> parse(ByteStream source, Context ctx) {
 			Optional<Token> entry = Choice.between(source, ctx,
-					Case.of(SizedSegment::parse, x -> {}),
-					Case.of(ScanSegment::parse, x -> {})
+					SizedSegment::parse,
+					ScanSegment::parse
 			);
 			if (!entry.isPresent()) {
 				ctx.fail("SizedScan missing from {}", source);
@@ -175,8 +174,8 @@ public class JPEG  {
 		
 		public static Optional<ScanEscape> parse(ByteStream source, Context ctx) {
 			Optional<Token> entry = Choice.between(source, ctx,
-					Case.of(ScanEscape$1::parse, x -> {}),
-					Case.of(ScanEscape$2::parse, x -> {})
+					ScanEscape$1::parse,
+					ScanEscape$2::parse
 			);
 			if (!entry.isPresent()) {
 				ctx.fail("ScanEscape from {}", source);

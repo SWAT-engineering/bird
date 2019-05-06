@@ -12,7 +12,6 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.examples.formats.jpeg.JPEG.Format;
@@ -78,10 +77,7 @@ public class FatLikeNestingTests {
         }
 
         public static Optional<PNGorJPEG> parse(ByteStream source, Context ctx) {
-            Optional<Token> entry = Choice.between(source, ctx,
-                    Case.of(PNG$::parse, x -> {}),
-                    Case.of(Format::parse, x -> {})
-            );
+            Optional<Token> entry = Choice.between(source, ctx, PNG$::parse, Format::parse);
             if (!entry.isPresent()) {
                 ctx.fail("PNGorJPEG choice failed {}", source);
                 return Optional.empty();

@@ -12,7 +12,6 @@ import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.io.IOException;
@@ -98,8 +97,20 @@ public class LinkedListSeekTest {
         public static Optional<LinkedListEntry> parse(ByteStream source, Context ctx, NestBigInteger offset) {
             AtomicReference<NestBigInteger> value = new AtomicReference<>();
             Optional<Token> parsed = Choice.between(source, ctx,
-                    Case.of((s,c) -> Node.parse(s, c, offset), (l) -> value.set(l.value)),
-                    Case.of((s,c) -> Leaf.parse(s, c, offset), (l) -> value.set(l.value))
+                    (s,c) -> {
+                        Optional<Node> result = Node.parse(s, c, offset);
+                        if (result.isPresent()) {
+                            value.set(result.get().value);
+                        }
+                        return result;
+                    },
+                    (s,c) -> {
+                        Optional<Leaf> result = Leaf.parse(s, c, offset);
+                        if (result.isPresent()) {
+                            value.set(result.get().value);
+                        }
+                        return result;
+                    }
             );
             if (!parsed.isPresent()) {
                 ctx.fail("[LinkedListEntry] failed to parse any choice");
