@@ -2,13 +2,13 @@ package engineering.swat.nest.examples.formats;
 
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.nontokens.Tracked;
+import engineering.swat.nest.core.tokens.Token;
+import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.primitive.TerminatedToken;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
-import engineering.swat.nest.core.tokens.UserDefinedToken;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
@@ -16,6 +16,7 @@ public class Strings {
 
 
     public static class ASCIIZeroTerminated extends UserDefinedToken {
+
         private final TerminatedToken<UnsignedBytes, UnsignedBytes> contents;
         public final Tracked<String> value;
 
@@ -27,25 +28,21 @@ public class Strings {
 
         public static ASCIIZeroTerminated parse(ByteStream source, Context ctx) {
             ctx = ctx.setEncoding(StandardCharsets.US_ASCII);
-            TerminatedToken<UnsignedBytes, UnsignedBytes> contents = terminatedWithChar(source, ctx, new byte[] { 0 });
+            TerminatedToken<UnsignedBytes, UnsignedBytes> contents = terminatedWithChar(source, ctx, new byte[]{0});
             Tracked<String> value = contents.getBody().asString();
             return new ASCIIZeroTerminated(contents, value);
         }
 
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return contents.getTrackedBytes();
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return contents.size();
+        protected Token[] parsedTokens() {
+            return new Token[]{contents};
         }
     }
 
 
     public static class UTF16ZeroTerminated extends UserDefinedToken {
+
         private final TerminatedToken<UnsignedBytes, UnsignedBytes> contents;
         public final Tracked<String> value;
 
@@ -56,7 +53,7 @@ public class Strings {
 
         public static UTF16ZeroTerminated parse(ByteStream source, Context ctx) {
             ctx = ctx.setEncoding(StandardCharsets.UTF_16);
-            TerminatedToken<UnsignedBytes, UnsignedBytes> contents = terminatedWithChar(source, ctx, new byte[] { 0 , 0});
+            TerminatedToken<UnsignedBytes, UnsignedBytes> contents = terminatedWithChar(source, ctx, new byte[]{0, 0});
             Tracked<String> value = contents.getBody().asString();
             return new UTF16ZeroTerminated(contents, value);
 
@@ -64,13 +61,8 @@ public class Strings {
 
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return contents.getTrackedBytes();
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return contents.size();
+        protected Token[] parsedTokens() {
+            return new Token[]{contents};
         }
     }
 

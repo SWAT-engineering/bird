@@ -21,7 +21,7 @@ public class BottomUpTokenVisitor<T> implements TokenVisitor<T> {
 
     @Override
     public T visitUserDefinedToken(UserDefinedToken value) {
-        Optional<T> childResult = Arrays.stream(value.getParsedTokens()).map(t -> t.accept(this)).reduce(mergeChildResults);
+        Optional<T> childResult = Arrays.stream(value.parsedTokens()).map(t -> t.accept(this)).reduce(mergeChildResults);
         T result = entryVisitor.visitUserDefinedToken(value);
         if (childResult.isPresent()) {
             return mergeChildResults.apply(childResult.get(), result);

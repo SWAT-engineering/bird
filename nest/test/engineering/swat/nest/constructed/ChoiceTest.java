@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
@@ -36,17 +35,19 @@ public class ChoiceTest {
 		});
 	}
 
-	
+
 	private static final class AorB extends UserDefinedToken {
+
 		public final NestBigInteger virtualField;
 		public final UnsignedBytes x;
 		public final Token entry;
+
 		private AorB(Token entry, NestBigInteger virtualField, UnsignedBytes x) {
 			this.entry = entry;
 			this.virtualField = virtualField;
 			this.x = x;
 		}
-		
+
 		public static AorB parse(ByteStream source, Context ctx) {
 			final AtomicReference<NestBigInteger> virtualField = new AtomicReference<>();
 			final AtomicReference<UnsignedBytes> x = new AtomicReference<>();
@@ -68,13 +69,8 @@ public class ChoiceTest {
 		}
 
 		@Override
-		public TrackedByteSlice getTrackedBytes() {
-			return entry.getTrackedBytes();
-		}
-
-		@Override
-		public NestBigInteger size() {
-			return entry.size();
+		protected Token[] parsedTokens() {
+			return new Token[]{entry};
 		}
 	}
 

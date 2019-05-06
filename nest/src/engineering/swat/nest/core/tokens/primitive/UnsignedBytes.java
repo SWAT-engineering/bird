@@ -7,6 +7,7 @@ import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.nontokens.Origin;
 import engineering.swat.nest.core.nontokens.Tracked;
 import engineering.swat.nest.core.tokens.PrimitiveToken;
+import engineering.swat.nest.core.tokens.TokenVisitor;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,4 +59,8 @@ public class UnsignedBytes extends PrimitiveToken  {
 		return new Tracked<>(Origin.of(slice), new String(slice.allBytes(), ctx.getEncoding()));
 	}
 
+	@Override
+	public <T> T accept(TokenVisitor<T> visitor) {
+		return visitor.visitUnsignedBytes(this);
+	}
 }

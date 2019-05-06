@@ -21,7 +21,6 @@ public abstract class Token {
 
 	public abstract  <T> T accept(TokenVisitor<T> visitor);
 
-
 	@Override
 	public boolean equals(@Nullable Object obj) {
 		throw new UnsupportedOperationException("Do not call equals on tokens, use sameBytes, or compare the slice from getTrackedBytes");

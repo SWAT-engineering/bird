@@ -7,7 +7,6 @@ import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
-import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
@@ -86,6 +85,7 @@ public class LinkedListSeekTest {
     }
 
     private static class LinkedListEntry extends UserDefinedToken {
+
         public final NestBigInteger value;
         private final Token parsed;
 
@@ -97,12 +97,12 @@ public class LinkedListSeekTest {
         public static LinkedListEntry parse(ByteStream source, Context ctx, NestBigInteger offset) {
             AtomicReference<NestBigInteger> value = new AtomicReference<>();
             Token parsed = Choice.between(source, ctx,
-                    (s,c) -> {
+                    (s, c) -> {
                         Node result = Node.parse(s, c, offset);
                         value.set(result.value);
                         return result;
                     },
-                    (s,c) -> {
+                    (s, c) -> {
                         Leaf result = Leaf.parse(s, c, offset);
                         value.set(result.value);
                         return result;
@@ -112,17 +112,13 @@ public class LinkedListSeekTest {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return parsed.getTrackedBytes();
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return parsed.size();
+        protected Token[] parsedTokens() {
+            return new Token[]{parsed};
         }
     }
 
     private static class Leaf extends UserDefinedToken {
+
         public final NestBigInteger value;
         public final UnsignedBytes next;
         public final UnsignedBytes rawValue;
@@ -145,17 +141,13 @@ public class LinkedListSeekTest {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return buildTrackedView(next, rawValue);
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return next.size().add(rawValue.size());
+        protected Token[] parsedTokens() {
+            return new Token[]{next, rawValue};
         }
     }
 
     private static class Node extends UserDefinedToken {
+
         public final NestBigInteger value;
         public final UnsignedBytes next;
         public final UnsignedBytes rawValue;
@@ -182,13 +174,8 @@ public class LinkedListSeekTest {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return buildTrackedView(next, rawValue, nextEntry);
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return next.size().add(rawValue.size()).add(nextEntry.size());
+        protected Token[] parsedTokens() {
+            return new Token[]{next, rawValue, nextEntry};
         }
     }
 

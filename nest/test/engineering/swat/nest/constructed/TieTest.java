@@ -6,11 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
-import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import engineering.swat.nest.core.tokens.Token;
+import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
-import engineering.swat.nest.core.tokens.UserDefinedToken;
 import org.junit.jupiter.api.Test;
 
 public class TieTest {
@@ -32,6 +32,7 @@ public class TieTest {
     }
 
     private static class Tie1 extends UserDefinedToken {
+
         public final UnsignedBytes data;
         public final OtherStruct other;
 
@@ -39,6 +40,7 @@ public class TieTest {
             this.data = data;
             this.other = other;
         }
+
         public static Tie1 parse(ByteStream source, Context ctx) {
             UnsignedBytes data = source.readUnsigned(4, ctx);
             // a tie is just a new bytestream that can start at any token
@@ -47,18 +49,13 @@ public class TieTest {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            // do not include the tie field to the tracked bytes view !
-            return buildTrackedView(data);
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return data.size();
+        protected Token[] parsedTokens() {
+            return new Token[]{data};
         }
     }
 
     private static class Tie2 extends UserDefinedToken {
+
         public final UnsignedBytes data1;
         public final UnsignedBytes data2;
         public final OtherStruct other;
@@ -79,18 +76,13 @@ public class TieTest {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            // do not include the tie field to the tracked bytes view !
-            return buildTrackedView(data1, data2);
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return data1.size().add(data2.size());
+        protected Token[] parsedTokens() {
+            return new Token[]{data1, data2};
         }
     }
 
     private static class OtherStruct extends UserDefinedToken {
+
         public final UnsignedBytes data1;
         public final UnsignedBytes data2;
 
@@ -107,13 +99,8 @@ public class TieTest {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return buildTrackedView(data1, data2);
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return data1.size().add(data2.size());
+        protected Token[] parsedTokens() {
+            return new Token[]{data1, data2};
         }
     }
 }
