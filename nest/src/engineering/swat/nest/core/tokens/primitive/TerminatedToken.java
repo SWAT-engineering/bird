@@ -7,6 +7,7 @@ import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.PrimitiveToken;
 import engineering.swat.nest.core.tokens.Token;
+import engineering.swat.nest.core.tokens.TokenVisitor;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -98,5 +99,10 @@ public class TerminatedToken<E extends Token, T extends Token> extends Primitive
     @Override
     public NestBigInteger size() {
         return body.size().add(terminator.size());
+    }
+
+    @Override
+    public <T> T accept(TokenVisitor<T> visitor) {
+        return visitor.visitTerminatedToken(this);
     }
 }

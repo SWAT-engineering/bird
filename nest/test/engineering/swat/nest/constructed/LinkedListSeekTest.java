@@ -7,12 +7,15 @@ import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
-import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
+import engineering.swat.nest.core.tokens.BottomUpTokenVisitor;
 import engineering.swat.nest.core.tokens.Token;
+import engineering.swat.nest.core.tokens.TokenVisitor;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
+import engineering.swat.nest.core.tokens.primitive.OptionalToken;
+import engineering.swat.nest.core.tokens.primitive.TerminatedToken;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.io.IOException;
@@ -71,6 +74,40 @@ public class LinkedListSeekTest {
     }
 
     @Test
+    void testWorkingIterator() throws IOException {
+        NestBigInteger result = LinkedListEntry.parse(wrap(TEST_DATA), Context.DEFAULT, NestBigInteger.ZERO)
+                .accept(new BottomUpTokenVisitor<>(
+                        new TokenVisitor<NestBigInteger>() {
+                            @Override
+                            public NestBigInteger visitUserDefinedToken(UserDefinedToken value) {
+                                return NestBigInteger.ZERO;
+                            }
+
+                            @Override
+                            public NestBigInteger visitOptionalToken(OptionalToken<? extends Token> value) {
+                                return NestBigInteger.ZERO;
+                            }
+
+                            @Override
+                            public NestBigInteger visitTerminatedToken(
+                                    TerminatedToken<? extends Token, ? extends Token> value) {
+                                return NestBigInteger.ZERO;
+                            }
+
+                            @Override
+                            public NestBigInteger visitTokenList(TokenList<? extends Token> value) {
+                                return NestBigInteger.ZERO;
+                            }
+
+                            @Override
+                            public NestBigInteger visitUnsignedBytes(UnsignedBytes value) {
+                                return value.size();
+                            }
+                        }, NestBigInteger::add));
+        assertEquals(result, NestBigInteger.of(18));
+    }
+
+    @Test
     void testParseMultipleLists() throws IOException {
         TokenList<LinkedListEntry> tokensFound = TokenList.untilParseFailure(wrap(TEST_DATA), Context.DEFAULT,
                 (s, c) -> {
@@ -86,6 +123,7 @@ public class LinkedListSeekTest {
     }
 
     private static class LinkedListEntry extends UserDefinedToken {
+
         public final NestBigInteger value;
         private final Token parsed;
 
@@ -97,12 +135,12 @@ public class LinkedListSeekTest {
         public static LinkedListEntry parse(ByteStream source, Context ctx, NestBigInteger offset) {
             AtomicReference<NestBigInteger> value = new AtomicReference<>();
             Token parsed = Choice.between(source, ctx,
-                    (s,c) -> {
+                    (s, c) -> {
                         Node result = Node.parse(s, c, offset);
                         value.set(result.value);
                         return result;
                     },
-                    (s,c) -> {
+                    (s, c) -> {
                         Leaf result = Leaf.parse(s, c, offset);
                         value.set(result.value);
                         return result;
@@ -112,17 +150,13 @@ public class LinkedListSeekTest {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return parsed.getTrackedBytes();
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return parsed.size();
+        protected Token[] parsedTokens() {
+            return new Token[]{parsed};
         }
     }
 
     private static class Leaf extends UserDefinedToken {
+
         public final NestBigInteger value;
         public final UnsignedBytes next;
         public final UnsignedBytes rawValue;
@@ -145,17 +179,13 @@ public class LinkedListSeekTest {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return buildTrackedView(next, rawValue);
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return next.size().add(rawValue.size());
+        protected Token[] parsedTokens() {
+            return new Token[]{next, rawValue};
         }
     }
 
     private static class Node extends UserDefinedToken {
+
         public final NestBigInteger value;
         public final UnsignedBytes next;
         public final UnsignedBytes rawValue;
@@ -182,13 +212,8 @@ public class LinkedListSeekTest {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return buildTrackedView(next, rawValue, nextEntry);
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return next.size().add(rawValue.size()).add(nextEntry.size());
+        protected Token[] parsedTokens() {
+            return new Token[]{next, rawValue, nextEntry};
         }
     }
 

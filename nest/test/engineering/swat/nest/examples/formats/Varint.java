@@ -21,6 +21,7 @@ public class Varint {
     // based on varint.bird
 
     public static class LEB128 extends UserDefinedToken {
+
         public final TokenList<UnsignedBytes> raw;
         public final UnsignedBytes lastOne;
         public final NestBigInteger value;
@@ -49,17 +50,13 @@ public class Varint {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return raw.getTrackedBytes();
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return raw.size();
+        protected Token[] parsedTokens() {
+            return new Token[]{raw};
         }
     }
 
     public static class PrefixVarint extends UserDefinedToken {
+
         private final Token entry;
         public final NestBigInteger value;
 
@@ -91,6 +88,7 @@ public class Varint {
         }
 
         private static class PrefixVarint$1 extends UserDefinedToken {
+
             public final UnsignedBytes prefixHeader;
             public final NestBigInteger value;
 
@@ -102,24 +100,20 @@ public class Varint {
             public static PrefixVarint$1 parse(ByteStream source, Context ctx) {
                 UnsignedBytes prefixHeader = source.readUnsigned(1, ctx);
                 if (!prefixHeader.asValue().and(NestValue.of(0b1, 1)).sameBytes(NestValue.of(0b1, 1))) {
-                   throw new ParseError("PrefixVarint$1.prefixHeader", prefixHeader);
+                    throw new ParseError("PrefixVarint$1.prefixHeader", prefixHeader);
                 }
                 NestBigInteger value = prefixHeader.asValue().shr(NestBigInteger.ONE).asInteger(Sign.UNSIGNED);
                 return new PrefixVarint$1(prefixHeader, value);
             }
 
             @Override
-            public TrackedByteSlice getTrackedBytes() {
-                return prefixHeader.getTrackedBytes();
-            }
-
-            @Override
-            public NestBigInteger size() {
-                return prefixHeader.size();
+            protected Token[] parsedTokens() {
+                return new Token[]{prefixHeader};
             }
         }
 
         private static class PrefixVarint$2 extends UserDefinedToken {
+
             public final UnsignedBytes prefixHeader;
             public final NestBigInteger prefixLength;
             public final UnsignedBytes rest;
@@ -149,17 +143,13 @@ public class Varint {
             }
 
             @Override
-            public TrackedByteSlice getTrackedBytes() {
-                return buildTrackedView(prefixHeader, rest) ;
-            }
-
-            @Override
-            public NestBigInteger size() {
-                return prefixHeader.size().add(rest.size());
+            protected Token[] parsedTokens() {
+                return new Token[]{prefixHeader, rest};
             }
         }
 
         private static class PrefixVarint$3 extends UserDefinedToken {
+
             public final UnsignedBytes prefixHeader;
             public final UnsignedBytes fullValue;
             public final NestBigInteger value;
@@ -181,25 +171,15 @@ public class Varint {
             }
 
             @Override
-            public TrackedByteSlice getTrackedBytes() {
-                return buildTrackedView(prefixHeader, fullValue);
-            }
-
-            @Override
-            public NestBigInteger size() {
-                return prefixHeader.size().add(fullValue.size());
+            protected Token[] parsedTokens() {
+                return new Token[]{prefixHeader, fullValue};
             }
         }
 
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return entry.getTrackedBytes();
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return entry.size();
+        protected Token[] parsedTokens() {
+            return new Token[]{entry};
         }
     }
 

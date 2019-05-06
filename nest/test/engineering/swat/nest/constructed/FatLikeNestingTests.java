@@ -8,7 +8,6 @@ import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
-import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
@@ -68,6 +67,7 @@ public class FatLikeNestingTests {
 
 
     private static class PNGorJPEG extends UserDefinedToken {
+
         private final Token entry;
 
         private PNGorJPEG(Token entry) {
@@ -83,18 +83,14 @@ public class FatLikeNestingTests {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return entry.getTrackedBytes();
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return entry.size();
+        protected Token[] parsedTokens() {
+            return new Token[]{entry};
         }
     }
 
 
     private static class NestedFiles<T extends Token> extends UserDefinedToken {
+
         public final UnsignedBytes header;
         public final TokenList<NestedFile<T>> files;
 
@@ -103,28 +99,26 @@ public class FatLikeNestingTests {
             this.files = files;
         }
 
-        public static <T extends Token> NestedFiles<T> parse(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> tParser) {
+        public static <T extends Token> NestedFiles<T> parse(ByteStream source, Context ctx,
+                BiFunction<ByteStream, Context, T> tParser) {
             ctx = ctx.setByteOrder(ByteOrder.LITTLE_ENDIAN);
             UnsignedBytes header = source.readUnsigned(NestBigInteger.of(3), ctx);
             if (!header.asString().get().equals("HDR")) {
                 throw new ParseError("NestedFiles.header", header);
             }
-            TokenList<NestedFile<T>> files = TokenList.untilParseFailure(source, ctx, (s,c) -> NestedFile.parse(s, c, tParser));
+            TokenList<NestedFile<T>> files = TokenList
+                    .untilParseFailure(source, ctx, (s, c) -> NestedFile.parse(s, c, tParser));
             return new NestedFiles<>(header, files);
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return buildTrackedView(header, files);
-        }
-
-        @Override
-        public NestBigInteger size() {
-            return header.size().add(files.size());
+        protected Token[] parsedTokens() {
+            return new Token[]{header, files};
         }
     }
 
     private static class NestedFile<T extends Token> extends UserDefinedToken {
+
         public final UnsignedBytes size;
         public final UnsignedBytes raw;
         public final T parsedFile;
@@ -134,7 +128,9 @@ public class FatLikeNestingTests {
             this.raw = raw;
             this.parsedFile = parsedFile;
         }
-        public static <T extends Token> NestedFile<T> parse(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> tParser) {
+
+        public static <T extends Token> NestedFile<T> parse(ByteStream source, Context ctx,
+                BiFunction<ByteStream, Context, T> tParser) {
             final UnsignedBytes size = source.readUnsigned(NestBigInteger.of(4), ctx);
             final UnsignedBytes raw = source.readUnsigned(size.asValue().asInteger(Sign.UNSIGNED), ctx);
             final T parsedFile = tParser.apply(new ByteStream(raw), ctx);
@@ -142,13 +138,13 @@ public class FatLikeNestingTests {
         }
 
         @Override
-        public TrackedByteSlice getTrackedBytes() {
-            return buildTrackedView(size, raw);
+        protected Token[] parsedTokens() {
+            return new Token[]{size, raw};
         }
 
         @Override
-        public NestBigInteger size() {
-            return size.size().add(raw.size());
+        protected Token[] allTokens() {
+            return new Token[] {size, raw, parsedFile };
         }
     }
 

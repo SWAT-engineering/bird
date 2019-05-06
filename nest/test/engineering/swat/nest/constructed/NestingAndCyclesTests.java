@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
@@ -26,9 +25,11 @@ public class NestingAndCyclesTests {
 
 	// translation of nesting_and_cycles.bird
 	public static final class Start extends UserDefinedToken {
+
 		public final UnsignedBytes header;
 		public final Node initial;
 		public final Loop loop;
+
 		private Start(UnsignedBytes header, Node initial, Loop loop) {
 			this.header = header;
 			this.initial = initial;
@@ -47,24 +48,21 @@ public class NestingAndCyclesTests {
 		}
 
 		@Override
-		public TrackedByteSlice getTrackedBytes() {
-			return buildTrackedView(header, initial, loop);
-		}
-
-		@Override
-		public NestBigInteger size() {
-			return header.size().add(initial.size().add(loop.size()));
+		protected Token[] parsedTokens() {
+			return new Token[]{header, initial, loop};
 		}
 	}
-	
+
 	public static final class Node extends UserDefinedToken {
+
 		public final UnsignedBytes a;
 		public final UnsignedBytes b;
+
 		private Node(UnsignedBytes a, UnsignedBytes b) {
 			this.a = a;
 			this.b = b;
 		}
-		
+
 		public static Node parse(ByteStream source, Context ctx) {
 			UnsignedBytes a = source.readUnsigned(1, ctx);
 			UnsignedBytes b = source.readUnsigned(1, ctx);
@@ -72,21 +70,19 @@ public class NestingAndCyclesTests {
 		}
 
 		@Override
-		public TrackedByteSlice getTrackedBytes() {
-			return buildTrackedView(a, b);
-		}
-
-		@Override
-		public NestBigInteger size() {
-			return a.size().add(b.size());
+		protected Token[] parsedTokens() {
+			return new Token[]{a, b};
 		}
 	}
-	
-	public static final class Loop extends UserDefinedToken{
+
+	public static final class Loop extends UserDefinedToken {
+
 		public final Token entry;
 
-		private Loop(Token entry) { this.entry = entry; }
-		
+		private Loop(Token entry) {
+			this.entry = entry;
+		}
+
 		public static Loop parse(ByteStream source, Context ctx, Node n) {
 			Token entry = Choice.between(source, ctx,
 					(s, c) -> Loop$1.parse(s, c, n),
@@ -94,10 +90,11 @@ public class NestingAndCyclesTests {
 			);
 			return new Loop(entry);
 		}
-		
+
 		private static final class Loop$1 extends UserDefinedToken {
+
 			private final UnsignedBytes $dummy1;
-			
+
 			public Loop$1(UnsignedBytes $dummy1) {
 				this.$dummy1 = $dummy1;
 			}
@@ -113,22 +110,18 @@ public class NestingAndCyclesTests {
 
 
 			@Override
-			public TrackedByteSlice getTrackedBytes() {
-				return $dummy1.getTrackedBytes();
-			}
-
-			@Override
-			public NestBigInteger size() {
-				return $dummy1.size();
+			protected Token[] parsedTokens() {
+				return new Token[]{$dummy1};
 			}
 		}
 
 		private static final class Loop$2 extends UserDefinedToken {
+
 			public final UnsignedBytes aRef;
 			public final Node n1;
 			public final Node n2;
 			public final Loop l;
-			
+
 			private Loop$2(UnsignedBytes aRef, Node n1, Node n2, Loop l) {
 				this.aRef = aRef;
 				this.n1 = n1;
@@ -153,28 +146,18 @@ public class NestingAndCyclesTests {
 				Loop l = Loop.parse(source, ctx, n1);
 				return new Loop$2(aRef, n1, n2, l);
 			}
-			
+
 
 			@Override
-			public TrackedByteSlice getTrackedBytes() {
-				return buildTrackedView(aRef, n1, n2, l);
+			protected Token[] parsedTokens() {
+				return new Token[]{aRef, n1, n2, l};
 			}
 
-			@Override
-			public NestBigInteger size() {
-				return aRef.size().add(n1.size()).add(n2.size()).add(l.size());
-			}
-			
 		}
 
 		@Override
-		public TrackedByteSlice getTrackedBytes() {
-			return entry.getTrackedBytes();
-		}
-
-		@Override
-		public NestBigInteger size() {
-			return entry.size();
+		protected Token[] parsedTokens() {
+			return new Token[]{entry};
 		}
 	}
 }

@@ -7,6 +7,7 @@ import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.PrimitiveToken;
 import engineering.swat.nest.core.tokens.Token;
+import engineering.swat.nest.core.tokens.TokenVisitor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -120,5 +121,10 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	@Override
 	public Iterator<T> iterator() {
 		return contents.iterator();
+	}
+
+	@Override
+	public <T> T accept(TokenVisitor<T> visitor) {
+		return visitor.visitTokenList(this);
 	}
 }
