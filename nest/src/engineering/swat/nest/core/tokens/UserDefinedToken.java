@@ -18,6 +18,14 @@ public abstract class UserDefinedToken extends Token {
 
 	protected abstract Token[] parsedTokens();
 
+	/**
+	 * In most cases, this is the same as the parsed tokens, but for nested parsing scenario's this should be overridden
+	 * @return
+	 */
+	protected Token[] allTokens() {
+	    return parsedTokens();
+	}
+
 	@Override
 	public TrackedByteSlice getTrackedBytes() {
 		return MultipleTokenByteSlice.buildByteView(Arrays.asList(parsedTokens()));

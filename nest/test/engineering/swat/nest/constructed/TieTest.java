@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
-import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
@@ -52,6 +51,11 @@ public class TieTest {
         protected Token[] parsedTokens() {
             return new Token[]{data};
         }
+
+        @Override
+        protected Token[] allTokens() {
+            return new Token[] {data, other};
+        }
     }
 
     private static class Tie2 extends UserDefinedToken {
@@ -78,6 +82,11 @@ public class TieTest {
         @Override
         protected Token[] parsedTokens() {
             return new Token[]{data1, data2};
+        }
+
+        @Override
+        protected Token[] allTokens() {
+            return new Token[] { data1, data2, other};
         }
     }
 

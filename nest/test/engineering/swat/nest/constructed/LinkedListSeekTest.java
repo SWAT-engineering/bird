@@ -9,9 +9,13 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
+import engineering.swat.nest.core.tokens.BottomUpTokenVisitor;
 import engineering.swat.nest.core.tokens.Token;
+import engineering.swat.nest.core.tokens.TokenVisitor;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
+import engineering.swat.nest.core.tokens.primitive.OptionalToken;
+import engineering.swat.nest.core.tokens.primitive.TerminatedToken;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.io.IOException;
@@ -67,6 +71,40 @@ public class LinkedListSeekTest {
     @Test
     void testWorkingSeekingLinkedList() throws IOException {
         assertEquals(NestBigInteger.of(9), LinkedListEntry.parse(wrap(TEST_DATA), Context.DEFAULT, NestBigInteger.ZERO).value);
+    }
+
+    @Test
+    void testWorkingIterator() throws IOException {
+        NestBigInteger result = LinkedListEntry.parse(wrap(TEST_DATA), Context.DEFAULT, NestBigInteger.ZERO)
+                .accept(new BottomUpTokenVisitor<>(
+                        new TokenVisitor<NestBigInteger>() {
+                            @Override
+                            public NestBigInteger visitUserDefinedToken(UserDefinedToken value) {
+                                return NestBigInteger.ZERO;
+                            }
+
+                            @Override
+                            public NestBigInteger visitOptionalToken(OptionalToken<? extends Token> value) {
+                                return NestBigInteger.ZERO;
+                            }
+
+                            @Override
+                            public NestBigInteger visitTerminatedToken(
+                                    TerminatedToken<? extends Token, ? extends Token> value) {
+                                return NestBigInteger.ZERO;
+                            }
+
+                            @Override
+                            public NestBigInteger visitTokenList(TokenList<? extends Token> value) {
+                                return NestBigInteger.ZERO;
+                            }
+
+                            @Override
+                            public NestBigInteger visitUnsignedBytes(UnsignedBytes value) {
+                                return value.size();
+                            }
+                        }, NestBigInteger::add));
+        assertEquals(result, NestBigInteger.of(18));
     }
 
     @Test

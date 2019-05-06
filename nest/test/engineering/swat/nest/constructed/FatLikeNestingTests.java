@@ -141,6 +141,11 @@ public class FatLikeNestingTests {
         protected Token[] parsedTokens() {
             return new Token[]{size, raw};
         }
+
+        @Override
+        protected Token[] allTokens() {
+            return new Token[] {size, raw, parsedFile };
+        }
     }
 
 }
