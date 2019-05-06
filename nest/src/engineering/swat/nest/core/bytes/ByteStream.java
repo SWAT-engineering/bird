@@ -27,13 +27,13 @@ public class ByteStream {
 	}
 
 	public UnsignedBytes readUnsigned(int size, Context ctx) {
-	    return readUnsigned(NestBigInteger.of(size), ctx);
+	    return readUnsigned(NestBigInteger.ofUntracked(size), ctx);
 	}
 
 	public UnsignedBytes readUnsigned(NestBigInteger size, Context ctx) {
 		assert size.compareTo(NestBigInteger.ZERO) >= 0;
 		NestBigInteger newOffset = offset.add(size);
-		if (newOffset.compareTo(limit) > 0) {
+		if (newOffset.greaterThan(limit)) {
 			throw new EOSError();
 		}
 		try {
@@ -48,7 +48,7 @@ public class ByteStream {
 		assert size.compareTo(NestBigInteger.ZERO) >= 0;
 		NestBigInteger sliceOffset = offset;
 		NestBigInteger newOffset = sliceOffset.add(size);
-		if (newOffset.compareTo(limit) > 0) {
+		if (newOffset.greaterThan(limit)) {
 			throw new EOSError();
 		}
 		offset = newOffset;

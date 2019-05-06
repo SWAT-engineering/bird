@@ -56,11 +56,11 @@ public class JPEG  {
 		
 		public static Header parse(ByteStream source, Context ctx) {
 			UnsignedBytes marker = source.readUnsigned(1, ctx);
-			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
+			if (!(marker.sameBytes(NestValue.of(0xFF, 1)))) {
 				throw new ParseError("Header.marker", marker);
 			}
 			UnsignedBytes identifier = source.readUnsigned(1, ctx);
-			if (!(identifier.asValue().sameBytes(NestValue.of(0xD8, 1)))) {
+			if (!(identifier.sameBytes(NestValue.of(0xD8, 1)))) {
 				throw new ParseError("Header.identifier", identifier);
 			}
 			return new Header(marker, identifier);
@@ -119,7 +119,7 @@ public class JPEG  {
 
 		public static SizedSegment parse(ByteStream source, Context ctx) {
 			UnsignedBytes marker = source.readUnsigned(1, ctx);
-			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
+			if (!(marker.sameBytes(NestValue.of(0xFF, 1)))) {
 				throw new ParseError("SizedSegment.marker", marker);
 			}
 			UnsignedBytes identifier = source.readUnsigned(1, ctx);
@@ -164,7 +164,7 @@ public class JPEG  {
 			
 			public static ScanEscape$1 parse(ByteStream source, Context ctx) {
 				UnsignedBytes scanData = source.readUnsigned(1, ctx);
-				if (!(!scanData.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
+				if (!(!scanData.sameBytes(NestValue.of(0xFF, 1)))) {
 					throw new ParseError("ScanEscape$1.scanData", scanData);
 				}
 				return new ScanEscape$1(scanData);
@@ -188,7 +188,7 @@ public class JPEG  {
 			
 			public static ScanEscape$2 parse(ByteStream source, Context ctx) {
 				UnsignedBytes escape = source.readUnsigned(2, ctx);
-				if (!(escape.asValue().sameBytes(NestValue.of(0xFF00, 2)) ||
+				if (!(escape.sameBytes(NestValue.of(0xFF00, 2)) ||
 						(escape.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xFFCF)) > 0 &&
 								escape.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xFFD8)) < 0))) {
 					throw new ParseError("ScanEscape$2.escape", escape);
@@ -237,11 +237,11 @@ public class JPEG  {
 		public static ScanSegment parse(ByteStream source, Context ctx) {
 			UnsignedBytes marker = source.readUnsigned(1, ctx);
 
-			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
+			if (!(marker.sameBytes(NestValue.of(0xFF, 1)))) {
 				throw new ParseError("ScanSegment.marker", marker);
 			}
 			UnsignedBytes identifier = source.readUnsigned(1, ctx);
-			if (!(identifier.asValue().sameBytes(NestValue.of(0xDA, 1)))) {
+			if (!(identifier.sameBytes(NestValue.of(0xDA, 1)))) {
 				throw new ParseError("ScanSegment.identifier", identifier);
 			}
 			UnsignedBytes length = source.readUnsigned(2, ctx);
@@ -273,11 +273,11 @@ public class JPEG  {
 
 			UnsignedBytes marker = source.readUnsigned(1, ctx);
 
-			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
+			if (!(marker.sameBytes(NestValue.of(0xFF, 1)))) {
 				throw new ParseError("Footer.marker", marker);
 			}
 			UnsignedBytes identifier = source.readUnsigned(1, ctx);
-			if (!(identifier.asValue().sameBytes(NestValue.of(0xD9, 1)))) {
+			if (!(identifier.sameBytes(NestValue.of(0xD9, 1)))) {
 				throw new ParseError("Footer.identifier", identifier);
 			}
 			return new Footer(marker, identifier);

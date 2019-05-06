@@ -48,7 +48,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
 
     @Override
     public NestBigInteger size() {
-        return NestBigInteger.of(nativeSize());
+        return NestBigInteger.ofUntracked(nativeSize());
     }
 
     @Override
@@ -83,7 +83,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
                 return false;
             }
             for (int cursor = 0; cursor < nativeSize(); cursor++) {
-                if (source.get(offset + cursor) != bytes.get(NestBigInteger.of(cursor))) {
+                if (source.get(offset + cursor) != bytes.get(NestBigInteger.ofUntracked(cursor))) {
                     return false;
                 }
             }
