@@ -1,5 +1,6 @@
 package engineering.swat.nest.core.tokens.primitive;
 
+import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
@@ -11,16 +12,19 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 public class TokenList<T extends Token> extends PrimitiveToken implements Iterable<T> {
+
+
 	private final List<T> contents;
+	private final MultipleTokenByteSlice<T> byteView;
 
 	private TokenList(List<T> contents, Context ctx) {
 	    super(ctx);
 		this.contents = Collections.unmodifiableList(contents);
+		byteView = MultipleTokenByteSlice.buildByteView(contents);
 	}
 
 
@@ -32,17 +36,20 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	 * @param <T>
 	 * @return
 	 */
-	public static <T extends Token> TokenList<T> untilParseFailure(ByteStream source, Context ctx, BiFunction<ByteStream, Context, Optional<T>> parser) {
+	public static <T extends Token> TokenList<T> untilParseFailure(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser) {
 		ByteStream lastSuccess = source.fork();
 		List<T> result = new ArrayList<>();
-		Optional<T> newValue;
-		while ((newValue = parser.apply(source, ctx)).isPresent()) {
-			ctx.trace("[TokenList::untilParseFailure] success parse at: {}", source);
-            lastSuccess = source.fork();
-            result.add(newValue.get());
+		while (true) {
+			try {
+				T newValue = parser.apply(source, ctx);
+				lastSuccess = source.fork();
+				result.add(newValue);
+			}
+			catch (ParseError e) {
+                source.sync(lastSuccess); // reset the stream to the end of the last successful parse
+				break;
+			}
 		}
-		ctx.trace("[TokenList::untilParseFailure] failed after: {}", source);
-		source.sync(lastSuccess); // reset the stream to the end of the last successful parse
 		return new TokenList<>(result, ctx);
 	}
 
@@ -55,20 +62,12 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	 * @param <T>
 	 * @return
 	 */
-	public static <T extends Token> Optional<TokenList<T>> times(ByteStream source, Context ctx, BiFunction<ByteStream, Context, Optional<T>> parser, int times) {
+	public static <T extends Token> TokenList<T> times(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser, int times) {
 		List<T> result = new ArrayList<>(times);
 		for (int i = 0; i < times; i++) {
-			Optional<T> newEntry = parser.apply(source, ctx);
-			if (newEntry.isPresent()) {
-				ctx.trace("[TokenList::times] success parse at: {} ({}-nth)", source, i);
-				result.add(newEntry.get());
-			}
-			else {
-			    ctx.fail("[TokenList::times] Failed to parse at {}", i);
-				return Optional.empty();
-			}
+			result.add(parser.apply(source, ctx));
 		}
-		return Optional.of(new TokenList<>(result, ctx));
+		return new TokenList<>(result, ctx);
 	}
 
 	/**
@@ -80,28 +79,20 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	 * @param <T>
 	 * @return
 	 */
-	public static <T extends Token> Optional<TokenList<T>> parseWhile(ByteStream source, Context ctx, BiFunction<ByteStream, Context, Optional<T>> parser, Predicate<T> whileCondition) {
+	public static <T extends Token> TokenList<T> parseWhile(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser, Predicate<T> whileCondition) {
 		List<T> result = new ArrayList<>();
 		while (true) {
 			ByteStream lastSuccess = source.fork();
-			Optional<T> parsedValue = parser.apply(source, ctx);
-			if (parsedValue.isPresent()) {
-				T actualValue = parsedValue.get();
-			    ctx.trace("[TokenList::parseWhile] parse successful, checking if matched: {}",  actualValue);
-				if (whileCondition.test(actualValue)) {
-					result.add(actualValue);
-				} else {
-					ctx.trace("[TokenList::parseWhile] predicate returned false");
-					source.sync(lastSuccess);
-					break;
-				}
+			T parsedValue = parser.apply(source, ctx);
+			if (whileCondition.test(parsedValue)) {
+				result.add(parsedValue);
 			}
 			else {
-				ctx.fail("[TokenList::parseWhile] failed to parse {} at {}", parser, source);
-				return Optional.empty();
+				source.sync(lastSuccess);
+				break;
 			}
 		}
-		return Optional.of(new TokenList<>(result, ctx));
+		return new TokenList<>(result, ctx);
     }
 
 	public static <T extends Token> TokenList<T> of(Context ctx, T... nestedTokens) {
@@ -110,12 +101,12 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 
 	@Override
 	public TrackedByteSlice getTrackedBytes() {
-	    return MultipleTokenByteSlice.buildByteView(contents);
+	    return byteView;
 	}
 
 	@Override
 	public NestBigInteger size() {
-	    return contents.stream().map(Token::size).reduce(NestBigInteger.ZERO, NestBigInteger::add);
+	    return byteView.size();
 	}
 
 	public int length() {

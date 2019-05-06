@@ -1,5 +1,6 @@
 package engineering.swat.nest.core.bytes.source;
 
+import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.net.URI;
@@ -25,7 +26,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
         int newOffset = Math.addExact(this.offset, offset.intValueExact());
         int newLimit = Math.addExact(newOffset, size.intValueExact());
         if (newLimit > limit) {
-            throw new IllegalArgumentException("Invalid slice");
+            throw new ParseError("Invalid slice");
         }
         return new ByteBufferSlice(source, newOffset, newLimit, origin);
     }
@@ -35,7 +36,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
         return new ByteOrigin() {
             @Override
             public NestBigInteger getOffset() {
-                return index.add(NestBigInteger.ofUntracked(offset));
+                return index.add(NestBigInteger.of(offset));
             }
 
             @Override
@@ -47,7 +48,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
 
     @Override
     public NestBigInteger size() {
-        return NestBigInteger.ofUntracked(nativeSize());
+        return NestBigInteger.of(nativeSize());
     }
 
     @Override
@@ -82,7 +83,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
                 return false;
             }
             for (int cursor = 0; cursor < nativeSize(); cursor++) {
-                if (source.get(offset + cursor) != bytes.get(NestBigInteger.ofUntracked(cursor))) {
+                if (source.get(offset + cursor) != bytes.get(NestBigInteger.of(cursor))) {
                     return false;
                 }
             }

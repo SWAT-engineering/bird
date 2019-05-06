@@ -96,6 +96,14 @@ class NestBitsFull implements NestBits {
     }
 
     @Override
+    public NestBigInteger trailingZeroes() {
+        if (value.isEmpty()) {
+            return NestBigInteger.ZERO;
+        }
+        return NestBigInteger.of(value.nextSetBit(0));
+    }
+
+    @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof NestBitsFull) {
             return minByteSize == ((NestBitsFull) obj).minByteSize && value.equals(((NestBitsFull) obj).value);

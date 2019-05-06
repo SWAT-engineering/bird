@@ -1,27 +1,48 @@
 package engineering.swat.nest.core.tokens.operations;
 
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.tokens.Token;
-import java.util.Optional;
-import java.util.function.BiFunction;
 
 public class Choice {
 
 	@SafeVarargs
-	public static Optional<Token> between(ByteStream source, Context ctx, BiFunction<ByteStream, Context, Optional<? extends Token>>... cases) {
+	public static Token between(ByteStream source, Context ctx, Case<? extends Token>... cases) {
 		ByteStream backup = source.fork();
-		for (BiFunction<ByteStream, Context, Optional<? extends  Token>> c: cases) {
-			Optional<Token> result = (Optional<Token>) c.apply(source, ctx);
-			if (result.isPresent()) {
-				return result;
+		for (Case<?> c: cases) {
+			try {
+				return c.parse(source, ctx);
 			}
-			else {
-			    ctx.trace("[Choice::between] failed to parse case {}", c);
-				source.sync(backup); // reset the stream to before the parse
+			catch (ParseError e) {
+			    source.sync(backup); // reset the stream to before the parse
 			}
 		}
-		ctx.fail("[Choice::between] none of the cases matched");
-		return Optional.empty();
+		throw new ParseError("None of the choices parsed");
 	}
+
+	public static final class Case<T extends Token> {
+		
+		private BiFunction<ByteStream, Context, T> parse;
+		private Consumer<T> successHandler;
+
+		private Case(BiFunction<ByteStream, Context, T> parse, Consumer<T> successHandler) {
+			this.parse = parse;
+			this.successHandler = successHandler;
+		}
+
+		public static <T extends Token> Case<T> of(BiFunction<ByteStream, Context, T> parse, Consumer<T> successHandler) {
+			return new Case<>(parse, successHandler);
+		}
+
+		public Token parse(ByteStream source, Context ctx) {
+			T result = parse.apply(source, ctx);
+			successHandler.accept(result);
+			return result;
+		}
+
+	}
+
 }

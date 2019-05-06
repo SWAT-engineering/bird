@@ -1,5 +1,6 @@
 package engineering.swat.nest.core.tokens.primitive;
 
+import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
@@ -46,9 +47,9 @@ public class TerminatedToken<E extends Token, T extends Token> extends Primitive
      * @param <T> type of the terminator
      * @return a terminated token instance
      */
-    public static <E extends Token, T extends Token> Optional<TerminatedToken<E,T>> parseUntil(ByteStream source, Context ctx,
+    public static <E extends Token, T extends Token> TerminatedToken<E,T> parseUntil(ByteStream source, Context ctx,
             NestBigInteger initialCheck, NestBigInteger stepSize, @Nullable NestBigInteger maxLength,
-            BiFunction<TrackedByteSlice, Context, Optional<E>> entryParser,
+            BiFunction<TrackedByteSlice, Context, E> entryParser,
             BiFunction<ByteStream, Context, Optional<T>> terminatorParser) {
         if (stepSize.isNegative() || stepSize.isZero()) {
             throw new IllegalArgumentException("stepSize should be positive");
@@ -67,37 +68,24 @@ public class TerminatedToken<E extends Token, T extends Token> extends Primitive
         NestBigInteger terminatorCursor = source.getOffset().add(initialCheck);
         NestBigInteger terminatorMax = maxLength == null ? null :  source.getOffset().add(maxLength);
         while (terminatorMax == null || terminatorCursor.compareTo(terminatorMax) <= 0) {
-            Optional<ByteStream> terminatorStreamOpt = source.fork(terminatorCursor);
-            ByteStream terminatorStream;
-            if (terminatorStreamOpt.isPresent()) {
-                terminatorStream = terminatorStreamOpt.get();
+            ByteStream terminatorStream = source.fork(terminatorCursor);
+            Optional<T> terminator;
+            try {
+                terminator = terminatorParser.apply(terminatorStream, ctx);
+            } catch (ParseError e) {
+                terminator = Optional.empty();
             }
-            else {
-                ctx.fail("Terminated token failed after EOS: {} (limit: {})", source, terminatorCursor);
-                return Optional.empty();
-            }
-            Optional<T> terminator = terminatorParser.apply(terminatorStream, ctx);
             if (terminator.isPresent()) {
                 // we have found the terminator, let's now parse E
                 NestBigInteger entrySize = terminatorCursor.subtract(source.getOffset());
-                Optional<E> entry = entryParser.apply(source.readSlice(entrySize, ctx).orElseThrow(RuntimeException::new), ctx);
-                if (entry.isPresent()) {
-                    // now forward the source stream to after the terminator
-                    source.sync(terminatorStream);
-                    return Optional.of(new TerminatedToken<>(entry.get(), terminator.get(), ctx));
-                }
-                else {
-                    ctx.fail("Entry failed to parse: {} (size: {})", source, entrySize);
-                    return Optional.empty();
-                }
-            }
-            else {
-                ctx.trace("Terminator failed at: {}", terminatorCursor);
+                E entry = entryParser.apply(source.readSlice(entrySize), ctx);
+                // now forward the source stream to after the terminator
+                source.sync(terminatorStream);
+                return new TerminatedToken<>(entry, terminator.get(), ctx);
             }
             terminatorCursor = terminatorCursor.add(stepSize);
         }
-        ctx.fail("Terminated token failed after exhausting limit: {} (limit: {})", source, maxLength);
-        return Optional.empty();
+        throw new ParseError("Max reached before we could parse the terminator (" + terminatorCursor + "/" + terminatorMax + ")");
     }
 
 

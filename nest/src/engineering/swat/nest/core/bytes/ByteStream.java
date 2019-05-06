@@ -1,10 +1,10 @@
 package engineering.swat.nest.core.bytes;
 
+import engineering.swat.nest.core.EOSError;
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
-import java.util.Optional;
 
 public class ByteStream {
 	
@@ -26,37 +26,34 @@ public class ByteStream {
 		this.window = window;
 	}
 
-	public Optional<UnsignedBytes> readUnsigned(int size, Context ctx) {
-	    return readUnsigned(NestBigInteger.ofUntracked(size), ctx);
+	public UnsignedBytes readUnsigned(int size, Context ctx) {
+	    return readUnsigned(NestBigInteger.of(size), ctx);
 	}
 
-
-	public Optional<UnsignedBytes> readUnsigned(NestBigInteger size, Context ctx) {
+	public UnsignedBytes readUnsigned(NestBigInteger size, Context ctx) {
 		assert size.compareTo(NestBigInteger.ZERO) >= 0;
 		NestBigInteger newOffset = offset.add(size);
-		if (newOffset.greaterThan(limit)) {
-			ctx.fail("End of Stream reached {} {}", window, newOffset);
-			return Optional.empty();
+		if (newOffset.compareTo(limit) > 0) {
+			throw new EOSError();
 		}
 		try {
-			return Optional.of(new UnsignedBytes(window.slice(offset, size), ctx));
+			return new UnsignedBytes(window.slice(offset, size), ctx);
 		}
 		finally {
 			offset = newOffset;
 		}
 	}
 
-	public Optional<TrackedByteSlice> readSlice(NestBigInteger size, Context context) {
+	public TrackedByteSlice readSlice(NestBigInteger size) {
 		assert size.compareTo(NestBigInteger.ZERO) >= 0;
 		NestBigInteger sliceOffset = offset;
 		NestBigInteger newOffset = sliceOffset.add(size);
 		if (newOffset.compareTo(limit) > 0) {
-			context.fail("End of Stream reached {} {}", window, newOffset);
-			return Optional.empty();
+			throw new EOSError();
 		}
 		offset = newOffset;
 
-		return Optional.of(new TrackedByteSlice() {
+		return new TrackedByteSlice() {
 			@Override
 			public ByteOrigin getOrigin(NestBigInteger index) {
 			    if (index.compareTo(size) >= 0) {
@@ -74,7 +71,7 @@ public class ByteStream {
 			public byte get(NestBigInteger index) {
 				return window.get(sliceOffset.add(index));
 			}
-		});
+		};
 	}
 
 	public NestBigInteger getOffset() {
@@ -88,14 +85,11 @@ public class ByteStream {
 	public ByteStream fork() {
 		return new ByteStream(offset, limit, window);
 	}
-	public Optional<ByteStream> fork(NestBigInteger atOffset) {
+	public ByteStream fork(NestBigInteger atOffset) {
 	    if (atOffset.isNegative()) {
 	    	throw new IndexOutOfBoundsException();
 		}
-	    if (atOffset.compareTo(limit) <= 0) {
-			return Optional.of(new ByteStream(atOffset, limit, window));
-		}
-	    return Optional.empty();
+		return new ByteStream(atOffset, limit, window);
 	}
 
 	public void sync(ByteStream other) {

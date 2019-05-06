@@ -20,7 +20,7 @@ public class ZeroTerminatedStringTest {
         zeroTerminated[zeroTerminated.length - 2] = 0;
         System.arraycopy(bytes, 0, zeroTerminated, 0, bytes.length);
 
-        assertEquals(input, UTF16ZeroTerminated.parse(wrap(zeroTerminated), Context.DEFAULT).get().value.get());
+        assertEquals(input, UTF16ZeroTerminated.parse(wrap(zeroTerminated), Context.DEFAULT).value.get());
     }
 
     @Test
@@ -31,7 +31,7 @@ public class ZeroTerminatedStringTest {
         zeroTerminated[zeroTerminated.length - 1] = 0;
         System.arraycopy(bytes, 0, zeroTerminated, 0, bytes.length);
 
-        assertEquals(input, ASCIIZeroTerminated.parse(wrap(zeroTerminated), Context.DEFAULT).get().value.get());
+        assertEquals(input, ASCIIZeroTerminated.parse(wrap(zeroTerminated), Context.DEFAULT).value.get());
     }
 
 }

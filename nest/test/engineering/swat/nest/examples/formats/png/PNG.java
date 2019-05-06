@@ -1,5 +1,6 @@
 package engineering.swat.nest.examples.formats.png;
 
+import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
@@ -11,7 +12,6 @@ import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 public class PNG {
     public final static class PNG$ extends UserDefinedToken {
@@ -25,21 +25,13 @@ public class PNG {
             this.$anon2 = $anon2;
         }
         
-        public static Optional<PNG$> parse(ByteStream source, Context ctx) {
+        public static PNG$ parse(ByteStream source, Context ctx) {
             ctx = ctx.setEncoding(StandardCharsets.US_ASCII);
             ctx = ctx.setByteOrder(ByteOrder.BIG_ENDIAN);
-            Optional<Signature> $anon1 = Signature.parse(source, ctx);
-            if (!$anon1.isPresent()) {
-                ctx.fail("PNG._ missing from {}", source);
-                return Optional.empty();
-            }
+            Signature $anon1 = Signature.parse(source, ctx);
             TokenList<Chunk> chunks = TokenList.untilParseFailure(source, ctx, (s, c) -> Chunk.parse(s, c));
-            Optional<IEND> $anon2 = IEND.parse(source, ctx);
-            if (!$anon2.isPresent()) {
-                ctx.fail("PNG._ missing from {}", source);
-                return Optional.empty();
-            }
-            return Optional.of(new PNG$($anon1.get(), chunks, $anon2.get()));
+            IEND $anon2 = IEND.parse(source, ctx);
+            return new PNG$($anon1, chunks, $anon2);
         }
 
         @Override
@@ -64,25 +56,22 @@ public class PNG {
             this.$anon3 = $anon3;
         }
         
-        public static Optional<Signature> parse(ByteStream source, Context ctx) {
-            Optional<UnsignedBytes> $anon1 = source.readUnsigned(1, ctx);
-            if (!$anon1.isPresent() || !($anon1.get().asValue().sameBytes(NestValue.of(0x89, 1)))) {
-                ctx.fail("Signature.$anon1 {}", $anon1);
-                return Optional.empty();
+        public static Signature parse(ByteStream source, Context ctx) throws ParseError {
+            UnsignedBytes $anon1 = source.readUnsigned(1, ctx);
+            if (!($anon1.asValue().sameBytes(NestValue.of(0x89, 1)))) {
+                throw new ParseError("Signature.$anon1", $anon1);
             }
 
-            Optional<UnsignedBytes> $anon2 = source.readUnsigned(3, ctx);
-            if (!$anon2.isPresent() || !($anon2.get().asString().get().equals("PNG"))) {
-                ctx.fail("Signature.$anon2 {}", $anon2);
-                return Optional.empty();
+            UnsignedBytes $anon2 = source.readUnsigned(3, ctx);
+            if (!($anon2.asString().get().equals("PNG"))) {
+                throw new ParseError("Signature.$anon2", $anon2);
             }
 
-            Optional<UnsignedBytes> $anon3 = source.readUnsigned(4, ctx);
-            if (!$anon3.isPresent() || !($anon3.get().asValue().sameBytes(NestValue.of(new byte[] {0x0d, 0x0a, 0x1a, 0x0a})))) {
-                ctx.fail("Signature.$anon3 {}", $anon3);
-                return Optional.empty();
+            UnsignedBytes $anon3 = source.readUnsigned(4, ctx);
+            if (!($anon3.asValue().sameBytes(NestValue.of(new byte[] {0x0d, 0x0a, 0x1a, 0x0a})))) {
+                throw new ParseError("Signature.$anon3", $anon3);
             }
-            return Optional.of(new Signature($anon1.get(), $anon2.get(), $anon3.get()));
+            return new Signature($anon1, $anon2, $anon3);
         }
         
         @Override
@@ -112,28 +101,18 @@ public class PNG {
             this.crc = crc;
         }
 
-        public static Optional<Chunk> parse(ByteStream source, Context ctx)  {
-            Optional<UnsignedBytes> length = source.readUnsigned(4, ctx);
-            if (!length.isPresent()) {
-                ctx.fail("Chunk.length missing from {}", source);
-                return Optional.empty();
+        public static Chunk parse(ByteStream source, Context ctx)  {
+            UnsignedBytes length = source.readUnsigned(4, ctx);
+            UnsignedBytes type = source.readUnsigned(4, ctx);
+            if (type.asString().get().equals("IEND")) {
+                throw new ParseError("Chunk.type");
             }
-            Optional<UnsignedBytes> type = source.readUnsigned(4, ctx);
-            if (!type.isPresent() || type.get().asString().get().equals("IEND")) {
-                ctx.fail("Chunk.type {}", type);
-                return Optional.empty();
+            UnsignedBytes data = source.readUnsigned(length.asValue().asInteger(Sign.UNSIGNED), ctx);
+            UnsignedBytes crc = source.readUnsigned(4, ctx);
+            if (!(crc.asValue().asInteger(Sign.UNSIGNED).equals(UserDefinedPNG.crc32(TokenList.of(ctx, type, data))))) {
+                throw new ParseError("Chunk.crc");
             }
-            Optional<UnsignedBytes> data = source.readUnsigned(length.get().asValue().asInteger(Sign.UNSIGNED), ctx);
-            if (!data.isPresent()) {
-                ctx.fail("Chunk.data missing from {}", source);
-                return Optional.empty();
-            }
-            Optional<UnsignedBytes> crc = source.readUnsigned(4, ctx);
-            if (!crc.isPresent() || !(crc.get().asValue().asInteger(Sign.UNSIGNED).equals(UserDefinedPNG.crc32(TokenList.of(ctx, type.get(), data.get()))))) {
-                ctx.fail("Chunk.crc {}", crc);
-                return Optional.empty();
-            }
-            return Optional.of(new Chunk(length.get(), type.get(), data.get(), crc.get()));
+            return new Chunk(length, type, data, crc);
         }
 
         @Override
@@ -159,25 +138,22 @@ public class PNG {
             this.crc = crc;
         }
 
-        public static Optional<IEND> parse(ByteStream source, Context ctx) {
-            Optional<UnsignedBytes> length = source.readUnsigned(4, ctx);
-            if (!length.isPresent() || !(length.get().asValue().asInteger(Sign.UNSIGNED).equals(NestBigInteger.ZERO))) {
-                ctx.fail("IED.length {}", length);
-                return Optional.empty();
+        public static IEND parse(ByteStream source, Context ctx) {
+            UnsignedBytes length = source.readUnsigned(4, ctx);
+            if (!(length.asValue().asInteger(Sign.UNSIGNED).equals(NestBigInteger.ZERO))) {
+                throw new ParseError("IED.length", length);
             }
             
-            Optional<UnsignedBytes> type = source.readUnsigned(4, ctx);
-            if (!type.isPresent() || !type.get().asString().get().equals("IEND")) {
-                ctx.fail("IED.type {}", type);
-                return Optional.empty();
+            UnsignedBytes type = source.readUnsigned(4, ctx);
+            if (!type.asString().get().equals("IEND")) {
+                throw new ParseError("IED.type", type);
             }
             
-            Optional<UnsignedBytes> crc = source.readUnsigned(4, ctx);
-            if (!crc.isPresent() || !crc.get().asValue().sameBytes(NestValue.of(new byte[] {(byte) 0xae, 0x42, 0x60, (byte) 0x82}))) {
-                ctx.fail("IED.crc {}", crc);
-                return Optional.empty();
+            UnsignedBytes crc = source.readUnsigned(4, ctx);
+            if (!crc.asValue().sameBytes(NestValue.of(new byte[] {(byte) 0xae, 0x42, 0x60, (byte) 0x82}))) {
+                throw new ParseError("IED.crc", crc);
             }
-            return Optional.of(new IEND(length.get(), type.get(), crc.get()));
+            return new IEND(length, type, crc);
         }
 
         @Override

@@ -10,7 +10,6 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +17,7 @@ public class TypeParameterTest {
 
     @Test
     void twoByteDoubleParseWithT() {
-        GenT<UnsignedBytes> parsed = GenT.parse(wrap(1, 2), Context.DEFAULT, (s,c) -> s.readUnsigned(1, c)).get();
+        GenT<UnsignedBytes> parsed = GenT.parse(wrap(1, 2), Context.DEFAULT, (s,c) -> s.readUnsigned(1, c));
         assertEquals(1, parsed.field1.getByteAt(NestBigInteger.ZERO));
         assertEquals(2, parsed.field2.getByteAt(NestBigInteger.ZERO));
     }
@@ -32,18 +31,10 @@ public class TypeParameterTest {
             this.field2 = field2;
         }
 
-        public static <T extends Token> Optional<GenT<T>> parse(ByteStream source, Context ctx, BiFunction<ByteStream, Context, Optional<T>> tParser) {
-            Optional<T> field1 = tParser.apply(source, ctx);
-            if (!field1.isPresent()) {
-                ctx.fail("GenT.field1 missing from {}", source);
-                return Optional.empty();
-            }
-            Optional<T> field2 = tParser.apply(source, ctx);
-            if (!field2.isPresent()) {
-                ctx.fail("GenT.field2 missing from {}", source);
-                return Optional.empty();
-            }
-            return Optional.of(new GenT<>(field1.get(), field2.get()));
+        public static <T extends Token> GenT<T> parse(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> tParser) {
+            T field1 = tParser.apply(source, ctx);
+            T field2 = tParser.apply(source, ctx);
+            return new GenT<>(field1, field2);
         }
 
         @Override
