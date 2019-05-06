@@ -31,8 +31,12 @@ public class BottomUpTokenVisitor<T> implements TokenVisitor<T> {
 
     @Override
     public T visitOptionalToken(OptionalToken<? extends Token> value) {
-        T nestedResult = value.getToken().accept(this);
-        return mergeChildResults.apply(nestedResult, entryVisitor.visitOptionalToken(value));
+        Optional<T> nestedResult = value.getToken().map(t -> t.accept(this));
+        T result = entryVisitor.visitOptionalToken(value);
+        if (nestedResult.isPresent()) {
+            return mergeChildResults.apply(nestedResult.get(), result);
+        }
+        return result;
     }
 
     @Override
@@ -50,7 +54,11 @@ public class BottomUpTokenVisitor<T> implements TokenVisitor<T> {
             T current = value.get(i).accept(this);
             result = result == null ? current : mergeChildResults.apply(result, current);
         }
-        return mergeChildResults.apply(result, entryVisitor.visitTokenList(value));
+        T token = entryVisitor.visitTokenList(value);
+        if (result != null) {
+            return mergeChildResults.apply(result, token);
+        }
+        return token;
     }
 
     @Override

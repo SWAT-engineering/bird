@@ -12,6 +12,7 @@ import engineering.swat.nest.core.nontokens.Tracked;
 import engineering.swat.nest.core.tokens.PrimitiveToken;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.TokenVisitor;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -95,7 +96,7 @@ public class OptionalToken<T extends Token> extends PrimitiveToken {
 		return visitor.visitOptionalToken(this);
 	}
 
-	public T getToken() {
-		return token;
+	public Optional<T> getToken() {
+		return Optional.ofNullable(token);
 	}
 }
