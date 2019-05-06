@@ -1,11 +1,12 @@
-package engineering.swat.nest.core.tokens;
+package engineering.swat.nest.core.tokens.primitive;
 
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import engineering.swat.nest.core.tokens.Token;
 import java.util.List;
 
-final class MultipleTokenByteSlice<T extends Token> implements TrackedByteSlice {
+public class MultipleTokenByteSlice<T extends Token> implements TrackedByteSlice {
 	private final List<T> contents;
 	private final NestBigInteger[] offsets;
 	private final NestBigInteger fullSize;

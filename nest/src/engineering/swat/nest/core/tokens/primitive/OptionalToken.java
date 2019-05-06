@@ -1,4 +1,4 @@
-package engineering.swat.nest.core.tokens;
+package engineering.swat.nest.core.tokens.primitive;
 
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
@@ -9,6 +9,8 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.nontokens.Origin;
 import engineering.swat.nest.core.nontokens.Tracked;
+import engineering.swat.nest.core.tokens.PrimitiveToken;
+import engineering.swat.nest.core.tokens.Token;
 import java.util.function.BiFunction;
 import org.checkerframework.checker.nullness.qual.Nullable;
 

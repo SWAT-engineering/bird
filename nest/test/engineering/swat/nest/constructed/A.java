@@ -7,8 +7,7 @@ import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
-import engineering.swat.nest.core.tokens.UnsignedByte;
-import engineering.swat.nest.core.tokens.UnsignedBytes;
+import engineering.swat.nest.core.tokens.primitive.UnsignedByte;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 
 public class A extends UserDefinedToken {

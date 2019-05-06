@@ -9,7 +9,7 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.UnsignedByte;
+import engineering.swat.nest.core.tokens.primitive.UnsignedByte;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
 import engineering.swat.nest.core.tokens.operations.Choice.Case;

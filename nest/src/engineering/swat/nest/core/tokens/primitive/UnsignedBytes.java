@@ -1,4 +1,4 @@
-package engineering.swat.nest.core.tokens;
+package engineering.swat.nest.core.tokens.primitive;
 
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
@@ -6,6 +6,7 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.nontokens.Origin;
 import engineering.swat.nest.core.nontokens.Tracked;
+import engineering.swat.nest.core.tokens.PrimitiveToken;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

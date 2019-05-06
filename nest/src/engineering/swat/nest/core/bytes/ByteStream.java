@@ -4,8 +4,8 @@ import engineering.swat.nest.core.EOSError;
 import engineering.swat.nest.core.bytes.source.ByteOrigin;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.UnsignedByte;
-import engineering.swat.nest.core.tokens.UnsignedBytes;
+import engineering.swat.nest.core.tokens.primitive.UnsignedByte;
+import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 
 public class ByteStream {
 	

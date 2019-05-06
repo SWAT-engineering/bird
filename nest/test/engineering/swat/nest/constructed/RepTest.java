@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.tokens.TokenList;
+import engineering.swat.nest.core.tokens.primitive.TokenList;
 
 public class RepTest {
 

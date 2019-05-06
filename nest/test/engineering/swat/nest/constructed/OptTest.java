@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
-import engineering.swat.nest.core.tokens.OptionalToken;
+import engineering.swat.nest.core.tokens.primitive.OptionalToken;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 
 public class OptTest {
