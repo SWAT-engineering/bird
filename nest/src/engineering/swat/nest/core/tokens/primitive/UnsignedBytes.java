@@ -1,4 +1,4 @@
-package engineering.swat.nest.core.tokens;
+package engineering.swat.nest.core.tokens.primitive;
 
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
@@ -6,11 +6,11 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.nontokens.Origin;
 import engineering.swat.nest.core.nontokens.Tracked;
+import engineering.swat.nest.core.tokens.PrimitiveToken;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-public class UnsignedBytes extends PrimitiveToken implements Iterable<UnsignedByte> {
+public class UnsignedBytes extends PrimitiveToken  {
 
 	private final TrackedByteSlice slice;
 
@@ -39,11 +39,11 @@ public class UnsignedBytes extends PrimitiveToken implements Iterable<UnsignedBy
 	}
 
 
-	public List<UnsignedByte> bytes() {
+	public List<Integer> bytes() {
 		NestBigInteger size = slice.size();
-	    List<UnsignedByte> result = new ArrayList<>(size.intValueExact());
+	    List<Integer> result = new ArrayList<>(size.intValueExact());
 	    for (NestBigInteger c = NestBigInteger.ZERO; c.compareTo(size) < 0; c = c.add(NestBigInteger.ONE)) {
-	    	result.add(new UnsignedByte(slice.slice(c, NestBigInteger.ONE), ctx));
+	    	result.add(slice.getUnsigned(c));
 		}
 	    return result;
 	}
@@ -58,8 +58,4 @@ public class UnsignedBytes extends PrimitiveToken implements Iterable<UnsignedBy
 		return new Tracked<>(Origin.of(slice), new String(slice.allBytes(), ctx.getEncoding()));
 	}
 
-	@Override
-	public Iterator<UnsignedByte> iterator() {
-	    return bytes().iterator();
-	}
 }

@@ -4,8 +4,11 @@ import engineering.swat.nest.core.bytes.ByteUtils;
 import engineering.swat.nest.core.bytes.Sign;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
+import java.util.function.Function;
 
 public interface NestBigInteger extends Comparable<NestBigInteger> {
+
+
     NestBigInteger add(NestBigInteger val);
     NestBigInteger subtract(NestBigInteger val);
     NestBigInteger multiply(NestBigInteger val);
@@ -29,26 +32,38 @@ public interface NestBigInteger extends Comparable<NestBigInteger> {
 
     Origin getOrigin();
 
-    NestBigInteger ZERO = of(0);
-    NestBigInteger ONE = of(1);
-    NestBigInteger TWO = of(2);
-    NestBigInteger THREE = of(3);
+    NestBigInteger ZERO = ofUntracked(0);
+    NestBigInteger ONE = ofUntracked(1);
+    NestBigInteger TWO = ofUntracked(2);
+    NestBigInteger THREE = ofUntracked(3);
 
     static NestBigInteger of(int value) {
         return of(Origin.EMPTY, value);
     }
 
     static NestBigInteger of(Origin origin, int value) {
-        return NestBigIntegerInt.ofInt(origin, value);
+        return NestBigIntegerIntTracked.ofInt(origin, value);
     }
+
+    static NestBigInteger ofUntracked(int value) {
+        return NestBigIntegerIntUntracked.ofInt(value);
+    }
+
     static NestBigInteger of(long value) {
         return of(Origin.EMPTY, value);
     }
     static NestBigInteger of(Origin origin, long value) {
         if ((int) value == value) {
-            return NestBigIntegerInt.ofInt(origin, (int)value);
+            return NestBigIntegerIntTracked.ofInt(origin, (int)value);
         }
-        return new NestBigIntegerFull(BigInteger.valueOf(value), origin);
+        return new NestBigIntegerFullTracked(BigInteger.valueOf(value), origin);
+    }
+
+    static NestBigInteger ofUntracked(long value) {
+        if ((int) value == value) {
+            return NestBigIntegerIntUntracked.ofInt((int)value);
+        }
+        return new NestBigIntegerFullUntracked(BigInteger.valueOf(value));
     }
 
     static NestBigInteger of(byte[] bytes, ByteOrder byteOrder, Sign sign) {
@@ -58,22 +73,22 @@ public interface NestBigInteger extends Comparable<NestBigInteger> {
     static NestBigInteger of(Origin origin, byte[] bytes, ByteOrder byteOrder, Sign sign) {
         bytes = byteOrder == ByteOrder.BIG_ENDIAN ? bytes : ByteUtils.copyReverse(bytes);
         if (sign == Sign.UNSIGNED) {
-            return fromBigEndianUnsigned(origin, bytes);
+            return fromBigEndianUnsigned(bytes, i -> NestBigIntegerIntTracked.ofInt(origin, i), bi -> new NestBigIntegerFullTracked(bi, origin));
         }
-        return fromBigEndianSigned(origin, bytes);
+        return fromBigEndianSigned(bytes, i -> NestBigIntegerIntTracked.ofInt(origin, i), bi -> new NestBigIntegerFullTracked(bi, origin));
     }
 
-    static NestBigInteger fromBigEndianUnsigned(Origin origin, byte[] bytes) {
+    static NestBigInteger fromBigEndianUnsigned(byte[] bytes, Function<Integer, NestBigInteger> fromInt, Function<BigInteger, NestBigInteger> fromBigInt) {
         switch (bytes.length) {
             case 1:
-                return NestBigInteger.of(origin, bytes[0] & 0xFF);
+                return fromInt.apply(bytes[0] & 0xFF);
             case 2:
-                return NestBigInteger.of(origin,
+                return fromInt.apply(
                         ((bytes[0] & 0xFF) << 8) |
                                 ((bytes[1] & 0xFF))
                 );
             case 3:
-                return NestBigInteger.of(origin,
+                return fromInt.apply(
                         ((bytes[0] & 0xFF) << 16) |
                                 ((bytes[1] & 0xFF) << 8) |
                                 ((bytes[2] & 0xFF))
@@ -83,54 +98,76 @@ public interface NestBigInteger extends Comparable<NestBigInteger> {
                     // we have a signed integer, so we must go to the big integer
                     break;
                 }
-                return NestBigInteger.of(origin,
+                return fromInt.apply(
                         ((bytes[0] & 0xFF) << 24) |
                                 ((bytes[1] & 0xFF) << 16) |
                                 ((bytes[2] & 0xFF) << 8) |
                                 ((bytes[3] & 0xFF))
                 );
         }
-        return NestBigInteger.of(origin, new BigInteger(1, bytes));
+        return fromBigInt.apply(new BigInteger(1, bytes));
     }
 
-    static NestBigInteger fromBigEndianSigned(Origin origin, byte[] bytes) {
+    static NestBigInteger fromBigEndianSigned(byte[] bytes, Function<Integer, NestBigInteger> fromInt, Function<BigInteger, NestBigInteger> fromBigInt) {
         switch (bytes.length) {
             case 1:
-                return NestBigInteger.of(origin, bytes[0]);
+                return fromInt.apply((int)bytes[0]);
             case 2:
-                return NestBigInteger.of(origin,
-                        ((bytes[0]) << 8) |
+                return fromInt.apply(((bytes[0]) << 8) |
                                 ((bytes[1] & 0xFF))
                 );
             case 3:
-                return NestBigInteger.of(origin,
-                        ((bytes[0]) << 16) |
+                return fromInt.apply(((bytes[0]) << 16) |
                                 ((bytes[1] & 0xFF) << 8) |
                                 ((bytes[2] & 0xFF))
                 );
             case 4:
-                return NestBigInteger.of(origin,
-                        ((bytes[0]) << 24) |
+                return fromInt.apply(((bytes[0]) << 24) |
                                 ((bytes[1] & 0xFF) << 16) |
                                 ((bytes[2] & 0xFF) << 8) |
                                 ((bytes[3] & 0xFF))
                 );
         }
-        return NestBigInteger.of(origin, new BigInteger(bytes));
+        return fromBigInt.apply(new BigInteger(bytes));
     }
 
-    static NestBigInteger of(BigInteger value) {
-        return of(Origin.EMPTY, value);
+    static NestBigInteger ofUntracked(byte[] bytes, ByteOrder byteOrder, Sign sign) {
+        bytes = byteOrder == ByteOrder.BIG_ENDIAN ? bytes : ByteUtils.copyReverse(bytes);
+        if (sign == Sign.UNSIGNED) {
+            return fromBigEndianUnsigned(bytes, NestBigIntegerIntUntracked::new, NestBigIntegerFullUntracked::new);
+        }
+        return fromBigEndianSigned(bytes, NestBigIntegerIntUntracked::new, NestBigIntegerFullUntracked::new);
     }
-    static NestBigInteger of(Origin origin, BigInteger value) {
+
+
+    static NestBigInteger ofUntracked(BigInteger value) {
         if (value.bitLength() < 31) {
             try {
-                return NestBigIntegerInt.ofInt(origin, value.intValueExact());
+                return NestBigIntegerIntUntracked.ofInt(value.intValueExact());
             }
             catch (ArithmeticException e){
                 // continue as if nothing happened
             }
         }
-        return new NestBigIntegerFull(value, origin);
+        return new NestBigIntegerFullUntracked(value);
     }
+
+    static NestBigInteger of(BigInteger value) {
+        return of(Origin.EMPTY, value);
+    }
+
+    static NestBigInteger of(Origin origin, BigInteger value) {
+        if (value.bitLength() < 31) {
+            try {
+                return NestBigIntegerIntTracked.ofInt(origin, value.intValueExact());
+            }
+            catch (ArithmeticException e){
+                // continue as if nothing happened
+            }
+        }
+        return new NestBigIntegerFullTracked(value, origin);
+    }
+
+    boolean greaterThan(NestBigInteger other);
+    boolean lessThan(NestBigInteger other);
 }

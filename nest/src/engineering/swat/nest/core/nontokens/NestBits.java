@@ -1,8 +1,6 @@
 package engineering.swat.nest.core.nontokens;
 
-import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.ByteUtils;
-import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import java.nio.ByteOrder;
 import java.util.BitSet;
 
@@ -17,8 +15,6 @@ interface NestBits {
 
     boolean isZero();
     byte[] getBytes(ByteOrder order);
-    ByteSlice getByteSlice(ByteOrder order);
-    NestBigInteger trailingZeroes();
 
     static NestBits of(byte[] bytes, ByteOrder byteOrder) {
         if (byteOrder == ByteOrder.LITTLE_ENDIAN) {

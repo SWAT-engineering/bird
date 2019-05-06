@@ -1,7 +1,5 @@
 package engineering.swat.nest.core.bytes.source;
 
-import engineering.swat.nest.core.ParseError;
-import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.net.URI;
@@ -27,7 +25,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
         int newOffset = Math.addExact(this.offset, offset.intValueExact());
         int newLimit = Math.addExact(newOffset, size.intValueExact());
         if (newLimit > limit) {
-            throw new ParseError("Invalid slice");
+            throw new IllegalArgumentException("Invalid slice");
         }
         return new ByteBufferSlice(source, newOffset, newLimit, origin);
     }
@@ -37,7 +35,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
         return new ByteOrigin() {
             @Override
             public NestBigInteger getOffset() {
-                return index.add(NestBigInteger.of(offset));
+                return index.add(NestBigInteger.ofUntracked(offset));
             }
 
             @Override
@@ -49,7 +47,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
 
     @Override
     public NestBigInteger size() {
-        return NestBigInteger.of(nativeSize());
+        return NestBigInteger.ofUntracked(nativeSize());
     }
 
     @Override
@@ -66,7 +64,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
     }
 
     @Override
-    public boolean sameBytes(ByteSlice bytes) {
+    public boolean sameBytes(TrackedByteSlice bytes) {
         if (bytes instanceof ByteBufferSlice) {
             ByteBufferSlice otherSlice = (ByteBufferSlice) bytes;
             if (otherSlice.nativeSize() != nativeSize()) {
@@ -84,7 +82,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
                 return false;
             }
             for (int cursor = 0; cursor < nativeSize(); cursor++) {
-                if (source.get(offset + cursor) != bytes.get(NestBigInteger.of(cursor))) {
+                if (source.get(offset + cursor) != bytes.get(NestBigInteger.ofUntracked(cursor))) {
                     return false;
                 }
             }

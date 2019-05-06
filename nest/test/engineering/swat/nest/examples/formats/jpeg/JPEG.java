@@ -1,6 +1,5 @@
 package engineering.swat.nest.examples.formats.jpeg;
 
-import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
@@ -8,13 +7,12 @@ import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.TokenList;
-import engineering.swat.nest.core.tokens.UnsignedByte;
-import engineering.swat.nest.core.tokens.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import engineering.swat.nest.core.tokens.primitive.TokenList;
+import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.ByteOrder;
+import java.util.Optional;
 
 public class JPEG  {
 	
@@ -28,12 +26,20 @@ public class JPEG  {
 			this.$anon3 = $anon3;
 		}
 
-		public static Format parse(ByteStream source, Context ctx) {
+		public static Optional<Format> parse(ByteStream source, Context ctx) {
 			ctx = ctx.setByteOrder(ByteOrder.BIG_ENDIAN);
-			Header $anon1 = Header.parse(source, ctx);
+			Optional<Header> $anon1 = Header.parse(source, ctx);
+			if (!$anon1.isPresent()) {
+			    ctx.fail("Format._ missing at {}", source);
+				return Optional.empty();
+			}
 			TokenList<SizedScan> $anon2 = TokenList.untilParseFailure(source, ctx, (s, c) -> SizedScan.parse(s, c));
-			Footer $anon3 = Footer.parse(source, ctx);
-			return new Format($anon1, $anon2, $anon3);
+			Optional<Footer> $anon3 = Footer.parse(source, ctx);
+			if (!$anon3.isPresent()) {
+				ctx.fail("Format._ missing at {}", source);
+				return Optional.empty();
+			}
+			return Optional.of(new Format($anon1.get(), $anon2, $anon3.get()));
 		}
 
 		@Override
@@ -48,23 +54,25 @@ public class JPEG  {
 	}
 	
 	public static class Header extends UserDefinedToken {
-		public final UnsignedByte marker;
-		public final UnsignedByte identifier;
-		private Header(UnsignedByte marker, UnsignedByte identifier) {
+		public final UnsignedBytes marker;
+		public final UnsignedBytes identifier;
+		private Header(UnsignedBytes marker, UnsignedBytes identifier) {
 			this.marker = marker;
 			this.identifier = identifier;
 		}
 		
-		public static Header parse(ByteStream source, Context ctx) {
-			UnsignedByte marker = source.readUnsigned( ctx);
-			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
-				throw new ParseError("Header.marker", marker);
+		public static Optional<Header> parse(ByteStream source, Context ctx) {
+			Optional<UnsignedBytes> marker = source.readUnsigned(NestBigInteger.ONE, ctx);
+			if (!marker.isPresent() || !(marker.get().sameBytes(NestValue.of(0xFF, 1)))) {
+			    ctx.fail("Header.marker {}", marker);
+			    return Optional.empty();
 			}
-			UnsignedByte identifier = source.readUnsigned( ctx);
-			if (!(identifier.asValue().sameBytes(NestValue.of(0xD8, 1)))) {
-				throw new ParseError("Header.identifier", identifier);
+			Optional<UnsignedBytes> identifier = source.readUnsigned(NestBigInteger.ONE, ctx);
+			if (!identifier.isPresent() || !(identifier.get().sameBytes(NestValue.of(0xD8, 1)))) {
+				ctx.fail("Header.identifier {}", identifier);
+				return Optional.empty();
 			}
-			return new Header(marker, identifier);
+			return Optional.of(new Header(marker.get(), identifier.get()));
 		}
 
 		@Override
@@ -84,12 +92,16 @@ public class JPEG  {
 			this.entry = entry;
 		}
 		
-		public static SizedScan parse(ByteStream source, Context ctx) {
-			Token entry = Choice.between(source, ctx,
-					Case.of(SizedSegment::parse, x -> {}),
-					Case.of(ScanSegment::parse, x -> {})
+		public static Optional<SizedScan> parse(ByteStream source, Context ctx) {
+			Optional<Token> entry = Choice.between(source, ctx,
+					SizedSegment::parse,
+					ScanSegment::parse
 			);
-			return new SizedScan(entry);
+			if (!entry.isPresent()) {
+				ctx.fail("SizedScan missing from {}", source);
+				return Optional.empty();
+			}
+			return Optional.of(new SizedScan(entry.get()));
 
 		}
 
@@ -106,30 +118,40 @@ public class JPEG  {
 	}
 
 	public static class SizedSegment extends UserDefinedToken {
-		public final UnsignedByte marker;
-		public final UnsignedByte identifier;
+		public final UnsignedBytes marker;
+		public final UnsignedBytes identifier;
 		public final UnsignedBytes length;
 		public final UnsignedBytes payload;
 
-		private SizedSegment(UnsignedByte marker, UnsignedByte identifier, UnsignedBytes length, UnsignedBytes payload) {
+		private SizedSegment(UnsignedBytes marker, UnsignedBytes identifier, UnsignedBytes length, UnsignedBytes payload) {
 			this.marker = marker;
 			this.identifier = identifier;
 			this.length = length;
 			this.payload = payload;
 		}
 
-		public static SizedSegment parse(ByteStream source, Context ctx) {
-			UnsignedByte marker = source.readUnsigned(ctx);
-			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
-				throw new ParseError("SizedSegment.marker", marker);
+		public static Optional<SizedSegment> parse(ByteStream source, Context ctx) {
+			Optional<UnsignedBytes> marker = source.readUnsigned(1, ctx);
+			if (!marker.isPresent() || !(marker.get().asValue().sameBytes(NestValue.of(0xFF, 1)))) {
+				ctx.fail("SizedSegment.marker {}", marker);
+				return Optional.empty();
 			}
-			UnsignedByte identifier = source.readUnsigned( ctx);
-			if (!(identifier.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xD8)) < 0 || identifier.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xDA)) > 0)) {
-				throw new ParseError("SizedSegment.identifier", identifier);
+			Optional<UnsignedBytes> identifier = source.readUnsigned(1, ctx);
+			if (!identifier.isPresent() || !(identifier.get().asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xD8)) < 0 || identifier.get().asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xDA)) > 0)) {
+				ctx.fail("SizedSegment.identifier {}", identifier);
+				return Optional.empty();
 			}
-			UnsignedBytes length = source.readUnsigned(2, ctx);
-			UnsignedBytes payload = source.readUnsigned(length.asValue().asInteger(Sign.UNSIGNED).subtract(NestBigInteger.TWO), ctx);
-			return new SizedSegment(marker, identifier, length, payload);
+			Optional<UnsignedBytes> length = source.readUnsigned(2, ctx);
+			if (!length.isPresent()) {
+				ctx.fail("SizedSegment.length missing from {}", source);
+				return Optional.empty();
+			}
+			Optional<UnsignedBytes> payload = source.readUnsigned(length.get().asValue().asInteger(Sign.UNSIGNED).subtract(NestBigInteger.TWO), ctx);
+			if (!payload.isPresent()) {
+				ctx.fail("SizedSegment.payload missing from {}", source);
+				return Optional.empty();
+			}
+			return Optional.of(new SizedSegment(marker.get(), identifier.get(), length.get(), payload.get()));
 		}
 		
 
@@ -150,25 +172,31 @@ public class JPEG  {
 			this.entry = entry;
 		}
 		
-		public static ScanEscape parse(ByteStream source, Context ctx) {
-			Token entry = Choice.between(source, ctx,
-					Case.of(ScanEscape$1::parse, x -> {}),
-					Case.of(ScanEscape$2::parse, x -> {})
+		public static Optional<ScanEscape> parse(ByteStream source, Context ctx) {
+			Optional<Token> entry = Choice.between(source, ctx,
+					ScanEscape$1::parse,
+					ScanEscape$2::parse
 			);
-			return new ScanEscape(entry);
+			if (!entry.isPresent()) {
+				ctx.fail("ScanEscape from {}", source);
+				return Optional.empty();
+			}
+			return Optional.of(new ScanEscape(entry.get()));
 		}
+
 		private static class ScanEscape$1 extends UserDefinedToken {
-			public final UnsignedByte scanData;
-			private ScanEscape$1(UnsignedByte scanData) {
+			public final UnsignedBytes scanData;
+			private ScanEscape$1(UnsignedBytes scanData) {
 				this.scanData = scanData;
 			}
 			
-			public static ScanEscape$1 parse(ByteStream source, Context ctx) {
-				UnsignedByte scanData = source.readUnsigned( ctx);
-				if (!(!scanData.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
-					throw new ParseError("ScanEscape$1.scanData", scanData);
+			public static Optional<ScanEscape$1> parse(ByteStream source, Context ctx) {
+				Optional<UnsignedBytes> scanData = source.readUnsigned(NestBigInteger.ONE, ctx);
+				if (!scanData.isPresent() || !(!scanData.get().sameBytes(NestValue.of(0xFF, 1)))) {
+					ctx.fail("ScanEscape$1.scanData", scanData);
+					return Optional.empty();
 				}
-				return new ScanEscape$1(scanData);
+				return Optional.of(new ScanEscape$1(scanData.get()));
 			}
 
 			@Override
@@ -187,14 +215,15 @@ public class JPEG  {
 				this.escape = escape;
 			}
 			
-			public static ScanEscape$2 parse(ByteStream source, Context ctx) {
-				UnsignedBytes escape = source.readUnsigned(2, ctx);
-				if (!(escape.asValue().sameBytes(NestValue.of(0xFF00, 2)) ||
-						(escape.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xFFCF)) > 0 &&
-								escape.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xFFD8)) < 0))) {
-					throw new ParseError("ScanEscape$2.escape", escape);
+			public static Optional<ScanEscape$2> parse(ByteStream source, Context ctx) {
+				Optional<UnsignedBytes> escape = source.readUnsigned(NestBigInteger.TWO, ctx);
+				if (!escape.isPresent() || !(escape.get().sameBytes(NestValue.of(0xFF00, 2)) ||
+						(escape.get().asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xFFCF)) > 0 &&
+								escape.get().asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xFFD8)) < 0))) {
+					ctx.fail("ScanEscape$2.escape", escape);
+					return Optional.empty();
 				}
-				return new ScanEscape$2(escape);
+				return Optional.of(new ScanEscape$2(escape.get()));
 			}
 
 			@Override
@@ -219,13 +248,13 @@ public class JPEG  {
 	}
 
 	public static class ScanSegment extends UserDefinedToken {
-		public final UnsignedByte marker;
-		public final UnsignedByte identifier;
+		public final UnsignedBytes marker;
+		public final UnsignedBytes identifier;
 		public final UnsignedBytes length;
 		public final UnsignedBytes payload;
 		public final TokenList<ScanEscape> choices;
 		
-		private ScanSegment(UnsignedByte marker, UnsignedByte identifier,
+		private ScanSegment(UnsignedBytes marker, UnsignedBytes identifier,
 				UnsignedBytes length, UnsignedBytes payload,
 				TokenList<ScanEscape> choices) {
 			this.marker = marker;
@@ -235,20 +264,29 @@ public class JPEG  {
 			this.choices = choices;
 		}
 		
-		public static ScanSegment parse(ByteStream source, Context ctx) {
-			UnsignedByte marker = source.readUnsigned(ctx);
-
-			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
-				throw new ParseError("ScanSegment.marker", marker);
+		public static Optional<ScanSegment> parse(ByteStream source, Context ctx) {
+			Optional<UnsignedBytes> marker = source.readUnsigned(NestBigInteger.ONE, ctx);
+			if (!marker.isPresent() || !(marker.get().sameBytes(NestValue.of(0xFF, 1)))) {
+				ctx.fail("ScanSegment.marker {}", marker);
+				return Optional.empty();
 			}
-			UnsignedByte identifier = source.readUnsigned(ctx);
-			if (!(identifier.asValue().sameBytes(NestValue.of(0xDA, 1)))) {
-				throw new ParseError("ScanSegment.identifier", identifier);
+			Optional<UnsignedBytes> identifier = source.readUnsigned(NestBigInteger.ONE, ctx);
+			if (!identifier.isPresent() || !(identifier.get().sameBytes(NestValue.of(0xDA, 1)))) {
+				ctx.fail("ScanSegment.identifier {}", identifier);
+				return Optional.empty();
 			}
-			UnsignedBytes length = source.readUnsigned(2, ctx);
-			UnsignedBytes payload = source.readUnsigned(length.asValue().asInteger(Sign.SIGNED).subtract(NestBigInteger.TWO), ctx);
+			Optional<UnsignedBytes> length = source.readUnsigned(NestBigInteger.TWO, ctx);
+			if (!length.isPresent()) {
+				ctx.fail("ScanSegment.length missing from {}", source);
+				return Optional.empty();
+			}
+			Optional<UnsignedBytes> payload = source.readUnsigned(length.get().asValue().asInteger(Sign.UNSIGNED).subtract(NestBigInteger.TWO), ctx);
+			if (!payload.isPresent()) {
+				ctx.fail("ScanSegment.payload missing from {}", source);
+				return Optional.empty();
+			}
 			TokenList<ScanEscape> choices = TokenList.untilParseFailure(source, ctx, ScanEscape::parse);
-			return new ScanSegment(marker, identifier, length, payload, choices);
+			return Optional.of(new ScanSegment(marker.get(), identifier.get(), length.get(), payload.get(), choices));
 		}
 
 		@Override
@@ -263,25 +301,27 @@ public class JPEG  {
 	}
 
 	public static class Footer extends UserDefinedToken {
-		public final UnsignedByte marker;
-		public final UnsignedByte identifier;
-		private Footer(UnsignedByte marker, UnsignedByte identifier) {
+		public final UnsignedBytes marker;
+		public final UnsignedBytes identifier;
+		private Footer(UnsignedBytes marker, UnsignedBytes identifier) {
 			this.marker = marker;
 			this.identifier = identifier;
 		}
 		
-		public static Footer parse(ByteStream source, Context ctx) {
+		public static Optional<Footer> parse(ByteStream source, Context ctx) {
 
-			UnsignedByte marker = source.readUnsigned(ctx);
+			Optional<UnsignedBytes> marker = source.readUnsigned(NestBigInteger.ONE, ctx);
 
-			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
-				throw new ParseError("Footer.marker", marker);
+			if (!marker.isPresent() || !(marker.get().sameBytes(NestValue.of(0xFF, 1)))) {
+				ctx.fail("Footer.marker {}", marker);
+				return Optional.empty();
 			}
-			UnsignedByte identifier = source.readUnsigned(ctx);
-			if (!(identifier.asValue().sameBytes(NestValue.of(0xD9, 1)))) {
-				throw new ParseError("Footer.identifier", identifier);
+			Optional<UnsignedBytes> identifier = source.readUnsigned(NestBigInteger.ONE, ctx);
+			if (!identifier.isPresent() || !(identifier.get().sameBytes(NestValue.of(0xD9, 1)))) {
+				ctx.fail("Footer.identifier {}", identifier);
+				return Optional.empty();
 			}
-			return new Footer(marker, identifier);
+			return Optional.of(new Footer(marker.get(), identifier.get()));
 		}
 
 		@Override

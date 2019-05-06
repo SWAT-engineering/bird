@@ -1,8 +1,11 @@
 package engineering.swat.nest.core.nontokens;
 
+import engineering.swat.nest.core.bytes.ByteUtils;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
+import engineering.swat.nest.core.tokens.PrimitiveToken;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -155,6 +158,15 @@ public class NestValue {
         return bytes;
     }
 
+    public byte[] getBytes(ByteOrder order) {
+        if (order == context.getByteOrder()) {
+            return bytes;
+        }
+        else {
+            return ByteUtils.copyReverse(bytes);
+        }
+    }
+
     private NestBits getBits() {
         return NestBits.of(bytes, context.getByteOrder());
     }
@@ -233,6 +245,9 @@ public class NestValue {
         return NestBigInteger.of(origin, bytes, context.getByteOrder(), sign);
     }
 
+    /**
+     * Warning, in most cases you want to call {@linkplain PrimitiveToken#asString()}.
+     */
     public Tracked<String> asString() {
         return new Tracked<>(origin, new String(getBytes(), context.getEncoding()));
     }

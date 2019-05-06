@@ -1,8 +1,6 @@
 package engineering.swat.nest.core.nontokens;
 
-import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.ByteUtils;
-import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -95,19 +93,6 @@ class NestBitsFull implements NestBits {
     @Override
     public int getMinByteSize() {
         return minByteSize;
-    }
-
-    @Override
-    public ByteSlice getByteSlice(ByteOrder order) {
-        return ByteSlice.wrap(getBytes(order));
-    }
-
-    @Override
-    public NestBigInteger trailingZeroes() {
-        if (value.isEmpty()) {
-            return NestBigInteger.ZERO;
-        }
-        return NestBigInteger.of(value.nextSetBit(0));
     }
 
     @Override
