@@ -1,6 +1,5 @@
 package engineering.swat.nest.core.nontokens;
 
-import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.ByteUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;

@@ -1,7 +1,6 @@
 package engineering.swat.nest.core.bytes.source;
 
 import engineering.swat.nest.core.ParseError;
-import engineering.swat.nest.core.bytes.ByteSlice;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.net.URI;
@@ -66,7 +65,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
     }
 
     @Override
-    public boolean sameBytes(ByteSlice bytes) {
+    public boolean sameBytes(TrackedByteSlice bytes) {
         if (bytes instanceof ByteBufferSlice) {
             ByteBufferSlice otherSlice = (ByteBufferSlice) bytes;
             if (otherSlice.nativeSize() != nativeSize()) {
