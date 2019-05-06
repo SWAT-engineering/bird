@@ -15,7 +15,6 @@ interface NestBits {
 
     boolean isZero();
     byte[] getBytes(ByteOrder order);
-    NestBigInteger trailingZeroes();
 
     static NestBits of(byte[] bytes, ByteOrder byteOrder) {
         if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
