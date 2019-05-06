@@ -9,11 +9,10 @@ import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.primitive.TokenList;
-import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import engineering.swat.nest.core.tokens.primitive.TokenList;
+import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.ByteOrder;
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicReference;
@@ -72,9 +71,21 @@ public class Varint {
         public static PrefixVarint parse(ByteStream source, Context ctx) {
             AtomicReference<NestBigInteger> value = new AtomicReference<>();
             Token entry = Choice.between(source, ctx,
-                    Case.of(PrefixVarint$1::parse, c -> value.set(c.value)),
-                    Case.of(PrefixVarint$2::parse, c -> value.set(c.value)),
-                    Case.of(PrefixVarint$3::parse, c -> value.set(c.value))
+                    (s, c) -> {
+                        PrefixVarint$1 result = PrefixVarint$1.parse(s, c);
+                        value.set(result.value);
+                        return result;
+                    },
+                    (s, c) -> {
+                        PrefixVarint$2 result = PrefixVarint$2.parse(s, c);
+                        value.set(result.value);
+                        return result;
+                    },
+                    (s, c) -> {
+                        PrefixVarint$1 result = PrefixVarint$1.parse(s, c);
+                        value.set(result.value);
+                        return result;
+                    }
             );
             return new PrefixVarint(entry, value.get());
         }

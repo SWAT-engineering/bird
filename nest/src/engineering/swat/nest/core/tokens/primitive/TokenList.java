@@ -44,6 +44,7 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 				result.add(newValue);
 			}
 			catch (ParseError e) {
+				ctx.fail("[TokenList::untilParseFailure] Parsing failed: {} after {}", e, source);
                 source.sync(lastSuccess); // reset the stream to the end of the last successful parse
 				break;
 			}

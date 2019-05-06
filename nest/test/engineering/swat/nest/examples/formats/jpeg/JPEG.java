@@ -8,11 +8,10 @@ import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.primitive.TokenList;
-import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import engineering.swat.nest.core.tokens.primitive.TokenList;
+import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.ByteOrder;
 
 public class JPEG  {
@@ -85,8 +84,8 @@ public class JPEG  {
 		
 		public static SizedScan parse(ByteStream source, Context ctx) {
 			Token entry = Choice.between(source, ctx,
-					Case.of(SizedSegment::parse, x -> {}),
-					Case.of(ScanSegment::parse, x -> {})
+					SizedSegment::parse,
+					ScanSegment::parse
 			);
 			return new SizedScan(entry);
 
@@ -151,8 +150,8 @@ public class JPEG  {
 		
 		public static ScanEscape parse(ByteStream source, Context ctx) {
 			Token entry = Choice.between(source, ctx,
-					Case.of(ScanEscape$1::parse, x -> {}),
-					Case.of(ScanEscape$2::parse, x -> {})
+					ScanEscape$1::parse,
+					ScanEscape$2::parse
 			);
 			return new ScanEscape(entry);
 		}

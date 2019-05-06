@@ -11,11 +11,10 @@ import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.primitive.TokenList;
-import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import engineering.swat.nest.core.tokens.primitive.TokenList;
+import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
@@ -98,8 +97,16 @@ public class LinkedListSeekTest {
         public static LinkedListEntry parse(ByteStream source, Context ctx, NestBigInteger offset) {
             AtomicReference<NestBigInteger> value = new AtomicReference<>();
             Token parsed = Choice.between(source, ctx,
-                    Case.of((s,c) -> Node.parse(s, c, offset), (l) -> value.set(l.value)),
-                    Case.of((s,c) -> Leaf.parse(s, c, offset), (l) -> value.set(l.value))
+                    (s,c) -> {
+                        Node result = Node.parse(s, c, offset);
+                        value.set(result.value);
+                        return result;
+                    },
+                    (s,c) -> {
+                        Leaf result = Leaf.parse(s, c, offset);
+                        value.set(result.value);
+                        return result;
+                    }
             );
             return new LinkedListEntry(value.get(), parsed);
         }

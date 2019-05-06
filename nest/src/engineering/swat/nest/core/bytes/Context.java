@@ -10,21 +10,27 @@ public class Context {
 
 	private final ByteOrder endianness;
 	private final Charset encoding;
+	private final ParseLogTarget logTarget;
 
-	private Context(Charset encoding, ByteOrder endianness) {
+	private Context(Charset encoding, ByteOrder endianness, ParseLogTarget logTarget) {
 		this.encoding = encoding;
 		this.endianness = endianness;
+		this.logTarget = logTarget;
 	}
 	
-	public static Context DEFAULT = new Context(StandardCharsets.US_ASCII, ByteOrder.BIG_ENDIAN);
+	public static Context DEFAULT = new Context(StandardCharsets.US_ASCII, ByteOrder.BIG_ENDIAN, ParseLogTarget.SINK);
 
 	public Context setEncoding(Charset encoding) {
-		return new Context(encoding, endianness);
+		return new Context(encoding, endianness, logTarget);
 	}
 
 	public Context setByteOrder(ByteOrder endianness) {
-		return new Context(encoding, endianness);
+		return new Context(encoding, endianness, logTarget);
 	}
+
+	public Context setParseLogTarget(ParseLogTarget logTarget) {
+		return new Context(encoding, endianness, logTarget);
+    }
 
 	public ByteOrder getByteOrder() {
 	    return this.endianness;
@@ -52,4 +58,20 @@ public class Context {
 	public int hashCode() {
 		return Objects.hash(endianness, encoding);
 	}
+
+	public void fail(String msg) {
+		logTarget.fail(msg);
+	}
+	public void fail(String msg, @Nullable Object p0) {
+		logTarget.fail(msg, p0);
+	}
+
+	public void fail(String msg, @Nullable Object p0, @Nullable Object p1) {
+		logTarget.fail(msg, p0, p1);
+	}
+
+	public void fail(String msg, @Nullable Object p0, @Nullable Object p1, @Nullable Object p2) {
+		logTarget.fail(msg, p0, p1, p2);
+	}
+
 }

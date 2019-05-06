@@ -11,11 +11,10 @@ import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.primitive.TokenList;
-import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import engineering.swat.nest.core.tokens.primitive.TokenList;
+import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.examples.formats.jpeg.JPEG;
 import engineering.swat.nest.examples.formats.png.PNG;
 import java.io.IOException;
@@ -77,8 +76,8 @@ public class FatLikeNestingTests {
 
         public static PNGorJPEG parse(ByteStream source, Context ctx) {
             Token entry = Choice.between(source, ctx,
-                    Case.of(PNG.PNG$::parse, x -> {}),
-                    Case.of(JPEG.Format::parse, x -> {})
+                    PNG.PNG$::parse,
+                    JPEG.Format::parse
             );
             return new PNGorJPEG(entry);
         }

@@ -11,7 +11,6 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
@@ -89,9 +88,9 @@ public class NestingAndCyclesTests {
 		private Loop(Token entry) { this.entry = entry; }
 		
 		public static Loop parse(ByteStream source, Context ctx, Node n) {
-			Token entry = Choice.between(source, ctx, 
-					Case.of((s, c) -> Loop$1.parse(s, c, n), x -> {}),
-					Case.of((s, c) -> Loop$2.parse(s, c, n), x -> {})
+			Token entry = Choice.between(source, ctx,
+					(s, c) -> Loop$1.parse(s, c, n),
+					(s, c) -> Loop$2.parse(s, c, n)
 			);
 			return new Loop(entry);
 		}

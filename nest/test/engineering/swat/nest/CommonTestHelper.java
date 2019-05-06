@@ -1,5 +1,6 @@
 package engineering.swat.nest;
 
+import engineering.swat.nest.core.bytes.ParseLogTarget;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -21,6 +22,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.source.ByteSliceBuilder;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class CommonTestHelper {
 	public static ByteStream wrap(byte... bytes) {
@@ -74,6 +76,34 @@ public class CommonTestHelper {
             }
         }
     }
-	 
+
+
+    public static ParseLogTarget TRACE_FAILURES = new ParseLogTarget() {
+		@Override
+		public void fail(String msg) {
+		    System.err.println(msg);
+		}
+
+		private String replaceFirstPlaceHolder(String s, @Nullable Object o) {
+			return s.replaceFirst("\\{}", Objects.toString(o));
+		}
+
+		@Override
+		public void fail(String msg, @Nullable Object p0) {
+		    System.err.println(replaceFirstPlaceHolder(msg, p0));
+
+		}
+
+		@Override
+		public void fail(String msg, @Nullable Object p0, @Nullable Object p1) {
+			System.err.println(replaceFirstPlaceHolder(replaceFirstPlaceHolder(msg, p0), p1));
+
+		}
+
+		@Override
+		public void fail(String msg, @Nullable Object p0, @Nullable Object p1, @Nullable Object p2) {
+			System.err.println(replaceFirstPlaceHolder(replaceFirstPlaceHolder(replaceFirstPlaceHolder(msg, p0), p1), p2));
+		}
+	};
 
 }

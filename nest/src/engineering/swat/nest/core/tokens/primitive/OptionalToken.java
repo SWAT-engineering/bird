@@ -29,6 +29,7 @@ public class OptionalToken<T extends Token> extends PrimitiveToken {
 			return new OptionalToken<>(parse.apply(source, ctx), ctx);
 		}
 		catch (ParseError e) {
+			ctx.fail("[OptionalToken] Parsing failed: {} after {}", e, source);
 			source.sync(backup); // restore after failure
 			return new OptionalToken<>(null, ctx);
 		}

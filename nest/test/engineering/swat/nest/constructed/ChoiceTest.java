@@ -12,7 +12,6 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
-import engineering.swat.nest.core.tokens.operations.Choice.Case;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.net.URISyntaxException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,14 +51,18 @@ public class ChoiceTest {
 			final AtomicReference<NestBigInteger> virtualField = new AtomicReference<>();
 			final AtomicReference<UnsignedBytes> x = new AtomicReference<>();
 			Token entry = Choice.between(source, ctx,
-					Case.of((s, c) -> A.parse(s, c), a -> {
-						virtualField.set(a.virtualField);
-						x.set(a.x);
-					}),
-					Case.of((s, c) -> B.parse(s, c), b -> {
-						virtualField.set(b.virtualField);
-						x.set(b.x);
-					})
+					(s, c) -> {
+						A result = A.parse(s, c);
+						virtualField.set(result.virtualField);
+						x.set(result.x);
+						return result;
+					},
+					(s, c) -> {
+						B result = B.parse(s, c);
+						virtualField.set(result.virtualField);
+						x.set(result.x);
+						return result;
+					}
 			);
 			return new AorB(entry, virtualField.get(), x.get());
 		}

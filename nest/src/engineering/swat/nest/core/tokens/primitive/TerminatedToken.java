@@ -73,6 +73,7 @@ public class TerminatedToken<E extends Token, T extends Token> extends Primitive
             try {
                 terminator = terminatorParser.apply(terminatorStream, ctx);
             } catch (ParseError e) {
+                ctx.fail("[TerminatedToken] Terminator parser failed unexpectedly: {}", e);
                 terminator = Optional.empty();
             }
             if (terminator.isPresent()) {
