@@ -18,6 +18,8 @@ public abstract class Token {
 		return getTrackedBytes().sameBytes(other.getBytes(ByteOrder.BIG_ENDIAN));
 	}
 
+	public abstract  <T> T accept(TokenVisitor<T> visitor);
+
 
 	@Override
 	public boolean equals(@Nullable Object obj) {
