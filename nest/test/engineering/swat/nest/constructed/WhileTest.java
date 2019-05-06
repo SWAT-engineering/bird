@@ -11,14 +11,13 @@ import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 public class WhileTest {
 
     @Test
     void parseUnevenBytes() {
-        WhileUnevenParse parsed = WhileUnevenParse.parse(wrap(1, 3, 5, 7, 8), Context.DEFAULT).get();
+        WhileUnevenParse parsed = WhileUnevenParse.parse(wrap(1, 3, 5, 7, 8), Context.DEFAULT);
         assertEquals(4, parsed.contents.length());
         assertEquals(8, parsed.terminatedAt.getByteAt(NestBigInteger.ZERO));
     }
@@ -34,21 +33,13 @@ public class WhileTest {
             this.terminatedAt = terminatedAt;
         }
 
-        public static Optional<WhileUnevenParse> parse(ByteStream source, Context ctx) {
-            Optional<TokenList<UnsignedBytes>> contents = TokenList.parseWhile(source, ctx,
+        public static WhileUnevenParse parse(ByteStream source, Context ctx) {
+            TokenList<UnsignedBytes>contents = TokenList.parseWhile(source, ctx,
                     (s, c) -> s.readUnsigned(1, c),
                     ub -> ub.asValue().and(NestValue.of(0x1, 1)).sameBytes(NestValue.of(1, 1))
                     );
-            if (!contents.isPresent()) {
-                ctx.fail("WhileUnevenParse.contents missing at {}", source);
-                return Optional.empty();
-            }
-            Optional<UnsignedBytes> terminatedAt = source.readUnsigned(1, ctx);
-            if (!terminatedAt.isPresent()) {
-                ctx.fail("WhileUnevenParse.terminatedAt missing at {}", source);
-                return Optional.empty();
-            }
-            return Optional.of(new WhileUnevenParse(contents.get(), terminatedAt.get()));
+            UnsignedBytes terminatedAt = source.readUnsigned(1, ctx);
+            return new WhileUnevenParse(contents, terminatedAt);
         }
 
 

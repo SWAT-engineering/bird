@@ -8,17 +8,16 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
-import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
-import java.util.Optional;
+import engineering.swat.nest.core.tokens.UserDefinedToken;
 import org.junit.jupiter.api.Test;
 
 public class TieTest {
 
     @Test
     void tieWorks() {
-        Tie1 parsed = Tie1.parse(wrap(1, 2, 3, 4), Context.DEFAULT).get();
+        Tie1 parsed = Tie1.parse(wrap(1, 2, 3, 4), Context.DEFAULT);
         assertEquals(4, parsed.size().intValueExact());
         assertEquals(0x01 << 8 | 0x02, parsed.other.data1.asValue().asInteger(Sign.UNSIGNED).intValueExact());
         assertEquals(0x03 << 8 | 0x04, parsed.other.data2.asValue().asInteger(Sign.UNSIGNED).intValueExact());
@@ -26,7 +25,7 @@ public class TieTest {
 
     @Test
     void tieFlipWorks() {
-        Tie2 parsed = Tie2.parse(wrap(1, 2, 3, 4), Context.DEFAULT).get();
+        Tie2 parsed = Tie2.parse(wrap(1, 2, 3, 4), Context.DEFAULT);
         assertEquals(4, parsed.size().intValueExact());
         assertEquals(0x01 << 8 | 0x02, parsed.data1.asValue().asInteger(Sign.UNSIGNED).intValueExact());
         assertEquals(0x01 << 8 | 0x02, parsed.other.data2.asValue().asInteger(Sign.UNSIGNED).intValueExact());
@@ -40,26 +39,17 @@ public class TieTest {
             this.data = data;
             this.other = other;
         }
-        public static Optional<Tie1> parse(ByteStream source, Context ctx) {
-            Optional<UnsignedBytes> data = source.readUnsigned(4, ctx);
-            if (!data.isPresent()) {
-                ctx.fail("Tie1.data missing from {}", source);
-                return Optional.empty();
-            }
+        public static Tie1 parse(ByteStream source, Context ctx) {
+            UnsignedBytes data = source.readUnsigned(4, ctx);
             // a tie is just a new bytestream that can start at any token
-            ByteStream tieSource = new ByteStream(data.get());
-            Optional<OtherStruct> other = OtherStruct.parse(tieSource, ctx);
-            if (!other.isPresent()) {
-                ctx.fail("Tie1.other missing from {}", tieSource);
-                return Optional.empty();
-            }
-            return Optional.of(new Tie1(data.get(), other.get()));
+            OtherStruct other = OtherStruct.parse(new ByteStream(data), ctx);
+            return new Tie1(data, other);
         }
 
         @Override
         public TrackedByteSlice getTrackedBytes() {
             // do not include the tie field to the tracked bytes view !
-            return data.getTrackedBytes();
+            return buildTrackedView(data);
         }
 
         @Override
@@ -80,25 +70,12 @@ public class TieTest {
         }
 
 
-        public static Optional<Tie2> parse(ByteStream source, Context ctx) {
-            Optional<UnsignedBytes> data1 = source.readUnsigned(2, ctx);
-            if (!data1.isPresent()) {
-                ctx.fail("Tie2.data1 missing from {}", source);
-                return Optional.empty();
-            }
-            Optional<UnsignedBytes> data2 = source.readUnsigned(2, ctx);
-            if (!data2.isPresent()) {
-                ctx.fail("Tie2.data2 missing from {}", source);
-                return Optional.empty();
-            }
+        public static Tie2 parse(ByteStream source, Context ctx) {
+            UnsignedBytes data1 = source.readUnsigned(2, ctx);
+            UnsignedBytes data2 = source.readUnsigned(2, ctx);
             // a tie is just a new bytestream that can start at any token
-            ByteStream tieSource = new ByteStream(TokenList.of(ctx, data2.get(), data1.get()));
-            Optional<OtherStruct> other = OtherStruct.parse(tieSource, ctx);
-            if (!other.isPresent()) {
-                ctx.fail("Tie2.other missing from {}", tieSource);
-                return Optional.empty();
-            }
-            return Optional.of(new Tie2(data1.get(), data2.get(), other.get()));
+            OtherStruct other = OtherStruct.parse(new ByteStream(TokenList.of(ctx, data2, data1)), ctx);
+            return new Tie2(data1, data2, other);
         }
 
         @Override
@@ -122,18 +99,10 @@ public class TieTest {
             this.data2 = data2;
         }
 
-        public static Optional<OtherStruct> parse(ByteStream source, Context ctx) {
-            Optional<UnsignedBytes> data1 = source.readUnsigned(2, ctx);
-            if (!data1.isPresent()) {
-                ctx.fail("OtherStruct.data1 missing from {}", source);
-                return Optional.empty();
-            }
-            Optional<UnsignedBytes> data2 = source.readUnsigned(2, ctx);
-            if (!data2.isPresent()) {
-                ctx.fail("OtherStruct.data2 missing from {}", source);
-                return Optional.empty();
-            }
-            return Optional.of(new OtherStruct(data1.get(), data2.get()));
+        public static OtherStruct parse(ByteStream source, Context ctx) {
+            UnsignedBytes data1 = source.readUnsigned(2, ctx);
+            UnsignedBytes data2 = source.readUnsigned(2, ctx);
+            return new OtherStruct(data1, data2);
 
         }
 

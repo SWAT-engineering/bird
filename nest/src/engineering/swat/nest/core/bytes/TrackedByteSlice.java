@@ -20,7 +20,6 @@ public interface TrackedByteSlice  {
 		return result;
 	}
 
-
 	default boolean sameBytes(TrackedByteSlice bytes) {
 		NestBigInteger mySize = size();
 		if (!mySize.equals(bytes.size())) {
@@ -74,5 +73,4 @@ public interface TrackedByteSlice  {
 			}
 		};
 	}
-
 }

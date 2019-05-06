@@ -77,47 +77,33 @@ public class CommonTestHelper {
         }
     }
 
-    public static final ParseLogTarget FAIL_LOG = new ParseLogTarget() {
+
+    public static ParseLogTarget TRACE_FAILURES = new ParseLogTarget() {
 		@Override
 		public void fail(String msg) {
 		    System.err.println(msg);
 		}
 
-		@Override
-		public void fail(String msg, @Nullable Object p0) {
-			System.err.println(replaceFirstPlaceHolder(msg, p0));
+		private String replaceFirstPlaceHolder(String s, @Nullable Object o) {
+			return s.replaceFirst("\\{}", Objects.toString(o));
 		}
 
-		private String replaceFirstPlaceHolder(String s, @Nullable Object o) {
-			return s.replaceFirst("\\{}", Objects.toString(o, "null"));
+		@Override
+		public void fail(String msg, @Nullable Object p0) {
+		    System.err.println(replaceFirstPlaceHolder(msg, p0));
+
 		}
 
 		@Override
 		public void fail(String msg, @Nullable Object p0, @Nullable Object p1) {
 			System.err.println(replaceFirstPlaceHolder(replaceFirstPlaceHolder(msg, p0), p1));
+
 		}
 
 		@Override
 		public void fail(String msg, @Nullable Object p0, @Nullable Object p1, @Nullable Object p2) {
 			System.err.println(replaceFirstPlaceHolder(replaceFirstPlaceHolder(replaceFirstPlaceHolder(msg, p0), p1), p2));
 		}
-
-		@Override
-		public void trace(String msg) {
-		}
-
-		@Override
-		public void trace(String msg, @Nullable Object p0) {
-		}
-
-		@Override
-		public void trace(String msg, @Nullable Object p0, @Nullable Object p1) {
-		}
-
-		@Override
-		public void trace(String msg, @Nullable Object p0, @Nullable Object p1, @Nullable Object p2) {
-		}
 	};
-	 
 
 }

@@ -14,6 +14,7 @@ public abstract class Token {
 	public boolean sameBytes(Token other) {
 		return getTrackedBytes().sameBytes(other.getTrackedBytes());
 	}
+
 	public boolean sameBytes(NestValue other) {
 		return getTrackedBytes().sameBytes(other.getBytes(ByteOrder.BIG_ENDIAN));
 	}
