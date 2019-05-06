@@ -27,7 +27,7 @@ public class ByteStream {
 	}
 
 	public Optional<UnsignedBytes> readUnsigned(int size, Context ctx) {
-	    return readUnsigned(NestBigInteger.of(size), ctx);
+	    return readUnsigned(NestBigInteger.ofUntracked(size), ctx);
 	}
 
 

@@ -15,7 +15,7 @@ public interface TrackedByteSlice  {
 	default byte[] allBytes() {
 		byte[] result = new byte[size().intValueExact()];
 		for (int i = 0; i < result.length; i++) {
-			result[i] = get(NestBigInteger.of(i));
+			result[i] = get(NestBigInteger.ofUntracked(i));
 		}
 		return result;
 	}
