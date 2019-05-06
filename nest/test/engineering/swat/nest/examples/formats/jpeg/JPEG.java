@@ -9,7 +9,6 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
-import engineering.swat.nest.core.tokens.primitive.UnsignedByte;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
@@ -48,19 +47,19 @@ public class JPEG  {
 	}
 	
 	public static class Header extends UserDefinedToken {
-		public final UnsignedByte marker;
-		public final UnsignedByte identifier;
-		private Header(UnsignedByte marker, UnsignedByte identifier) {
+		public final UnsignedBytes marker;
+		public final UnsignedBytes identifier;
+		private Header(UnsignedBytes marker, UnsignedBytes identifier) {
 			this.marker = marker;
 			this.identifier = identifier;
 		}
 		
 		public static Header parse(ByteStream source, Context ctx) {
-			UnsignedByte marker = source.readUnsigned( ctx);
+			UnsignedBytes marker = source.readUnsigned(1, ctx);
 			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
 				throw new ParseError("Header.marker", marker);
 			}
-			UnsignedByte identifier = source.readUnsigned( ctx);
+			UnsignedBytes identifier = source.readUnsigned(1, ctx);
 			if (!(identifier.asValue().sameBytes(NestValue.of(0xD8, 1)))) {
 				throw new ParseError("Header.identifier", identifier);
 			}
@@ -106,12 +105,12 @@ public class JPEG  {
 	}
 
 	public static class SizedSegment extends UserDefinedToken {
-		public final UnsignedByte marker;
-		public final UnsignedByte identifier;
+		public final UnsignedBytes marker;
+		public final UnsignedBytes identifier;
 		public final UnsignedBytes length;
 		public final UnsignedBytes payload;
 
-		private SizedSegment(UnsignedByte marker, UnsignedByte identifier, UnsignedBytes length, UnsignedBytes payload) {
+		private SizedSegment(UnsignedBytes marker, UnsignedBytes identifier, UnsignedBytes length, UnsignedBytes payload) {
 			this.marker = marker;
 			this.identifier = identifier;
 			this.length = length;
@@ -119,11 +118,11 @@ public class JPEG  {
 		}
 
 		public static SizedSegment parse(ByteStream source, Context ctx) {
-			UnsignedByte marker = source.readUnsigned(ctx);
+			UnsignedBytes marker = source.readUnsigned(1, ctx);
 			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
 				throw new ParseError("SizedSegment.marker", marker);
 			}
-			UnsignedByte identifier = source.readUnsigned( ctx);
+			UnsignedBytes identifier = source.readUnsigned(1, ctx);
 			if (!(identifier.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xD8)) < 0 || identifier.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xDA)) > 0)) {
 				throw new ParseError("SizedSegment.identifier", identifier);
 			}
@@ -158,13 +157,13 @@ public class JPEG  {
 			return new ScanEscape(entry);
 		}
 		private static class ScanEscape$1 extends UserDefinedToken {
-			public final UnsignedByte scanData;
-			private ScanEscape$1(UnsignedByte scanData) {
+			public final UnsignedBytes scanData;
+			private ScanEscape$1(UnsignedBytes scanData) {
 				this.scanData = scanData;
 			}
 			
 			public static ScanEscape$1 parse(ByteStream source, Context ctx) {
-				UnsignedByte scanData = source.readUnsigned( ctx);
+				UnsignedBytes scanData = source.readUnsigned(1, ctx);
 				if (!(!scanData.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
 					throw new ParseError("ScanEscape$1.scanData", scanData);
 				}
@@ -219,13 +218,13 @@ public class JPEG  {
 	}
 
 	public static class ScanSegment extends UserDefinedToken {
-		public final UnsignedByte marker;
-		public final UnsignedByte identifier;
+		public final UnsignedBytes marker;
+		public final UnsignedBytes identifier;
 		public final UnsignedBytes length;
 		public final UnsignedBytes payload;
 		public final TokenList<ScanEscape> choices;
 		
-		private ScanSegment(UnsignedByte marker, UnsignedByte identifier,
+		private ScanSegment(UnsignedBytes marker, UnsignedBytes identifier,
 				UnsignedBytes length, UnsignedBytes payload,
 				TokenList<ScanEscape> choices) {
 			this.marker = marker;
@@ -236,12 +235,12 @@ public class JPEG  {
 		}
 		
 		public static ScanSegment parse(ByteStream source, Context ctx) {
-			UnsignedByte marker = source.readUnsigned(ctx);
+			UnsignedBytes marker = source.readUnsigned(1, ctx);
 
 			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
 				throw new ParseError("ScanSegment.marker", marker);
 			}
-			UnsignedByte identifier = source.readUnsigned(ctx);
+			UnsignedBytes identifier = source.readUnsigned(1, ctx);
 			if (!(identifier.asValue().sameBytes(NestValue.of(0xDA, 1)))) {
 				throw new ParseError("ScanSegment.identifier", identifier);
 			}
@@ -263,21 +262,21 @@ public class JPEG  {
 	}
 
 	public static class Footer extends UserDefinedToken {
-		public final UnsignedByte marker;
-		public final UnsignedByte identifier;
-		private Footer(UnsignedByte marker, UnsignedByte identifier) {
+		public final UnsignedBytes marker;
+		public final UnsignedBytes identifier;
+		private Footer(UnsignedBytes marker, UnsignedBytes identifier) {
 			this.marker = marker;
 			this.identifier = identifier;
 		}
 		
 		public static Footer parse(ByteStream source, Context ctx) {
 
-			UnsignedByte marker = source.readUnsigned(ctx);
+			UnsignedBytes marker = source.readUnsigned(1, ctx);
 
 			if (!(marker.asValue().sameBytes(NestValue.of(0xFF, 1)))) {
 				throw new ParseError("Footer.marker", marker);
 			}
-			UnsignedByte identifier = source.readUnsigned(ctx);
+			UnsignedBytes identifier = source.readUnsigned(1, ctx);
 			if (!(identifier.asValue().sameBytes(NestValue.of(0xD9, 1)))) {
 				throw new ParseError("Footer.identifier", identifier);
 			}

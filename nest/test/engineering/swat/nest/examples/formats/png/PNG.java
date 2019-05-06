@@ -8,7 +8,6 @@ import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
-import engineering.swat.nest.core.tokens.primitive.UnsignedByte;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import java.nio.ByteOrder;
@@ -47,18 +46,18 @@ public class PNG {
     }
 
     public static final class Signature extends UserDefinedToken {
-        private final UnsignedByte $anon1;
+        private final UnsignedBytes $anon1;
         private final UnsignedBytes $anon2;
         private final UnsignedBytes $anon3;
         
-        private Signature(UnsignedByte $anon1, UnsignedBytes $anon2, UnsignedBytes $anon3) {
+        private Signature(UnsignedBytes $anon1, UnsignedBytes $anon2, UnsignedBytes $anon3) {
             this.$anon1 = $anon1;
             this.$anon2 = $anon2;
             this.$anon3 = $anon3;
         }
         
         public static Signature parse(ByteStream source, Context ctx) throws ParseError {
-            UnsignedByte $anon1 = source.readUnsigned( ctx);
+            UnsignedBytes $anon1 = source.readUnsigned(1, ctx);
             if (!($anon1.asValue().sameBytes(NestValue.of(0x89, 1)))) {
                 throw new ParseError("Signature.$anon1", $anon1);
             }

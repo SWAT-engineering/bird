@@ -9,10 +9,10 @@ import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.primitive.UnsignedByte;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
 import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
@@ -27,10 +27,10 @@ public class NestingAndCyclesTests {
 
 	// translation of nesting_and_cycles.bird
 	public static final class Start extends UserDefinedToken {
-		public final UnsignedByte header;
+		public final UnsignedBytes header;
 		public final Node initial;
 		public final Loop loop;
-		private Start(UnsignedByte header, Node initial, Loop loop) {
+		private Start(UnsignedBytes header, Node initial, Loop loop) {
 			this.header = header;
 			this.initial = initial;
 			this.loop = loop;
@@ -38,7 +38,7 @@ public class NestingAndCyclesTests {
 
 		public static Start parse(ByteStream source, Context ctx) {
 			ctx = ctx.setEncoding(StandardCharsets.US_ASCII);
-			UnsignedByte header = source.readUnsigned( ctx);
+			UnsignedBytes header = source.readUnsigned(1, ctx);
 			if (!header.asString().get().equals("H")) {
 				throw new ParseError("Start.header", header);
 			}
@@ -59,16 +59,16 @@ public class NestingAndCyclesTests {
 	}
 	
 	public static final class Node extends UserDefinedToken {
-		public final UnsignedByte a;
-		public final UnsignedByte b;
-		private Node(UnsignedByte a, UnsignedByte b) {
+		public final UnsignedBytes a;
+		public final UnsignedBytes b;
+		private Node(UnsignedBytes a, UnsignedBytes b) {
 			this.a = a;
 			this.b = b;
 		}
 		
 		public static Node parse(ByteStream source, Context ctx) {
-			UnsignedByte a = source.readUnsigned( ctx);
-			UnsignedByte b = source.readUnsigned( ctx);
+			UnsignedBytes a = source.readUnsigned(1, ctx);
+			UnsignedBytes b = source.readUnsigned(1, ctx);
 			return new Node(a, b);
 		}
 
@@ -97,15 +97,15 @@ public class NestingAndCyclesTests {
 		}
 		
 		private static final class Loop$1 extends UserDefinedToken {
-			private final UnsignedByte $dummy1;
+			private final UnsignedBytes $dummy1;
 			
-			public Loop$1(UnsignedByte $dummy1) {
+			public Loop$1(UnsignedBytes $dummy1) {
 				this.$dummy1 = $dummy1;
 			}
 
 
 			public static Loop$1 parse(ByteStream source, Context ctx, Node n) {
-				UnsignedByte $dummy1 = source.readUnsigned( ctx);
+				UnsignedBytes $dummy1 = source.readUnsigned(1, ctx);
 				if (!($dummy1.asString().get().equals("0"))) {
 					throw new ParseError("Loop$1._", $dummy1);
 				}
@@ -125,12 +125,12 @@ public class NestingAndCyclesTests {
 		}
 
 		private static final class Loop$2 extends UserDefinedToken {
-			public final UnsignedByte aRef;
+			public final UnsignedBytes aRef;
 			public final Node n1;
 			public final Node n2;
 			public final Loop l;
 			
-			private Loop$2(UnsignedByte aRef, Node n1, Node n2, Loop l) {
+			private Loop$2(UnsignedBytes aRef, Node n1, Node n2, Loop l) {
 				this.aRef = aRef;
 				this.n1 = n1;
 				this.n2 = n2;
@@ -139,7 +139,7 @@ public class NestingAndCyclesTests {
 
 
 			public static Loop$2 parse(ByteStream source, Context ctx, Node n) {
-				UnsignedByte aRef = source.readUnsigned(ctx);
+				UnsignedBytes aRef = source.readUnsigned(1, ctx);
 				if (!(aRef.sameBytes(n.a))) {
 					throw new ParseError("Loop$2.aRef", aRef);
 				}

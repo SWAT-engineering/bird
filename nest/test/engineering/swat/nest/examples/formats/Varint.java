@@ -10,7 +10,6 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
-import engineering.swat.nest.core.tokens.primitive.UnsignedByte;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
@@ -23,11 +22,11 @@ public class Varint {
     // based on varint.bird
 
     public static class LEB128 extends UserDefinedToken {
-        public final TokenList<UnsignedByte> raw;
-        public final UnsignedByte lastOne;
+        public final TokenList<UnsignedBytes> raw;
+        public final UnsignedBytes lastOne;
         public final NestBigInteger value;
 
-        private LEB128(TokenList<UnsignedByte> raw, UnsignedByte lastOne,
+        private LEB128(TokenList<UnsignedBytes> raw, UnsignedBytes lastOne,
                 NestBigInteger value) {
             this.raw = raw;
             this.lastOne = lastOne;
@@ -35,11 +34,11 @@ public class Varint {
         }
 
         public static LEB128 parse(ByteStream source, Context ctx) {
-            TokenList<UnsignedByte> raw = TokenList.parseWhile(source, ctx,
-                    (s, c) -> s.readUnsigned(c),
+            TokenList<UnsignedBytes> raw = TokenList.parseWhile(source, ctx,
+                    (s, c) -> s.readUnsigned(1, c),
                     it -> !(it.asValue().and(NestValue.of(0b1000_0000, 1)).sameBytes(NestValue.of(0, 1)))
             );
-            UnsignedByte lastOne = source.readUnsigned(ctx);
+            UnsignedBytes lastOne = source.readUnsigned(1, ctx);
             NestValue ac = lastOne.asValue();
             // reverse slice
             for (int index = raw.length() - 1; index >= 0; index--) {
@@ -81,16 +80,16 @@ public class Varint {
         }
 
         private static class PrefixVarint$1 extends UserDefinedToken {
-            public final UnsignedByte prefixHeader;
+            public final UnsignedBytes prefixHeader;
             public final NestBigInteger value;
 
-            private PrefixVarint$1(UnsignedByte prefixHeader, NestBigInteger value) {
+            private PrefixVarint$1(UnsignedBytes prefixHeader, NestBigInteger value) {
                 this.prefixHeader = prefixHeader;
                 this.value = value;
             }
 
             public static PrefixVarint$1 parse(ByteStream source, Context ctx) {
-                UnsignedByte prefixHeader = source.readUnsigned( ctx);
+                UnsignedBytes prefixHeader = source.readUnsigned(1, ctx);
                 if (!prefixHeader.asValue().and(NestValue.of(0b1, 1)).sameBytes(NestValue.of(0b1, 1))) {
                    throw new ParseError("PrefixVarint$1.prefixHeader", prefixHeader);
                 }
@@ -110,12 +109,12 @@ public class Varint {
         }
 
         private static class PrefixVarint$2 extends UserDefinedToken {
-            public final UnsignedByte prefixHeader;
+            public final UnsignedBytes prefixHeader;
             public final NestBigInteger prefixLength;
             public final UnsignedBytes rest;
             public final NestBigInteger value;
 
-            private PrefixVarint$2(UnsignedByte prefixHeader,
+            private PrefixVarint$2(UnsignedBytes prefixHeader,
                     NestBigInteger prefixLength, UnsignedBytes rest,
                     NestBigInteger value) {
                 this.prefixHeader = prefixHeader;
@@ -126,7 +125,7 @@ public class Varint {
 
 
             public static PrefixVarint$2 parse(ByteStream source, Context ctx) {
-                UnsignedByte prefixHeader = source.readUnsigned(ctx);
+                UnsignedBytes prefixHeader = source.readUnsigned(1, ctx);
                 if (prefixHeader.asValue().sameBytes(NestValue.of(0x00, 1))) {
                     throw new ParseError("PrefixVarint$2.prefixHeader", prefixHeader);
                 }
@@ -150,18 +149,18 @@ public class Varint {
         }
 
         private static class PrefixVarint$3 extends UserDefinedToken {
-            public final UnsignedByte prefixHeader;
+            public final UnsignedBytes prefixHeader;
             public final UnsignedBytes fullValue;
             public final NestBigInteger value;
 
-            private PrefixVarint$3(UnsignedByte prefixHeader, UnsignedBytes fullValue, NestBigInteger value) {
+            private PrefixVarint$3(UnsignedBytes prefixHeader, UnsignedBytes fullValue, NestBigInteger value) {
                 this.prefixHeader = prefixHeader;
                 this.fullValue = fullValue;
                 this.value = value;
             }
 
             public static PrefixVarint$3 parse(ByteStream source, Context ctx) {
-                UnsignedByte prefixHeader = source.readUnsigned( ctx);
+                UnsignedBytes prefixHeader = source.readUnsigned(1, ctx);
                 if (!prefixHeader.asValue().sameBytes(NestValue.of(0x00, 1))) {
                     throw new ParseError("PrefixVarint$3.prefixHeader", prefixHeader);
                 }
