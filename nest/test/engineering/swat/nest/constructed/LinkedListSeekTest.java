@@ -1,10 +1,8 @@
 package engineering.swat.nest.constructed;
 
-import static engineering.swat.nest.CommonTestHelper.FAIL_LOG;
 import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import engineering.swat.nest.CommonTestHelper;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
@@ -12,11 +10,11 @@ import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.primitive.TokenList;
-import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
 import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import engineering.swat.nest.core.tokens.primitive.TokenList;
+import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
@@ -70,13 +68,12 @@ public class LinkedListSeekTest {
 
     @Test
     void testWorkingSeekingLinkedList() throws IOException {
-        assertEquals(NestBigInteger.of(9), LinkedListEntry.parse(wrap(TEST_DATA), Context.DEFAULT.setLogTarget(
-                CommonTestHelper.FAIL_LOG), NestBigInteger.ZERO).get().value);
+        assertEquals(NestBigInteger.of(9), LinkedListEntry.parse(wrap(TEST_DATA), Context.DEFAULT, NestBigInteger.ZERO).get().value);
     }
 
     @Test
     void testParseMultipleLists() throws IOException {
-        TokenList<LinkedListEntry> tokensFound = TokenList.untilParseFailure(wrap(TEST_DATA), Context.DEFAULT.setLogTarget(FAIL_LOG),
+        TokenList<LinkedListEntry> tokensFound = TokenList.untilParseFailure(wrap(TEST_DATA), Context.DEFAULT,
                 (s, c) -> {
                     Optional<LinkedListEntry> result = LinkedListEntry.parse(s, c, s.getOffset());
                     s.readUnsigned(6, c); // forward pointer by 6 bytes

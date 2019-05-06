@@ -67,12 +67,7 @@ public class FatLikeNestingTests {
         assertEquals(data_end, result.size().intValueExact());
     }
 
-    public static void main(String[] args) {
-        for (int i = 0; i < 100;  i++ ) {
-          new FatLikeNestingTests().parseNestedPNGorJPEG();
-        }
 
-    }
 
 
     private static class PNGorJPEG extends UserDefinedToken {

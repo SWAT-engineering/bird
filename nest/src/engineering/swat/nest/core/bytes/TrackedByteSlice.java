@@ -20,6 +20,7 @@ public interface TrackedByteSlice  {
 		return result;
 	}
 
+
 	default boolean sameBytes(TrackedByteSlice bytes) {
 		NestBigInteger mySize = size();
 		if (!mySize.equals(bytes.size())) {
@@ -31,6 +32,20 @@ public interface TrackedByteSlice  {
 			}
 		}
 		return true;
+	}
+
+	default boolean sameBytes(byte[] bytes) {
+		NestBigInteger mySize = size();
+		if (!mySize.fitsInt() || mySize.intValueExact() != bytes.length) {
+			return false;
+		}
+		for (int c = 0; c < bytes.length; c++) {
+			if (get(NestBigInteger.ofUntracked(c)) != bytes[c]) {
+				return false;
+			}
+		}
+		return true;
+
 	}
 
 	default TrackedByteSlice slice(NestBigInteger offset, NestBigInteger size) {
@@ -59,4 +74,5 @@ public interface TrackedByteSlice  {
 			}
 		};
 	}
+
 }

@@ -63,13 +63,13 @@ public class JPEG  {
 		}
 		
 		public static Optional<Header> parse(ByteStream source, Context ctx) {
-			Optional<UnsignedBytes> marker = source.readUnsigned(1, ctx);
-			if (!marker.isPresent() || !(marker.get().asValue().sameBytes(NestValue.of(0xFF, 1)))) {
+			Optional<UnsignedBytes> marker = source.readUnsigned(NestBigInteger.ONE, ctx);
+			if (!marker.isPresent() || !(marker.get().sameBytes(NestValue.of(0xFF, 1)))) {
 			    ctx.fail("Header.marker {}", marker);
 			    return Optional.empty();
 			}
-			Optional<UnsignedBytes> identifier = source.readUnsigned(1, ctx);
-			if (!identifier.isPresent() || !(identifier.get().asValue().sameBytes(NestValue.of(0xD8, 1)))) {
+			Optional<UnsignedBytes> identifier = source.readUnsigned(NestBigInteger.ONE, ctx);
+			if (!identifier.isPresent() || !(identifier.get().sameBytes(NestValue.of(0xD8, 1)))) {
 				ctx.fail("Header.identifier {}", identifier);
 				return Optional.empty();
 			}
@@ -192,8 +192,8 @@ public class JPEG  {
 			}
 			
 			public static Optional<ScanEscape$1> parse(ByteStream source, Context ctx) {
-				Optional<UnsignedBytes> scanData = source.readUnsigned(1, ctx);
-				if (!scanData.isPresent() || !(!scanData.get().asValue().sameBytes(NestValue.of(0xFF, 1)))) {
+				Optional<UnsignedBytes> scanData = source.readUnsigned(NestBigInteger.ONE, ctx);
+				if (!scanData.isPresent() || !(!scanData.get().sameBytes(NestValue.of(0xFF, 1)))) {
 					ctx.fail("ScanEscape$1.scanData", scanData);
 					return Optional.empty();
 				}
@@ -217,8 +217,8 @@ public class JPEG  {
 			}
 			
 			public static Optional<ScanEscape$2> parse(ByteStream source, Context ctx) {
-				Optional<UnsignedBytes> escape = source.readUnsigned(2, ctx);
-				if (!escape.isPresent() || !(escape.get().asValue().sameBytes(NestValue.of(0xFF00, 2)) ||
+				Optional<UnsignedBytes> escape = source.readUnsigned(NestBigInteger.TWO, ctx);
+				if (!escape.isPresent() || !(escape.get().sameBytes(NestValue.of(0xFF00, 2)) ||
 						(escape.get().asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xFFCF)) > 0 &&
 								escape.get().asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xFFD8)) < 0))) {
 					ctx.fail("ScanEscape$2.escape", escape);
@@ -266,17 +266,17 @@ public class JPEG  {
 		}
 		
 		public static Optional<ScanSegment> parse(ByteStream source, Context ctx) {
-			Optional<UnsignedBytes> marker = source.readUnsigned(1, ctx);
-			if (!marker.isPresent() || !(marker.get().asValue().sameBytes(NestValue.of(0xFF, 1)))) {
+			Optional<UnsignedBytes> marker = source.readUnsigned(NestBigInteger.ONE, ctx);
+			if (!marker.isPresent() || !(marker.get().sameBytes(NestValue.of(0xFF, 1)))) {
 				ctx.fail("ScanSegment.marker {}", marker);
 				return Optional.empty();
 			}
-			Optional<UnsignedBytes> identifier = source.readUnsigned(1, ctx);
-			if (!identifier.isPresent() || !(identifier.get().asValue().sameBytes(NestValue.of(0xDA, 1)))) {
+			Optional<UnsignedBytes> identifier = source.readUnsigned(NestBigInteger.ONE, ctx);
+			if (!identifier.isPresent() || !(identifier.get().sameBytes(NestValue.of(0xDA, 1)))) {
 				ctx.fail("ScanSegment.identifier {}", identifier);
 				return Optional.empty();
 			}
-			Optional<UnsignedBytes> length = source.readUnsigned(2, ctx);
+			Optional<UnsignedBytes> length = source.readUnsigned(NestBigInteger.TWO, ctx);
 			if (!length.isPresent()) {
 				ctx.fail("ScanSegment.length missing from {}", source);
 				return Optional.empty();
@@ -311,14 +311,14 @@ public class JPEG  {
 		
 		public static Optional<Footer> parse(ByteStream source, Context ctx) {
 
-			Optional<UnsignedBytes> marker = source.readUnsigned(1, ctx);
+			Optional<UnsignedBytes> marker = source.readUnsigned(NestBigInteger.ONE, ctx);
 
-			if (!marker.isPresent() || !(marker.get().asValue().sameBytes(NestValue.of(0xFF, 1)))) {
+			if (!marker.isPresent() || !(marker.get().sameBytes(NestValue.of(0xFF, 1)))) {
 				ctx.fail("Footer.marker {}", marker);
 				return Optional.empty();
 			}
-			Optional<UnsignedBytes> identifier = source.readUnsigned(1, ctx);
-			if (!identifier.isPresent() || !(identifier.get().asValue().sameBytes(NestValue.of(0xD9, 1)))) {
+			Optional<UnsignedBytes> identifier = source.readUnsigned(NestBigInteger.ONE, ctx);
+			if (!identifier.isPresent() || !(identifier.get().sameBytes(NestValue.of(0xD9, 1)))) {
 				ctx.fail("Footer.identifier {}", identifier);
 				return Optional.empty();
 			}

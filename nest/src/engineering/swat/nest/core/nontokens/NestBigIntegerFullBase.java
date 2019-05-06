@@ -84,4 +84,14 @@ public abstract class NestBigIntegerFullBase implements NestBigInteger {
     public int hashCode() {
         return 7 * value.hashCode();
     }
+
+    @Override
+    public boolean lessThan(NestBigInteger other) {
+        return compareTo(other) < 0;
+    }
+
+    @Override
+    public boolean greaterThan(NestBigInteger other) {
+        return compareTo(other) > 0;
+    }
 }

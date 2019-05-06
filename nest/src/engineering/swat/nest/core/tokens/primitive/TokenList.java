@@ -16,15 +16,11 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 public class TokenList<T extends Token> extends PrimitiveToken implements Iterable<T> {
-
-
 	private final List<T> contents;
-	private final MultipleTokenByteSlice<T> byteView;
 
 	private TokenList(List<T> contents, Context ctx) {
 	    super(ctx);
 		this.contents = Collections.unmodifiableList(contents);
-		byteView = MultipleTokenByteSlice.buildByteView(contents);
 	}
 
 
@@ -114,12 +110,12 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 
 	@Override
 	public TrackedByteSlice getTrackedBytes() {
-	    return byteView;
+	    return MultipleTokenByteSlice.buildByteView(contents);
 	}
 
 	@Override
 	public NestBigInteger size() {
-	    return byteView.size();
+	    return contents.stream().map(Token::size).reduce(NestBigInteger.ZERO, NestBigInteger::add);
 	}
 
 	public int length() {

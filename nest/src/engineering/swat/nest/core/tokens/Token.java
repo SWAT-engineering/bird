@@ -2,6 +2,8 @@ package engineering.swat.nest.core.tokens;
 
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import engineering.swat.nest.core.nontokens.NestValue;
+import java.nio.ByteOrder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public abstract class Token {
@@ -11,6 +13,9 @@ public abstract class Token {
 
 	public boolean sameBytes(Token other) {
 		return getTrackedBytes().sameBytes(other.getTrackedBytes());
+	}
+	public boolean sameBytes(NestValue other) {
+		return getTrackedBytes().sameBytes(other.getBytes(ByteOrder.BIG_ENDIAN));
 	}
 
 

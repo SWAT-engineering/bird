@@ -154,4 +154,20 @@ public abstract class NestBigIntegerIntBase implements NestBigInteger {
     public String toString() {
         return Integer.toString(value);
     }
+
+    @Override
+    public boolean lessThan(NestBigInteger other) {
+        if (other instanceof NestBigIntegerIntBase) {
+            return value < ((NestBigIntegerIntBase) other).value;
+        }
+        return compareTo(other) < 0;
+    }
+
+    @Override
+    public boolean greaterThan(NestBigInteger other) {
+        if (other instanceof NestBigIntegerIntBase) {
+            return value > ((NestBigIntegerIntBase) other).value;
+        }
+        return compareTo(other) > 0;
+    }
 }

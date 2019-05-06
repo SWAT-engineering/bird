@@ -34,7 +34,7 @@ public class ByteStream {
 	public Optional<UnsignedBytes> readUnsigned(NestBigInteger size, Context ctx) {
 		assert size.compareTo(NestBigInteger.ZERO) >= 0;
 		NestBigInteger newOffset = offset.add(size);
-		if (newOffset.compareTo(limit) > 0) {
+		if (newOffset.greaterThan(limit)) {
 			ctx.fail("End of Stream reached {} {}", window, newOffset);
 			return Optional.empty();
 		}

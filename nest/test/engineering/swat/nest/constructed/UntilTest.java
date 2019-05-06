@@ -4,7 +4,6 @@ import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import engineering.swat.nest.CommonTestHelper;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
@@ -52,7 +51,7 @@ public class UntilTest {
 
 
     private static Optional<TerminatedToken<UnsignedBytes, UnsignedBytes>> cTerminatedToken(ByteStream source, int startOffset, int stepSize, int maxLength) {
-        return TerminatedToken.parseUntil(source, Context.DEFAULT.setLogTarget(CommonTestHelper.FAIL_LOG),
+        return TerminatedToken.parseUntil(source, Context.DEFAULT,
                 NestBigInteger.of(startOffset), NestBigInteger.of(stepSize), NestBigInteger.of(maxLength),
                 (b, c) -> new ByteStream(b).readUnsigned(b.size(), c),
                 (s, c) -> s.readUnsigned(1, c).filter(p -> p.getByteAt(NestBigInteger.ZERO) == 'c')

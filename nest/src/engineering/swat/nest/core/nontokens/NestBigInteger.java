@@ -167,4 +167,7 @@ public interface NestBigInteger extends Comparable<NestBigInteger> {
         }
         return new NestBigIntegerFullTracked(value, origin);
     }
+
+    boolean greaterThan(NestBigInteger other);
+    boolean lessThan(NestBigInteger other);
 }
