@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
@@ -25,10 +26,12 @@ public class OptTest {
 	
 	@Test
 	void testOptNested() {
-		ABA aa = ABA.parse(wrap(1,1), Context.DEFAULT);
-		ABA aba = ABA.parse(wrap(1,2,1), Context.DEFAULT);
-		assertFalse(aa.b.isPresent());
-		assertTrue(aba.b.isPresent());
+		Optional<ABA> aa = ABA.parse(wrap(1,1), Context.DEFAULT);
+		Optional<ABA> aba = ABA.parse(wrap(1,2,1), Context.DEFAULT);
+		assertTrue(aa.isPresent());
+		assertTrue(aba.isPresent());
+		assertFalse(aa.get().b.isPresent());
+		assertTrue(aba.get().b.isPresent());
 	}
 	
 	private static final class ABA extends UserDefinedToken {
@@ -42,11 +45,19 @@ public class OptTest {
 			this.a2 = a2;
 		}
 		
-		public static ABA parse(ByteStream source, Context ctx) {
-			A a = A.parse(source, ctx);
+		public static Optional<ABA> parse(ByteStream source, Context ctx) {
+			Optional<A> a = A.parse(source, ctx);
+			if (!a.isPresent()) {
+				ctx.fail("[ABA.a] {}", a);
+				return Optional.empty();
+			}
 			OptionalToken<B> b = OptionalToken.optional(source, ctx, B::parse);
-			A a2 = A.parse(source, ctx);
-			return new ABA(a, b, a2);
+			Optional<A> a2 = A.parse(source, ctx);
+			if (!a2.isPresent()) {
+				ctx.fail("[ABA.a2] {}", a2);
+				return Optional.empty();
+			}
+			return Optional.of(new ABA(a.get(), b, a2.get()));
 		}
 
 		@Override

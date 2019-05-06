@@ -4,20 +4,19 @@ import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import engineering.swat.nest.CommonTestHelper;
-import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.primitive.TokenList;
-import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
 import engineering.swat.nest.core.tokens.operations.Choice.Case;
-import engineering.swat.nest.examples.formats.jpeg.JPEG;
-import engineering.swat.nest.examples.formats.png.PNG;
+import engineering.swat.nest.core.tokens.primitive.TokenList;
+import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
+import engineering.swat.nest.examples.formats.jpeg.JPEG.Format;
+import engineering.swat.nest.examples.formats.png.PNG.PNG$;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -25,6 +24,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,7 +63,7 @@ public class FatLikeNestingTests {
 
     @Test
     void parseNestedPNGorJPEG() {
-        NestedFiles<PNGorJPEG> result = NestedFiles.parse(wrap(TEST_DATA), Context.DEFAULT, PNGorJPEG::parse);
+        NestedFiles<PNGorJPEG> result = NestedFiles.parse(wrap(TEST_DATA), Context.DEFAULT, PNGorJPEG::parse).get();
         assertEquals(data_end, result.size().intValueExact());
     }
 
@@ -75,12 +75,16 @@ public class FatLikeNestingTests {
             this.entry = entry;
         }
 
-        public static PNGorJPEG parse(ByteStream source, Context ctx) {
-            Token entry = Choice.between(source, ctx,
-                    Case.of(PNG.PNG$::parse, x -> {}),
-                    Case.of(JPEG.Format::parse, x -> {})
+        public static Optional<PNGorJPEG> parse(ByteStream source, Context ctx) {
+            Optional<Token> entry = Choice.between(source, ctx,
+                    Case.of(PNG$::parse, x -> {}),
+                    Case.of(Format::parse, x -> {})
             );
-            return new PNGorJPEG(entry);
+            if (!entry.isPresent()) {
+                ctx.fail("PNGorJPEG choice failed {}", source);
+                return Optional.empty();
+            }
+            return Optional.of(new PNGorJPEG(entry.get()));
         }
 
         @Override
@@ -104,14 +108,15 @@ public class FatLikeNestingTests {
             this.files = files;
         }
 
-        public static <T extends Token> NestedFiles<T> parse(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> tParser) {
+        public static <T extends Token> Optional<NestedFiles<T>> parse(ByteStream source, Context ctx, BiFunction<ByteStream, Context, Optional<T>> tParser) {
             ctx = ctx.setByteOrder(ByteOrder.LITTLE_ENDIAN);
-            UnsignedBytes header = source.readUnsigned(NestBigInteger.of(3), ctx);
-            if (!header.asString().get().equals("HDR")) {
-                throw new ParseError("NestedFiles.header", header);
+            Optional<UnsignedBytes> header = source.readUnsigned(NestBigInteger.of(3), ctx);
+            if (!header.isPresent() || !header.get().asString().get().equals("HDR")) {
+                ctx.fail("NestedFiles.header {}", header);
+                return Optional.empty();
             }
             TokenList<NestedFile<T>> files = TokenList.untilParseFailure(source, ctx, (s,c) -> NestedFile.parse(s, c, tParser));
-            return new NestedFiles<>(header, files);
+            return Optional.of(new NestedFiles<>(header.get(), files));
         }
 
         @Override
@@ -135,11 +140,23 @@ public class FatLikeNestingTests {
             this.raw = raw;
             this.parsedFile = parsedFile;
         }
-        public static <T extends Token> NestedFile<T> parse(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> tParser) {
-            final UnsignedBytes size = source.readUnsigned(NestBigInteger.of(4), ctx);
-            final UnsignedBytes raw = source.readUnsigned(size.asValue().asInteger(Sign.UNSIGNED), ctx);
-            final T parsedFile = tParser.apply(new ByteStream(raw), ctx);
-            return new NestedFile<>(size, raw, parsedFile);
+        public static <T extends Token> Optional<NestedFile<T>> parse(ByteStream source, Context ctx, BiFunction<ByteStream, Context, Optional<T>> tParser) {
+            final Optional<UnsignedBytes> size = source.readUnsigned(NestBigInteger.of(4), ctx);
+            if (!size.isPresent()) {
+                ctx.fail("NestedFile.size missing {}", source);
+                return Optional.empty();
+            }
+            final Optional<UnsignedBytes> raw = source.readUnsigned(size.get().asValue().asInteger(Sign.UNSIGNED), ctx);
+            if (!raw.isPresent()) {
+                ctx.fail("NestedFile.raw missing {}", source);
+                return Optional.empty();
+            }
+            final Optional<T> parsedFile = tParser.apply(new ByteStream(raw.get()), ctx);
+            if (!parsedFile.isPresent()) {
+                ctx.fail("NestedFile.parsedFile missing {}", source);
+                return Optional.empty();
+            }
+            return Optional.of(new NestedFile<>(size.get(), raw.get(), parsedFile.get()));
         }
 
         @Override

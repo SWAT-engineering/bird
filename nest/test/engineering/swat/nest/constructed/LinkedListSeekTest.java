@@ -1,9 +1,10 @@
 package engineering.swat.nest.constructed;
 
+import static engineering.swat.nest.CommonTestHelper.FAIL_LOG;
 import static engineering.swat.nest.CommonTestHelper.wrap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import engineering.swat.nest.core.ParseError;
+import engineering.swat.nest.CommonTestHelper;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.Sign;
@@ -18,6 +19,7 @@ import engineering.swat.nest.core.tokens.operations.Choice;
 import engineering.swat.nest.core.tokens.operations.Choice.Case;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
@@ -68,14 +70,15 @@ public class LinkedListSeekTest {
 
     @Test
     void testWorkingSeekingLinkedList() throws IOException {
-        assertEquals(NestBigInteger.of(9), LinkedListEntry.parse(wrap(TEST_DATA), Context.DEFAULT, NestBigInteger.ZERO).value);
+        assertEquals(NestBigInteger.of(9), LinkedListEntry.parse(wrap(TEST_DATA), Context.DEFAULT.setLogTarget(
+                CommonTestHelper.FAIL_LOG), NestBigInteger.ZERO).get().value);
     }
 
     @Test
     void testParseMultipleLists() throws IOException {
-        TokenList<LinkedListEntry> tokensFound = TokenList.untilParseFailure(wrap(TEST_DATA), Context.DEFAULT,
+        TokenList<LinkedListEntry> tokensFound = TokenList.untilParseFailure(wrap(TEST_DATA), Context.DEFAULT.setLogTarget(FAIL_LOG),
                 (s, c) -> {
-                    LinkedListEntry result = LinkedListEntry.parse(s, c, s.getOffset());
+                    Optional<LinkedListEntry> result = LinkedListEntry.parse(s, c, s.getOffset());
                     s.readUnsigned(6, c); // forward pointer by 6 bytes
                     return result;
                 });
@@ -95,13 +98,17 @@ public class LinkedListSeekTest {
             this.parsed = parsed;
         }
 
-        public static LinkedListEntry parse(ByteStream source, Context ctx, NestBigInteger offset) {
+        public static Optional<LinkedListEntry> parse(ByteStream source, Context ctx, NestBigInteger offset) {
             AtomicReference<NestBigInteger> value = new AtomicReference<>();
-            Token parsed = Choice.between(source, ctx,
+            Optional<Token> parsed = Choice.between(source, ctx,
                     Case.of((s,c) -> Node.parse(s, c, offset), (l) -> value.set(l.value)),
                     Case.of((s,c) -> Leaf.parse(s, c, offset), (l) -> value.set(l.value))
             );
-            return new LinkedListEntry(value.get(), parsed);
+            if (!parsed.isPresent()) {
+                ctx.fail("[LinkedListEntry] failed to parse any choice");
+                return Optional.empty();
+            }
+            return Optional.of(new LinkedListEntry(value.get(), parsed.get()));
         }
 
         @Override
@@ -126,15 +133,31 @@ public class LinkedListSeekTest {
             this.rawValue = rawValue;
         }
 
-        public static Leaf parse(ByteStream source, Context ctx, NestBigInteger offset) {
-            source = source.fork(offset);
-            UnsignedBytes next = source.readUnsigned(NestBigInteger.of(2), ctx);
-            if (!next.asValue().sameBytes(NestValue.of(0x0000, 2))) {
-                throw new ParseError("Lead.next", next);
+        public static Optional<Leaf> parse(ByteStream source, Context ctx, NestBigInteger offset) {
+            Optional<ByteStream> sourceFork = source.fork(offset);
+            if (sourceFork.isPresent()) {
+                source = sourceFork.get();
             }
-            UnsignedBytes rawValue = source.readUnsigned(NestBigInteger.of(4), ctx);
-            NestBigInteger value = rawValue.asValue().asInteger(Sign.UNSIGNED);
-            return new Leaf(value, rawValue, next);
+            else {
+                ctx.fail("[Leaf] end of stream reached");
+                return Optional.empty();
+            }
+            Optional<UnsignedBytes> next = source.readUnsigned(NestBigInteger.of(2), ctx);
+            if (!next.isPresent()) {
+                ctx.fail("[Leaf::next] missing");
+                return Optional.empty();
+            }
+            if (!next.get().asValue().sameBytes(NestValue.of(0x0000, 2))) {
+                ctx.fail("[Leaf::next] incorrect");
+                return Optional.empty();
+            }
+            Optional<UnsignedBytes> rawValue = source.readUnsigned(NestBigInteger.of(4), ctx);
+            if (!rawValue.isPresent()) {
+                ctx.fail("[Leaf::rawValue] missing");
+                return Optional.empty();
+            }
+            NestBigInteger value = rawValue.get().asValue().asInteger(Sign.UNSIGNED);
+            return Optional.of(new Leaf(value, rawValue.get(), next.get()));
         }
 
         @Override
@@ -161,17 +184,37 @@ public class LinkedListSeekTest {
             this.nextEntry = nextEntry;
         }
 
-        public static Node parse(ByteStream source, Context ctx, NestBigInteger offset) {
-            source = source.fork(offset);
-            UnsignedBytes next = source.readUnsigned(NestBigInteger.of(2), ctx);
-            if (next.asValue().sameBytes(NestValue.of(0x0000, 2))) {
-                throw new ParseError("Node.next", next);
+        public static Optional<Node> parse(ByteStream source, Context ctx, NestBigInteger offset) {
+            Optional<ByteStream> sourceFork = source.fork(offset);
+            if (sourceFork.isPresent()) {
+                source = sourceFork.get();
             }
-            UnsignedBytes rawValue = source.readUnsigned(NestBigInteger.of(4), ctx);
-            LinkedListEntry nextEntry = LinkedListEntry.parse(source, ctx, next.asValue().asInteger(Sign.UNSIGNED));
+            else {
+                ctx.fail("[Node] end of stream reached");
+                return Optional.empty();
+            }
+            Optional<UnsignedBytes> next = source.readUnsigned(NestBigInteger.of(2), ctx);
+            if (!next.isPresent()) {
+                ctx.fail("[Node::next] missing");
+                return Optional.empty();
+            }
+            if (next.get().asValue().sameBytes(NestValue.of(0x0000, 2))) {
+                ctx.fail("[Node::next] incorrect");
+                return Optional.empty();
+            }
+            Optional<UnsignedBytes> rawValue = source.readUnsigned(NestBigInteger.of(4), ctx);
+            if (!rawValue.isPresent()) {
+                ctx.fail("[Node::rawValue] missing");
+                return Optional.empty();
+            }
+            Optional<LinkedListEntry> nextEntry = LinkedListEntry.parse(source, ctx, next.get().asValue().asInteger(Sign.UNSIGNED));
+            if (!nextEntry.isPresent()) {
+                ctx.fail("[Node::nextEntry] missing");
+                return Optional.empty();
+            }
 
-            NestBigInteger value = nextEntry.value.add(rawValue.asValue().asInteger(Sign.UNSIGNED));
-            return new Node(value, next, rawValue, nextEntry);
+            NestBigInteger value = nextEntry.get().value.add(rawValue.get().asValue().asInteger(Sign.UNSIGNED));
+            return Optional.of(new Node(value, next.get(), rawValue.get(), nextEntry.get()));
         }
 
         @Override

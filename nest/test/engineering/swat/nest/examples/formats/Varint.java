@@ -1,6 +1,5 @@
 package engineering.swat.nest.examples.formats;
 
-import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.ByteUtils;
 import engineering.swat.nest.core.bytes.Context;
@@ -9,13 +8,14 @@ import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
-import engineering.swat.nest.core.tokens.primitive.TokenList;
-import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
 import engineering.swat.nest.core.tokens.operations.Choice.Case;
+import engineering.swat.nest.core.tokens.primitive.TokenList;
+import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.ByteOrder;
 import java.util.BitSet;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Varint {
@@ -33,20 +33,28 @@ public class Varint {
             this.value = value;
         }
 
-        public static LEB128 parse(ByteStream source, Context ctx) {
-            TokenList<UnsignedBytes> raw = TokenList.parseWhile(source, ctx,
+        public static Optional<LEB128> parse(ByteStream source, Context ctx) {
+            Optional<TokenList<UnsignedBytes>> raw = TokenList.parseWhile(source, ctx,
                     (s, c) -> s.readUnsigned(1, c),
                     it -> !(it.asValue().and(NestValue.of(0b1000_0000, 1)).sameBytes(NestValue.of(0, 1)))
             );
-            UnsignedBytes lastOne = source.readUnsigned(1, ctx);
-            NestValue ac = lastOne.asValue();
+            if (!raw.isPresent()) {
+                ctx.fail("LEB128.raw missing from {}", source);
+                return Optional.empty();
+            }
+            Optional<UnsignedBytes> lastOne = source.readUnsigned(1, ctx);
+            if (!lastOne.isPresent()) {
+                ctx.fail("LEB128.lastOne missing from {}", source);
+                return Optional.empty();
+            }
+            NestValue ac = lastOne.get().asValue();
             // reverse slice
-            for (int index = raw.length() - 1; index >= 0; index--) {
+            for (int index = raw.get().length() - 1; index >= 0; index--) {
                 ac = (ac.shl(NestBigInteger.of(7))
-                        .or(raw.get(index).asValue().and(NestValue.of(0b0111_1111, 1))));
+                        .or(raw.get().get(index).asValue().and(NestValue.of(0b0111_1111, 1))));
             }
             NestBigInteger value = ac.asInteger(Sign.UNSIGNED);
-            return new LEB128(raw, lastOne, value);
+            return Optional.of(new LEB128(raw.get(), lastOne.get(), value));
         }
 
         @Override
@@ -69,14 +77,18 @@ public class Varint {
             this.value = value;
         }
 
-        public static PrefixVarint parse(ByteStream source, Context ctx) {
+        public static Optional<PrefixVarint> parse(ByteStream source, Context ctx) {
             AtomicReference<NestBigInteger> value = new AtomicReference<>();
-            Token entry = Choice.between(source, ctx,
+            Optional<Token> entry = Choice.between(source, ctx,
                     Case.of(PrefixVarint$1::parse, c -> value.set(c.value)),
                     Case.of(PrefixVarint$2::parse, c -> value.set(c.value)),
                     Case.of(PrefixVarint$3::parse, c -> value.set(c.value))
             );
-            return new PrefixVarint(entry, value.get());
+            if (!entry.isPresent()) {
+                ctx.fail("PrefixVarint missing from {}", source);
+                return Optional.empty();
+            }
+            return Optional.of(new PrefixVarint(entry.get(), value.get()));
         }
 
         private static class PrefixVarint$1 extends UserDefinedToken {
@@ -88,13 +100,14 @@ public class Varint {
                 this.value = value;
             }
 
-            public static PrefixVarint$1 parse(ByteStream source, Context ctx) {
-                UnsignedBytes prefixHeader = source.readUnsigned(1, ctx);
-                if (!prefixHeader.asValue().and(NestValue.of(0b1, 1)).sameBytes(NestValue.of(0b1, 1))) {
-                   throw new ParseError("PrefixVarint$1.prefixHeader", prefixHeader);
+            public static Optional<PrefixVarint$1> parse(ByteStream source, Context ctx) {
+                Optional<UnsignedBytes> prefixHeader = source.readUnsigned(1, ctx);
+                if (!prefixHeader.isPresent() || !prefixHeader.get().asValue().and(NestValue.of(0b1, 1)).sameBytes(NestValue.of(0b1, 1))) {
+                    ctx.fail("PrefixVarint$1.prefixHeader {}", prefixHeader);
+                    return Optional.empty();
                 }
-                NestBigInteger value = prefixHeader.asValue().shr(NestBigInteger.ONE).asInteger(Sign.UNSIGNED);
-                return new PrefixVarint$1(prefixHeader, value);
+                NestBigInteger value = prefixHeader.get().asValue().shr(NestBigInteger.ONE).asInteger(Sign.UNSIGNED);
+                return Optional.of(new PrefixVarint$1(prefixHeader.get(), value));
             }
 
             @Override
@@ -124,17 +137,22 @@ public class Varint {
             }
 
 
-            public static PrefixVarint$2 parse(ByteStream source, Context ctx) {
-                UnsignedBytes prefixHeader = source.readUnsigned(1, ctx);
-                if (prefixHeader.asValue().sameBytes(NestValue.of(0x00, 1))) {
-                    throw new ParseError("PrefixVarint$2.prefixHeader", prefixHeader);
+            public static Optional<PrefixVarint$2> parse(ByteStream source, Context ctx) {
+                Optional<UnsignedBytes> prefixHeader = source.readUnsigned(1, ctx);
+                if (!prefixHeader.isPresent() || prefixHeader.get().asValue().sameBytes(NestValue.of(0x00, 1))) {
+                    ctx.fail("PrefixVarint$2.prefixHeader {}", prefixHeader);
+                    return Optional.empty();
                 }
-                NestBigInteger prefixLength = PrefixVarintUserDefined.trailingZeroes(prefixHeader);
-                UnsignedBytes rest = source.readUnsigned(prefixLength, ctx.setByteOrder(ByteOrder.LITTLE_ENDIAN));
-                NestBigInteger value = prefixHeader.asValue().shr(prefixLength.add(NestBigInteger.ONE)).
-                        or(rest.asValue().shl(NestBigInteger.of(8).subtract(prefixLength).subtract(NestBigInteger.ONE)))
+                NestBigInteger prefixLength = PrefixVarintUserDefined.trailingZeroes(prefixHeader.get());
+                Optional<UnsignedBytes> rest = source.readUnsigned(prefixLength, ctx.setByteOrder(ByteOrder.LITTLE_ENDIAN));
+                if (!rest.isPresent()) {
+                    ctx.fail("PrefixVarint$2.rest missing from {}", source);
+                    return Optional.empty();
+                }
+                NestBigInteger value = prefixHeader.get().asValue().shr(prefixLength.add(NestBigInteger.ONE)).
+                        or(rest.get().asValue().shl(NestBigInteger.of(8).subtract(prefixLength).subtract(NestBigInteger.ONE)))
                         .asInteger(Sign.UNSIGNED);
-                return new PrefixVarint$2(prefixHeader, prefixLength, rest, value);
+                return Optional.of(new PrefixVarint$2(prefixHeader.get(), prefixLength, rest.get(), value));
             }
 
             @Override
@@ -159,14 +177,19 @@ public class Varint {
                 this.value = value;
             }
 
-            public static PrefixVarint$3 parse(ByteStream source, Context ctx) {
-                UnsignedBytes prefixHeader = source.readUnsigned(1, ctx);
-                if (!prefixHeader.asValue().sameBytes(NestValue.of(0x00, 1))) {
-                    throw new ParseError("PrefixVarint$3.prefixHeader", prefixHeader);
+            public static Optional<PrefixVarint$3> parse(ByteStream source, Context ctx) {
+                Optional<UnsignedBytes> prefixHeader = source.readUnsigned(1, ctx);
+                if (!prefixHeader.isPresent() || !prefixHeader.get().asValue().sameBytes(NestValue.of(0x00, 1))) {
+                    ctx.fail("PrefixVarint$3.prefixHeader {}", prefixHeader);
+                    return Optional.empty();
                 }
-                UnsignedBytes fullValue = source.readUnsigned(8, ctx);
-                NestBigInteger value = fullValue.asValue().asInteger(Sign.UNSIGNED);
-                return new PrefixVarint$3(prefixHeader, fullValue, value);
+                Optional<UnsignedBytes> fullValue = source.readUnsigned(8, ctx);
+                if (!fullValue.isPresent()) {
+                    ctx.fail("PrefixVarint$3.fullValue missing from {}", source);
+                    return Optional.empty();
+                }
+                NestBigInteger value = fullValue.get().asValue().asInteger(Sign.UNSIGNED);
+                return Optional.of(new PrefixVarint$3(prefixHeader.get(), fullValue.get(), value));
             }
 
             @Override

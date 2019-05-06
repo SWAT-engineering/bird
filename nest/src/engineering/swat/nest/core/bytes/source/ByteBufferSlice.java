@@ -1,6 +1,5 @@
 package engineering.swat.nest.core.bytes.source;
 
-import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import java.net.URI;
@@ -26,7 +25,7 @@ public class ByteBufferSlice implements TrackedByteSlice {
         int newOffset = Math.addExact(this.offset, offset.intValueExact());
         int newLimit = Math.addExact(newOffset, size.intValueExact());
         if (newLimit > limit) {
-            throw new ParseError("Invalid slice");
+            throw new IllegalArgumentException("Invalid slice");
         }
         return new ByteBufferSlice(source, newOffset, newLimit, origin);
     }
