@@ -167,7 +167,6 @@ syntax Type
 	| "str"
 	| "bool"
 	| UInt
-	| SInt
 	| AnonStruct
 	| Id id TypeActuals actuals
 	| Type "[" "]"
@@ -182,8 +181,6 @@ syntax TypeLiteral = "typeOf" "[" Type "]";
 	
 lexical UInt = @category="Constant" "u" [0-9]+ !>> [0-9];
 
-lexical SInt = @category="Constant" "s" [0-9]+ !>> [0-9];
-	
 lexical NatLiteral
 	=  @category="Constant" [0-9 _]+ !>> [0-9 _]
 	;
