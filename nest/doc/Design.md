@@ -27,13 +27,7 @@ There are two kinds of values:
 
 ### Tokens
 
-Primitive tokens parses one or more bytes. The bytes are parsed in a certain context (Sign, Endianness, and the Encoding) and can be compared to other byte values. 
-
-The two main primitive tokens are:
-- `UnsignedByte` : a single byte
-- `UnsignedBytes` : a range of bytes, can be iterated over to get the `UnsignedByte` inside.
-
-Other tokens can consists of zero or more nested tokens, examples are: list, optional, terminated token. 
+Primitive tokens parses one or more bytes. The bytes are parsed in a certain context (Sign, Endianness, and the Encoding) and can be compared to other byte values. Primitive tokens can also consists of zero or more nested tokens, examples are: list, optional, terminated token. 
 
 
 ### Endianness
@@ -55,7 +49,7 @@ This is only done when converting a Value to a BigInteger, all byte level operat
 ## Internals of Nest and their mapping to bird
 
 
- - `u8` to `UnsignedByte` when parsed (I think `s8` should not exist but we need a `int` and `uint` type)
+ - `u8` to `UnsignedBytes` when parsed (I think `s8` should not exist but we need a `int` and `uint` type)
  - `u8` to `NestValue` when the result of a calculation
  - `u16` to `UnsignedBytes` when parsed
  - `u16` to `NestValue` when the result of a calculation
@@ -65,7 +59,7 @@ This is only done when converting a Value to a BigInteger, all byte level operat
  - `X[]` to `TokenList<X>`
  - `y.as[int]` to `y.asValue().toInteger(Sign.SIGNED)`
  - `y.as[uint]` to `y.asValue().toInteger(Sign.UNSIGNED)`
- - `x != 0xEEFF` to `!x.asValue().sameBytes(NestValue.of(0xEEFF, 2))` (second argument is amount of bytes)
+ - `x != 0xEEFF` to `!x.asValue().sameBytes(NestValue.of(0xEEFF, 2))` or `x.sameBytes(NestValue.of(0xEEFF,2))` (second argument is amount of bytes)
  - `x != 0x00FF` to `!x.asValue().sameBytes(NestValue.of(0x00FF, 2))` (second argument is amount of bytes)
  - `x != 0xFF` to `!x.asValue().sameBytes(NestValue.of(0xFF, 1))` (second argument is amount of bytes)
  - `x != [0xEE, 0xFF]` to `!x.asValue().sameBytes(NestValue.of(new int[] {0xEE, 0xFF}))` (we will not use java byte type, as it is a signed byte, so we take the same technique as many others, we use only the last 8bits of an int)
@@ -75,7 +69,7 @@ This is only done when converting a Value to a BigInteger, all byte level operat
 ```bird
 struct X {
     u8[] data[4];
-    uint value = (u128 ac = 0 | ((ac << 7) | (b & 0b0111_1111)) | b <- data[-1:0]).as[uint]; 
+    uint value = (u8 ac = 0 | ((ac << 7) | (b & 0b0111_1111)) | b <- data[-1:0]).as[uint]; 
 }
 ```
 
@@ -93,7 +87,7 @@ public class X extends UserDefinedToken {
     
     public static X parse(ByteStream source, Context ctx) {
         final UnsignedBytes data = source.readUnsigned(NestBigInteger.of(4), ctx);
-        NestValue ac = NestValue.of(0, 16); // u128 = 16 bytes value
+        NestValue ac = NestValue.of(0, 1);
         for (int c = data.length() - 1; c >= 0; c--) {
             ac = ac.shl(NestBigInteger.of(7))
                 .or(dataBytes.get(c).asValue().and(NestValue.of(0b0111_1111, 1)));
