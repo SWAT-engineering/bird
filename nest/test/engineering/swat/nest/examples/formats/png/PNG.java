@@ -56,7 +56,7 @@ public class PNG {
 
         public static Signature parse(ByteStream source, Context ctx) throws ParseError {
             UnsignedBytes $anon1 = source.readUnsigned(1, ctx);
-            if (!($anon1.asValue().sameBytes(NestValue.of(0x89, 1)))) {
+            if (!($anon1.sameBytes(NestValue.of(0x89, 1)))) {
                 throw new ParseError("Signature.$anon1", $anon1);
             }
 
@@ -140,7 +140,7 @@ public class PNG {
             }
 
             UnsignedBytes crc = source.readUnsigned(4, ctx);
-            if (!crc.asValue().sameBytes(NestValue.of(new byte[]{(byte) 0xae, 0x42, 0x60, (byte) 0x82}))) {
+            if (!crc.sameBytes(NestValue.of(new byte[]{(byte) 0xae, 0x42, 0x60, (byte) 0x82}))) {
                 throw new ParseError("IED.crc", crc);
             }
             return new IEND(length, type, crc);
