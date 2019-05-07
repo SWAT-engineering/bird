@@ -3,7 +3,7 @@ module lang::bird::Syntax
 extend lang::std::Layout;
 
 // TODO can we specify a pattern for u? types
-keyword Reserved = "abstract" | "struct" | "choice"  | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it" | "parse" | "with" | "typeOf";
+keyword Reserved = "abstract" | "struct" | "choice" | "bytes" | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it" | "parse" | "with" | "typeOf";
 
 start syntax Program =
 	"module" ModuleId
@@ -163,7 +163,8 @@ syntax AnonStruct
 	;
 	
 syntax Type
-	= "int"
+	= "bytes"
+	| "int"
 	| "str"
 	| "bool"
 	| UInt

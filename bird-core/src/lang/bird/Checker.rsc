@@ -25,6 +25,7 @@ data AType
 	| structDef(str name, list[str] args)
 	| structType(str name, list[AType] actuals)
 	| anonType(lrel[str, AType] fields)
+	| bytesType()
 	| uType(int n)
 	| moduleType()
 	| variableType(str s)
@@ -74,6 +75,7 @@ bool isConvertible(AType t1, AType t2) = true
 default bool isConvertible(AType _, AType _) = false;
 
 str prettyPrintAType(voidType()) = "void";
+str prettyPrintAType(bytesType()) = "bytes";
 str prettyPrintAType(intType()) = "int";
 str prettyPrintAType(typeType(t)) = "typeof(<prettyPrintAType(t)>)";
 str prettyPrintAType(strType()) = "str";
@@ -512,6 +514,11 @@ void collect(current:(UnaryExpr) `<UnaryOperator uo> <Expr e>`, Collector c){
 void collect(current:(Type)`<UInt v>`, Collector c) {
 	c.fact(current, uType(toInt("<v>"[1..])));
 }
+
+
+void collect(current:(Type)`bytes`, Collector c) {
+	c.fact(current, bytesType());
+}  
 
 void collect(current:(Type)`str`, Collector c) {
 	c.fact(current, strType());
