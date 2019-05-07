@@ -6,6 +6,9 @@ import ListRelation;
 import Set;
 import String;
 
+import IO;
+import util::Maybe;
+
 extend analysis::typepal::TypePal;
 extend analysis::typepal::TestFramework;
 
@@ -25,8 +28,7 @@ data AType
 	| structDef(str name, list[str] args)
 	| structType(str name, list[AType] actuals)
 	| anonType(lrel[str, AType] fields)
-	| bytesType()
-	| uType(int n)
+	| bytesType(Maybe[int])
 	| moduleType()
 	| variableType(str s)
 	;
@@ -75,7 +77,7 @@ bool isConvertible(AType t1, AType t2) = true
 default bool isConvertible(AType _, AType _) = false;
 
 str prettyPrintAType(voidType()) = "void";
-str prettyPrintAType(bytesType()) = "bytes";
+str prettyPrintAType(bytesType(_)) = "bytes";
 str prettyPrintAType(intType()) = "int";
 str prettyPrintAType(typeType(t)) = "typeof(<prettyPrintAType(t)>)";
 str prettyPrintAType(strType()) = "str";
@@ -92,7 +94,7 @@ str prettyPrintAType(structDef(name, args)) = "structDef(<name>, [<intercalate("
 
 
 AType birdInstantiateTypeParameters(Tree selector, structDef(str name1, list[str] formals), structType(str name2, list[AType] actuals), AType t, Solver s){
-    if(size(formals) != size(actuals)) throw checkFailed({});
+    if(size(formals) != size(actuals)) throw checkFailed([]);
     bindings = (formals[i] : actuals [i] | int i <- index(formals));
     return visit(t) { case variableType(str x) => bindings[x] };
 }
@@ -141,7 +143,7 @@ AType infixBitwise(intType(), t1:listType(uType(_))) = t1;
 
 default AType infixBitwise(AType t1, AType t2){ throw "Wrong operands for a bitwise operation: "+ prettyPrintAType(t1) +", " + prettyPrintAType(t2); }
 
-AType infixShift(t1, t2) = t1
+AType infixShift(AType t1, AType t2) = t1
 	when isConvertible(t1, intType()) && isConvertible(t2, intType());
 default AType infixShift(AType t1, AType t2){ throw "Wrong operands for a shift operation"; }
 
@@ -432,6 +434,7 @@ void collectArgs(Type ty, Arguments? current, Collector c){
 	
 }
 
+/*	TODO remove comments. At the moment this breaks the Rascal Type Checker
 void collectFunctionArgs(Id id, Arguments current, Collector c){
 		for (a <- current.args){
 			collect(a, c);
@@ -448,7 +451,7 @@ void collectFunctionArgs(Id id, Arguments current, Collector c){
 			}
 		});
 	
-}
+}*/
 
 void collectFormals(Id id, Formals? current, Collector c){
 	actualFormals = [af | fformals <- current, af <- fformals.formals];
@@ -512,12 +515,14 @@ void collect(current:(UnaryExpr) `<UnaryOperator uo> <Expr e>`, Collector c){
 
 
 void collect(current:(Type)`<UInt v>`, Collector c) {
-	c.fact(current, uType(toInt("<v>"[1..])));
+	c.requireEqual(toInt("<v>"[1..]) % 8, 0, error(current, "The number of bits in a u? type must be a multiple of 8"));
+	if (toInt("<v>"[1..]) % 8 ==0)
+		c.fact(current, bytesType(just(toInt("<v>"[1..])/8)));
 }
 
 
 void collect(current:(Type)`bytes`, Collector c) {
-	c.fact(current, bytesType());
+	c.fact(current, bytesType(nothing()));
 }  
 
 void collect(current:(Type)`str`, Collector c) {
@@ -686,6 +691,7 @@ void collect(current: (Expr) `<Expr e>.<Id field>`, Collector c){
 
 }
 
+/*	TODO remove comments. At the moment this breaks the Rascal Type Checker
 void collect(current: (Expr) `<Id id> <Arguments args>`, Collector c){
 	c.use(id, {funId()});
 	collectFunctionArgs(id, args, c);
@@ -700,7 +706,7 @@ void collect(current: (Expr) `<Id id> <Arguments args>`, Collector c){
 		}
 	});	
 }
-
+*/
 
 void collect(current: (Expr) `<Expr e>[<Range r>]`, Collector c){
 	collect(e, c);
@@ -734,7 +740,8 @@ void collectRange(Expr access, Expr e, current: (Range) `<Expr begin> :`, Collec
 		return s.getType(e);
 	});
 }
-	
+
+/*	TODO remove comments. At the moment this breaks the Rascal Type Checker
 void collectRange(Expr access, Expr e, current: (Range) `<Expr idx>`, Collector c){
 	collect(idx, c);
 	c.calculate("list access", access, [e, idx], AType (Solver s){
@@ -744,6 +751,7 @@ void collectRange(Expr access, Expr e, current: (Range) `<Expr idx>`, Collector 
 		return ty;
 	});	
 }
+*/
 
 void collect(current: (Expr) `<Expr e1> <EqualityOperator op> <Expr e2>`, Collector c){
     collect(e1, e2, c);
@@ -848,7 +856,7 @@ void collect(current: (Expr) `(<Expr e>)`, Collector c){
 
 void collect(current: (Expr)`! <Expr e>`, Collector c) {
     collect(e,c);
-    c.calculate(current, "not expression", [e], AType (Solver s) {
+    c.calculate("not expression", current, [e], AType (Solver s) {
         et = s.getType(e);
         if (et != boolType()) {
             s.requireSubType(et, intType(),error(e, "Expected either a boolean type, or an int type, got: %t", e));
@@ -953,4 +961,3 @@ bool testBird(int n, bool debug = false, set[str] runOnly = {}) {
     }, runOnly = runOnly);
 }
 
- 
