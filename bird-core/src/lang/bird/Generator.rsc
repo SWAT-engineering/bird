@@ -215,7 +215,7 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 		 isSimpleByteType(aty),
 		 int size := sizeSimpleByteType(aty),
 		 safeId := makeSafeId("<id>", id@\loc),
-		 condStr := ("" | it + ", <compileSideCondition(aCond, aty, tokenExps, useDefs, types, index, scopes, defines)>" |SideCondition aCond <- cond)
+		 condStr := ("" | it + ", <compileSideCondition(aCond, aty, parentId, tokenExps, useDefs, types, index, scopes, defines)>" |SideCondition aCond <- cond)
 		 ;
 		 
 str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Expr n>] <SideCondition? cond>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) = 
@@ -224,7 +224,7 @@ str compile(current:(DeclInStruct) `<Type ty>[] <DId id> <Arguments? args> [<Exp
 	when AType aty := types[ty@\loc], 
 		 !isSimpleByteType(aty),
 		 safeId := makeSafeId("<id>", id@\loc),
-		 condStr := ("" | it + ", <compileSideCondition(aCond, aty, tokenExps, useDefs, types, index, scopes, defines)>" |SideCondition aCond <- cond)
+		 condStr := ("" | it + ", <compileSideCondition(aCond, aty, parentId, tokenExps, useDefs, types, index, scopes, defines)>" |SideCondition aCond <- cond)
 		 ;
 		 
 		 
@@ -283,14 +283,16 @@ str compileSideCondition((SideCondition) `?(== <Expr e>)`, AType t1, Id parentId
 	calculateOp("==", {t1,t2}, [compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines)])
 	when t2 := types[e@\loc];
 
-str compileSideCondition((SideCondition) `?(!= <Expr e>)`, AType t1,  map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
+str compileSideCondition((SideCondition) `?(!= <Expr e>)`, AType t1, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
 	calculateOp("!=", {t1,t2}, [compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines)])
 	when t2 := types[e@\loc];
 
 default str compileSideCondition(current:(SideCondition) `? ( <Expr e>)`, AType ty, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) 
 	= compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines);
 	
-default str compileSideCondition(SideCondition sc, AType ty, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines){ throw "Not yet implemented: <sc>"; } 
+default str compileSideCondition(SideCondition sc, AType ty, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) { 
+	throw "Not yet implemented: <sc>";
+} 
 
 str compile(current:(Formal) `<Type ty> <Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines)
 	= "<safeId>" 
