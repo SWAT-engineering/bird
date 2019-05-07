@@ -66,7 +66,7 @@ public class PNG {
             }
 
             UnsignedBytes $anon3 = source.readUnsigned(4, ctx);
-            if (!($anon3.asValue().sameBytes(NestValue.of(new byte[]{0x0d, 0x0a, 0x1a, 0x0a})))) {
+            if (!($anon3.sameBytes(NestValue.of(new byte[]{0x0d, 0x0a, 0x1a, 0x0a})))) {
                 throw new ParseError("Signature.$anon3", $anon3);
             }
             return new Signature($anon1, $anon2, $anon3);
