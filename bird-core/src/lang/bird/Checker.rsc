@@ -28,7 +28,7 @@ data AType
 	| structDef(str name, list[str] args)
 	| structType(str name, list[AType] actuals)
 	| anonType(lrel[str, AType] fields)
-	| bytesType(Maybe[int])
+	| bytesType(Maybe[int] n = nothing())
 	| moduleType()
 	| variableType(str s)
 	;
@@ -517,12 +517,12 @@ void collect(current:(UnaryExpr) `<UnaryOperator uo> <Expr e>`, Collector c){
 void collect(current:(Type)`<UInt v>`, Collector c) {
 	c.requireEqual(toInt("<v>"[1..]) % 8, 0, error(current, "The number of bits in a u? type must be a multiple of 8"));
 	if (toInt("<v>"[1..]) % 8 ==0)
-		c.fact(current, bytesType(just(toInt("<v>"[1..])/8)));
+		c.fact(current, bytesType(n = just(toInt("<v>"[1..])/8)));
 }
 
 
 void collect(current:(Type)`bytes`, Collector c) {
-	c.fact(current, bytesType(nothing()));
+	c.fact(current, bytesType());
 }  
 
 void collect(current:(Type)`str`, Collector c) {
