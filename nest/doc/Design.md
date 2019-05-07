@@ -4,7 +4,7 @@
 
 Nest is the infrastructure layer of BIRD, until it can be replaced by a version of Metal that does support the operations we need.
 
-The goal of Nest is to make it easier to work with lists and map to regular java objects, such that the BIRD strucutures are easier represented.
+The goal of Nest is to make it easier to work with lists and map to regular java objects, such that the BIRD strucutures are more easily represented.
 
 
 
@@ -21,7 +21,7 @@ Bird & Metal's design feature a mix of modes in the expressions they allow. Most
 
 There are two kinds of values:
 
-- A byte backed value, for bitwise operations and byte comparison. It stores the byte in big-endian format and can perform operations on other byte back values.
+- A byte backed value, for bitwise operations and byte comparison. It stores the byte in big-endian format and can perform operations on other byte backed values.
 - A BigInteger, these can be used for calculations, but you cannot go back and get the byte backed value again.
 
 
