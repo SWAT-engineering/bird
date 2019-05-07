@@ -16,6 +16,10 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
+/**
+ * A list of zero or more tokens
+ * @param <T> type of the tokens inside the list
+ */
 public class TokenList<T extends Token> extends PrimitiveToken implements Iterable<T> {
 
 
@@ -28,10 +32,10 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 
 
 	/**
-	 *
+	 * Read from the stream until the function provided as {@linkplain parser} parameter fails.
 	 * @param source
 	 * @param ctx
-	 * @param parser
+	 * @param parser function that should parse the token
 	 * @param <T>
 	 * @return
 	 */
@@ -54,7 +58,7 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	}
 
 	/**
-	 *
+	 * Construct a list that contains {@linkplain times} entries of T
 	 * @param source
 	 * @param ctx
 	 * @param parser
@@ -71,7 +75,7 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	}
 
 	/**
-	 *
+	 * Construct a list that parses an entry, and then calls a predicate if it should be included in the list. The stream is reverted to the point of the last added entry.
 	 * @param source
 	 * @param ctx
 	 * @param parser
@@ -95,6 +99,13 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 		return new TokenList<>(result, ctx);
     }
 
+	/**
+	 * Create a token list to concat multiple tokens together
+	 * @param ctx
+	 * @param nestedTokens
+	 * @param <T>
+	 * @return
+	 */
 	public static <T extends Token> TokenList<T> of(Context ctx, T... nestedTokens) {
 		return new TokenList<T>(Arrays.asList(nestedTokens), ctx);
 	}
@@ -109,6 +120,10 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 		return contents.stream().map(Token::size).reduce(NestBigInteger.ZERO, NestBigInteger::add);
 	}
 
+	/**
+	 * Amount of tokens in the list
+	 * @return
+	 */
 	public int length() {
 		return contents.size();
 

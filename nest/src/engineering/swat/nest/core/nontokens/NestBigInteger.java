@@ -6,6 +6,9 @@ import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.util.function.Function;
 
+/**
+ * Nest Big Integer which wraps the {@link BigInteger} class to add some extra nest specific features
+ */
 public interface NestBigInteger extends Comparable<NestBigInteger> {
 
 

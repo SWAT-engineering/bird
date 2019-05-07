@@ -10,7 +10,7 @@ import java.util.Arrays;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Nest Value automatically translates between implementations depending on the operation
+ * Nest Value allows byte bases operations and can translate to an NestBigInteger when needed.
  */
 public class NestValue {
     private final Origin origin;

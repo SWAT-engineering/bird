@@ -9,10 +9,14 @@ import engineering.swat.nest.core.tokens.PrimitiveToken;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.TokenVisitor;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+/**
+ * Token that models the until feature of bird
+ * @param <E> body of the token
+ * @param <T> terminator that ends the token
+ */
 public class TerminatedToken<E extends Token, T extends Token> extends PrimitiveToken {
 
     private final E body;
@@ -35,7 +39,7 @@ public class TerminatedToken<E extends Token, T extends Token> extends Primitive
     /**
      * It starts parsing from the beginning of the current position in the stream, and checks for the terminator at the intervals defined by and initialCheck stepSize.
      * If maxLength is not null, it will fail to parse if it hasn't find a terminator by that point.
-     * After the terminator is found, all the preceding bytes are parsed by the entryParser.
+     * After the terminator is found (no ParserError thrown), all the preceding bytes are parsed by the entryParser.
      *
      * @param source bytes stream to start parsing from
      * @param ctx current context
@@ -51,7 +55,7 @@ public class TerminatedToken<E extends Token, T extends Token> extends Primitive
     public static <E extends Token, T extends Token> TerminatedToken<E,T> parseUntil(ByteStream source, Context ctx,
             NestBigInteger initialCheck, NestBigInteger stepSize, @Nullable NestBigInteger maxLength,
             BiFunction<TrackedByteSlice, Context, E> entryParser,
-            BiFunction<ByteStream, Context, Optional<T>> terminatorParser) {
+            BiFunction<ByteStream, Context, T> terminatorParser) {
         if (stepSize.isNegative() || stepSize.isZero()) {
             throw new IllegalArgumentException("stepSize should be positive");
         }
@@ -70,20 +74,19 @@ public class TerminatedToken<E extends Token, T extends Token> extends Primitive
         NestBigInteger terminatorMax = maxLength == null ? null :  source.getOffset().add(maxLength);
         while (terminatorMax == null || terminatorCursor.compareTo(terminatorMax) <= 0) {
             ByteStream terminatorStream = source.fork(terminatorCursor);
-            Optional<T> terminator;
+            T terminator = null;
             try {
                 terminator = terminatorParser.apply(terminatorStream, ctx);
             } catch (ParseError e) {
                 ctx.fail("[TerminatedToken] Terminator parser failed unexpectedly: {}", e);
-                terminator = Optional.empty();
             }
-            if (terminator.isPresent()) {
+            if (terminator != null) {
                 // we have found the terminator, let's now parse E
                 NestBigInteger entrySize = terminatorCursor.subtract(source.getOffset());
                 E entry = entryParser.apply(source.readSlice(entrySize), ctx);
                 // now forward the source stream to after the terminator
                 source.sync(terminatorStream);
-                return new TerminatedToken<>(entry, terminator.get(), ctx);
+                return new TerminatedToken<>(entry, terminator, ctx);
             }
             terminatorCursor = terminatorCursor.add(stepSize);
         }

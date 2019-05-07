@@ -16,6 +16,10 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+/**
+ * A token that is either there or not, but causes no parsing failure if it is not.
+ * @param <T>
+ */
 public class OptionalToken<T extends Token> extends PrimitiveToken {
 	
 	private final @Nullable T token;

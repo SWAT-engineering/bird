@@ -1,5 +1,6 @@
 package engineering.swat.nest.examples.formats;
 
+import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
@@ -10,7 +11,6 @@ import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.primitive.TerminatedToken;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 public class Strings {
 
@@ -69,8 +69,13 @@ public class Strings {
     private static TerminatedToken<UnsignedBytes, UnsignedBytes> terminatedWithChar(ByteStream source, Context ctx, byte[] terminatorChar) {
         return TerminatedToken.parseUntil(source, ctx, NestBigInteger.ZERO, NestBigInteger.of(terminatorChar.length), null,
                 (b,c) -> new ByteStream(b).readUnsigned(b.size(), c),
-                (s,c) -> Optional.of(s.readUnsigned(NestBigInteger.of(terminatorChar.length), c))
-                        .filter(u -> u.asValue().sameBytes(NestValue.of(terminatorChar)))
+                (s,c) -> {
+                    UnsignedBytes result = s.readUnsigned(NestBigInteger.of(terminatorChar.length), c);
+                    if (!result.sameBytes(NestValue.of(terminatorChar))) {
+                        throw new ParseError("Terminator", result);
+                    }
+                    return result;
+                }
         );
     }
 

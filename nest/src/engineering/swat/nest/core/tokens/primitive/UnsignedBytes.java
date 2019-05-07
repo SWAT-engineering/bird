@@ -11,6 +11,9 @@ import engineering.swat.nest.core.tokens.TokenVisitor;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * One or more bytes consumed from the stream
+ */
 public class UnsignedBytes extends PrimitiveToken  {
 
 	private final TrackedByteSlice slice;

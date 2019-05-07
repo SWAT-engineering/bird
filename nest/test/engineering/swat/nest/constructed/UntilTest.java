@@ -11,7 +11,6 @@ import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.tokens.primitive.TerminatedToken;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 public class UntilTest {
@@ -60,9 +59,9 @@ public class UntilTest {
                 (s, c) -> {
                     UnsignedBytes parsedChar = s.readUnsigned(1, c);
                     if (parsedChar.getByteAt(NestBigInteger.ZERO) != 'c') {
-                        return Optional.empty();
+                        throw new ParseError("Char.terminator", parsedChar);
                     }
-                    return Optional.of(parsedChar);
+                    return parsedChar;
                 });
     }
 

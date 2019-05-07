@@ -6,6 +6,9 @@ import engineering.swat.nest.core.nontokens.NestValue;
 import java.nio.ByteOrder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+/**
+ * Base class for all tokens in Nest
+ */
 public abstract class Token {
 
 	public abstract TrackedByteSlice getTrackedBytes();
