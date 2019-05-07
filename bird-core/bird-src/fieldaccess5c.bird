@@ -2,7 +2,7 @@ module fieldaccess5c
 
 struct A(u8[] arr) {
 	u8[] xs[2]	
-	u8[] totalData = xs + arr
+	u8[] totalData = xs ++ arr
 }
 
 struct S{
