@@ -16,9 +16,7 @@ lexical ConsId =  "$" ([a-z A-Z 0-9 _] !<< [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z 
 
 data AType
 	= voidType()
-	| numType()
 	| intType()
-	| uintType()
 	| typeType(AType ty)
 	| strType()
 	| boolType()
@@ -55,9 +53,8 @@ data PathRole
 //default bool birdIsSubType(AType _, AType _) = false;
 
 bool isSubtype(voidType(), AType t) = true;
-bool isSubtype(intType(), numType()) = true;
-bool isSubtype(intType(), numType()) = true;
-bool isSubtype(uintType(), numType()) = true;
+bool isSubtype(AType t1, AType t2) = true
+	when t2 == t2;
 default bool isSubtype(AType _, AType _) = false;
 
 
@@ -86,7 +83,6 @@ default bool isConvertible(AType _, AType _) = false;
 str prettyPrintAType(voidType()) = "void";
 str prettyPrintAType(bytesType()) = "bytes";
 str prettyPrintAType(intType()) = "int";
-str prettyPrintAType(uintType()) = "uint";
 str prettyPrintAType(typeType(t)) = "typeof(<prettyPrintAType(t)>)";
 str prettyPrintAType(strType()) = "str";
 str prettyPrintAType(boolType()) = "bool";
@@ -395,7 +391,7 @@ void collectSize(Type ty, sz:(Size) `[<Expr e>]`, Collector c){
 	collect(e, c);
 	c.require("size argument", sz, [ty] + [e], void (Solver s) {
 		s.requireTrue(s.getType(ty) is listType, error(sz, "Setting size on a non-list element"));
-		s.requireSubType(s.getType(e), numType(), error(sz, "Size must be an integer"));
+		s.requireSubType(s.getType(e), intType(), error(sz, "Size must be an integer"));
 	});
 }
 
@@ -539,10 +535,6 @@ void collect(current:(Type)`bool`, Collector c) {
 
 void collect(current:(Type)`int`, Collector c) {
 	c.fact(current, intType());
-}  
-
-void collect(current:(Type)`uint`, Collector c) {
-	c.fact(current, uintType());
 }  
 
 
