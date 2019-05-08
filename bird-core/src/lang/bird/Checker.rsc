@@ -280,11 +280,15 @@ private loc relocsingleLine(loc osrc, loc base)
 }*/
 
 void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     c.define("<id>", structId(), current, defType(structDef("<id>", ["<tf>" | atypeFormals <- typeFormals, tf <- atypeFormals.typeFormals])));
+     list[Id] tformals = [tf |atypeFormals <- typeFormals, tf <- atypeFormals.typeFormals];
+     if (_ <- tformals)
+     	c.define("<id>", structId(), current, defType(structDef("<id>", ["<tf>" | tf <- tformals])));
+     else
+     	c.define("<id>", structId(), current, defType(structType("<id>", [])));
      //collect(id, formals, c);
      
      c.enterScope(current); {
-     	for (atypeFormals <- typeFormals, Id tf <- atypeFormals.typeFormals)
+     	for (Id tf <- tformals)
      		c.define("<tf>", typeVariableId(), tf, defType(variableType("<tf>")));
      	collectFormals(id, formals, c);
      	collect(decls, c);
@@ -460,7 +464,7 @@ void collectFormals(Id id, Formals? current, Collector c){
 
 void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`,  Collector c) {
 	 // TODO  explore `Solver.getAllDefinedInType` for implementing the check of abstract fields
-	 c.define("<id>", structId(), current, defType(structDef("<id>",[])));
+	 c.define("<id>", structId(), current, defType(structType("<id>",[])));
      c.enterScope(current); {
      	collectFormals(id, formals, c);
      	collect(decls, c);
@@ -550,23 +554,32 @@ void collect(current:(Type)`int`, Collector c) {
      });
 }*/
 
+void collect(current:(Type)`<Type t> [ ]`, Collector c) {
+	collect(t, c);
+	c.calculate("list type", current, [t], AType(Solver s) {
+		println("<t> &&& <s.getType(t)>");
+		return listType(s.getType(t)); });
+}  
+
 void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c){
+	println("checking <current>");
     c.use(name, {structId(), typeVariableId()});
-    if (aactuals <- actuals){
-    	tpActuals = [tp | tp <- aactuals.actuals];
-        c.calculate("actual type", current, [name] + tpActuals,
-            AType(Solver s) { return structType("<name>", [s.getType(tp) | tp <- tpActuals]);});
-        collect(tpActuals, c);
-    } else {
-		 c.calculate("actual type", current, [name],
-			AType(Solver s) { 
-            	if (structDef(_,_) := s.getType(name)){
-                	return structType("<name>", []);
-				}
-                else{
-                	return s.getType(name);
-			};});
+    for (TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals)
+    	collect(t, c);
+    list[Type] tpActuals = [t | TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals];
+    if (_ <- tpActuals){
+    	c.calculate("actual type", current, [name] + tpActuals,
+           AType(Solver s) {
+           	if (structDef(_, fs) := s.getType(name))  
+            	s.requireTrue(size(fs) == size(tpActuals));
+            else if (sructType(_,_) := s.getType(name))
+            	s.report(error(current, "User-defined type %v does not require parameters", name));
+            else
+            	s.report(error(current, "Type %v does not receive parameters", name));
+            return structType("<name>", [s.getType(tp) | tp <- tpActuals]);});
     }
+    else 
+    	c.fact(current, name);
 }
 
 void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c) {
@@ -586,13 +599,6 @@ void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c) {
 		return anonType([<id, s.getType(ty)> | <id, ty> <- fields]);
 	});
 }
-
-void collect(current:(Type)`<Type t> [ ]`, Collector c) {
-	collect(t, c);
-	c.calculate("list type", current, [t], AType(Solver s) {
-		println("<t> &&& <s.getType(t)>");
-		return listType(s.getType(t)); });
-}  
 
 void collect(current: (Expr) `[<{Expr ","}*  exprs>]`, Collector c){
     collect([e | e <-exprs], c);
