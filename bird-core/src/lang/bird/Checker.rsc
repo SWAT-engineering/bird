@@ -434,7 +434,6 @@ void collectArgs(Type ty, Arguments? current, Collector c){
 	
 }
 
-/*	TODO remove comments. At the moment this breaks the Rascal Type Checker
 void collectFunctionArgs(Id id, Arguments current, Collector c){
 		for (a <- current.args){
 			collect(a, c);
@@ -442,16 +441,17 @@ void collectFunctionArgs(Id id, Arguments current, Collector c){
 		c.require("constructor arguments", current, 
 			  [id] + [a | a <- current.args], void (Solver s) {
 			ty = s.getType(id);  
-			if (!funType(_,_,_,_) := ty)
-				s.report(error(current, "Function arguments only apply to function types but got %t", ty));
-			else{
-				funType(_, _, formals,_) = ty;
-			    argTypes = atypeList([ s.getType(a) |  a <- current.args]);
+			if (funType(_, _, formals, _) := ty) {
+				argTypes = atypeList([ s.getType(a) |  a <- current.args]);
 				s.requireSubType(argTypes, formals, error(current, "Wrong type of arguments"));
+			}
+			else{
+				s.report(error(current, "Function arguments only apply to function types but got %t", ty));
+				
 			}
 		});
 	
-}*/
+}
 
 void collectFormals(Id id, Formals? current, Collector c){
 	actualFormals = [af | fformals <- current, af <- fformals.formals];
@@ -691,22 +691,19 @@ void collect(current: (Expr) `<Expr e>.<Id field>`, Collector c){
 
 }
 
-/*	TODO remove comments. At the moment this breaks the Rascal Type Checker
 void collect(current: (Expr) `<Id id> <Arguments args>`, Collector c){
 	c.use(id, {funId()});
 	collectFunctionArgs(id, args, c);
 	c.calculate("function call", current, [id] + [a | a <- args.args], AType(Solver s){
 		ty = s.getType(id);
-		if (!funType(_, _, _, _) := ty)
-				s.report(error(current, "Function arguments only apply to function types but got %t", ty));
-		else{
-			funType(_, retType, _, _) = ty;
+		if (funType(_, retType, _, _) := ty)
 			return retType;
+		else{
+			s.report(error(current, "Function arguments only apply to function types but got %t", ty));
 			
 		}
 	});	
 }
-*/
 
 void collect(current: (Expr) `<Expr e>[<Range r>]`, Collector c){
 	collect(e, c);
@@ -741,17 +738,15 @@ void collectRange(Expr access, Expr e, current: (Range) `<Expr begin> :`, Collec
 	});
 }
 
-/*	TODO remove comments. At the moment this breaks the Rascal Type Checker
 void collectRange(Expr access, Expr e, current: (Range) `<Expr idx>`, Collector c){
 	collect(idx, c);
 	c.calculate("list access", access, [e, idx], AType (Solver s){
 		s.requireEqual(idx, intType(), error(idx, "Indexes must be integers"));
 		s.requireTrue(listType(ty) := s.getType(e), error(e, "Expression is not of type list"));
-		listType(ty) = s.getType(e);
-		return ty;
+		if (listType(ty) := s.getType(e))
+			return ty;
 	});	
 }
-*/
 
 void collect(current: (Expr) `<Expr e1> <EqualityOperator op> <Expr e2>`, Collector c){
     collect(e1, e2, c);
