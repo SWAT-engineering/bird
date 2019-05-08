@@ -3,7 +3,7 @@ module lang::bird::Syntax
 extend lang::std::Layout;
 
 // TODO can we specify a pattern for u? types
-keyword Reserved = "abstract" | "struct" | "choice" | "bytes" | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it" | "parse" | "with" | "typeOf";
+keyword Reserved = "abstract" | "struct" | "choice" | "bytes" | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it" | "parse" | "with" | "typeOf" | "as";
 
 start syntax Program =
 	"module" ModuleId
@@ -34,7 +34,7 @@ syntax Import
  	;
 	
 syntax TopLevelDecl
-	= "struct" Id TypeFormals Formals? Annos? "{" DeclInStruct* declarations "}"
+	= "struct" Id TypeFormals? Formals? Annos? "{" DeclInStruct* declarations "}"
 	| "choice" Id Formals? Annos? "{" DeclInChoice* declarations "}"
 	| "@" "(" JavaId ")" Type Id Formals?
 	;
@@ -48,8 +48,7 @@ syntax Anno
 	;	
 	
 syntax TypeFormals
-    = noTypeFormals: ()
-    | withTypeFormals: "\<" {Id "," }* formals  "\>"
+    = "\<" {Id "," }* typeFormals  "\>"
     ;	
 	
 syntax Formals
@@ -169,13 +168,12 @@ syntax Type
 	| "bool"
 	| UInt
 	| AnonStruct
-	| Id id TypeActuals actuals
+	| Id id TypeActuals? typeActuals
 	| Type "[" "]"
 	;
 	
 syntax TypeActuals 
-    = noActuals: ()
-    | withTypeActuals: "\<" {Type "," }* actuals "\>"
+    ="\<" {Type "," }* typeActuals "\>"
     ;
 	
 syntax TypeLiteral = "typeOf" "[" Type "]";	
