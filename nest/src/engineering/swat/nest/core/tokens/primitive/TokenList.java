@@ -5,6 +5,7 @@ import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import engineering.swat.nest.core.tokens.NestParseFunction;
 import engineering.swat.nest.core.tokens.PrimitiveToken;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.TokenVisitor;
@@ -13,7 +14,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 /**
@@ -32,14 +32,14 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 
 
 	/**
-	 * Read from the stream until the function provided as {@linkplain parser} parameter fails.
+	 * Read from the stream until the function provided as {@code parser} parameter fails.
 	 * @param source
 	 * @param ctx
 	 * @param parser function that should parse the token
 	 * @param <T>
 	 * @return
 	 */
-	public static <T extends Token> TokenList<T> untilParseFailure(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser) {
+	public static <T extends Token> TokenList<T> untilParseFailure(ByteStream source, Context ctx, NestParseFunction<T> parser) {
 		ByteStream lastSuccess = source.fork();
 		List<T> result = new ArrayList<>();
 		while (true) {
@@ -58,7 +58,7 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	}
 
 	/**
-	 * Construct a list that contains {@linkplain times} entries of T
+	 * Construct a list that contains {@code times} entries of T
 	 * @param source
 	 * @param ctx
 	 * @param parser
@@ -66,7 +66,7 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	 * @param <T>
 	 * @return
 	 */
-	public static <T extends Token> TokenList<T> times(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser, int times) {
+	public static <T extends Token> TokenList<T> times(ByteStream source, Context ctx, NestParseFunction<T> parser, int times) {
 		List<T> result = new ArrayList<>(times);
 		for (int i = 0; i < times; i++) {
 			result.add(parser.apply(source, ctx));
@@ -83,7 +83,7 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	 * @param <T>
 	 * @return
 	 */
-	public static <T extends Token> TokenList<T> parseWhile(ByteStream source, Context ctx, BiFunction<ByteStream, Context, T> parser, Predicate<T> whileCondition) {
+	public static <T extends Token> TokenList<T> parseWhile(ByteStream source, Context ctx, NestParseFunction<T> parser, Predicate<T> whileCondition) {
 		List<T> result = new ArrayList<>();
 		while (true) {
 			ByteStream lastSuccess = source.fork();

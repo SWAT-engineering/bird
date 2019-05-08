@@ -5,6 +5,7 @@ import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
 import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
+import engineering.swat.nest.core.tokens.NestParseFunction;
 import engineering.swat.nest.core.tokens.PrimitiveToken;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.TokenVisitor;
@@ -55,7 +56,7 @@ public class TerminatedToken<E extends Token, T extends Token> extends Primitive
     public static <E extends Token, T extends Token> TerminatedToken<E,T> parseUntil(ByteStream source, Context ctx,
             NestBigInteger initialCheck, NestBigInteger stepSize, @Nullable NestBigInteger maxLength,
             BiFunction<TrackedByteSlice, Context, E> entryParser,
-            BiFunction<ByteStream, Context, T> terminatorParser) {
+            NestParseFunction<T> terminatorParser) {
         if (stepSize.isNegative() || stepSize.isZero()) {
             throw new IllegalArgumentException("stepSize should be positive");
         }
