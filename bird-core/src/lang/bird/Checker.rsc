@@ -14,15 +14,13 @@ extend analysis::typepal::TestFramework;
 
 lexical ConsId =  "$" ([a-z A-Z 0-9 _] !<< [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z A-Z 0-9 _])\Reserved;
 
-anno bool Type@bounded;
-
 data AType
 	= voidType()
 	| intType()
 	| typeType(AType ty)
 	| strType()
 	| boolType()
-	| listType(AType ty, bool bounded = false)
+	| listType(AType ty)
 	| consType(AType formals)
 	| funType(str name, AType returnType, AType formals, str javaRef)
 	| structDef(str name, list[str] args)
@@ -320,19 +318,9 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
 		s.requireTrue(isTokenType(s.getType(ty)), error(ty, "Non-initialized fields must be of a token type, but it was %t (AType: %t)", ty, s.getType(ty)));
 	});
 	if ("<id>" != "_"){
-		if (sz <- size){
-			println("HAS SIZE");
-			c.define("<id>", fieldId(), id, defType(ty[@bounded = true]));
-		}else{
-			c.define("<id>", fieldId(), id, defType(ty));
-		}
+		c.define("<id>", fieldId(), id, defType(ty));
 	}
-	if (sz <- size){
-		collect(ty[@bounded = true], c);
-	}
-	else{
-		collect(ty, c);
-	}
+	collect(ty, c);
 	collectArgs(ty, args, c);
 	
 	for (sz <-size){
@@ -605,7 +593,7 @@ void collect(current:(Type)`<Type t> [ ]`, Collector c) {
 	collect(t, c);
 	c.calculate("list type", current, [t], AType(Solver s) {
 		println("<t> &&& <s.getType(t)>");
-		return listType(s.getType(t), bounded = (current has bounded)); });
+		return listType(s.getType(t)); });
 }  
 
 void collect(current: (Expr) `[<{Expr ","}*  exprs>]`, Collector c){
@@ -642,9 +630,6 @@ void collect(current: (Expr) `<NatLiteral nat>`, Collector c){
 
 void collect(current: (Expr) `<Id id>`, Collector c){
     c.use(id, {variableId(), fieldId(), paramId()});
-    c.require("trivial", current, [current], void(Solver s){
-    	println("<id> :::: <s.getType(current) has bounded>");
-    });
 }
 
 void collect(current: (Expr) `<Expr e>.offset`, Collector c){
