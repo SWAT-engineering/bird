@@ -16,15 +16,17 @@ lexical ConsId =  "$" ([a-z A-Z 0-9 _] !<< [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z 
 
 data AType
 	= voidType()
+	| numType()
 	| intType()
+	| uintType()
 	| typeType(AType ty)
 	| strType()
 	| boolType()
 	| listType(AType ty)
 	| consType(AType formals)
 	| funType(str name, AType returnType, AType formals, str javaRef)
-	| structDef(str name, list[str] args)
-	| structType(str name, list[AType] actuals)
+	| structDeft(str name, list[str] typeFormals)
+	| structType(str name, list[AType] typeActuals)
 	| anonType(lrel[str, AType] fields)
 	| bytesType(Maybe[int] n = nothing())
 	| moduleType()
@@ -52,6 +54,13 @@ data PathRole
 //	when t1 == t2;
 //default bool birdIsSubType(AType _, AType _) = false;
 
+bool isSubtype(voidType(), AType t) = true;
+bool isSubtype(intType(), numType()) = true;
+bool isSubtype(intType(), numType()) = true;
+bool isSubtype(uintType(), numType()) = true;
+default bool isSubtype(AType _, AType _) = false;
+
+
 bool isConvertible(voidType(), AType t) = true;
 
 bool isConvertible(atypeList(vs), atypeList(ws))
@@ -75,8 +84,9 @@ bool isConvertible(AType t1, AType t2) = true
 default bool isConvertible(AType _, AType _) = false;
 
 str prettyPrintAType(voidType()) = "void";
-str prettyPrintAType(bytesType(_)) = "bytes";
+str prettyPrintAType(bytesType()) = "bytes";
 str prettyPrintAType(intType()) = "int";
+str prettyPrintAType(uintType()) = "uint";
 str prettyPrintAType(typeType(t)) = "typeof(<prettyPrintAType(t)>)";
 str prettyPrintAType(strType()) = "str";
 str prettyPrintAType(boolType()) = "bool";
@@ -88,7 +98,7 @@ str prettyPrintAType(consType(formals)) = "constructor(<("" | it + "<prettyPrint
 str prettyPrintAType(funType(name,_,_,_)) = "fun <name>";
 str prettyPrintAType(moduleType()) = "module";
 str prettyPrintAType(variableType(s)) = "variableType(<s>)";
-str prettyPrintAType(structDef(name, args)) = "structDef(<name>, [<intercalate(", ", args)>])";
+str prettyPrintAType(structDef(name, formals)) = "structDef(<name>, [<intercalate(", ", formals)>])";
 
 
 AType birdInstantiateTypeParameters(Tree selector, structDef(str name1, list[str] formals), structType(str name2, list[AType] actuals), AType t, Solver s){
@@ -112,7 +122,7 @@ AType lub(strType(), t1:uType(_)) = strType();
 AType lub(t1:listType(ta),t2:listType(tb)) = listType(lub(ta,tb));
 default AType lub(AType t1, AType t2){ throw "Cannot find a lub for types <prettyPrintAType(t1)> and <prettyPrintAType(t2)>"; }
 
-bool isTokenType(uType(_)) = true;
+bool isTokenType(bytesType()) = true;
 bool isTokenType(structType(_,_)) = true;
 bool isTokenType(variableType(_)) = true;
 bool isTokenType(anonType(_)) = true;
@@ -273,15 +283,14 @@ private loc relocsingleLine(loc osrc, loc base)
     c.leaveScope(current);
 }*/
 
-void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     typeFormalList = typeFormals is noTypeFormals ? [] : [f | f <- typeFormals.formals];
-     c.define("<id>", structId(), current, defType(structDef("<id>", ["<tp>" | tp <- typeFormalList])));
+void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
+     c.define("<id>", structId(), current, defType(structDef("<id>", ["<tp>" | atypeFormals <- typeFormals, f <- atypeFormals.typeFormals])));
      //collect(id, formals, c);
+     
      c.enterScope(current); {
-     	for (Id tf <- typeFormalList)
+     	for (atypeFormals <- typeFormals, Id tf <- atypeFormals.typeFormals)
      		c.define("<tf>", typeVariableId(), tf, defType(variableType("<tf>")));
-     	collect(typeFormalList, c);
-		collectFormals(id, formals, c);
+     	collectFormals(id, formals, c);
      	collect(decls, c);
     }
     c.leaveScope(current);
@@ -321,7 +330,10 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
 		c.define("<id>", fieldId(), id, defType(ty));
 	}
 	collect(ty, c);
-	collectArgs(ty, args, c);
+	
+	if (aargs <- args)
+		collectArgs(ty, aargs, c);
+	
 	
 	for (sz <-size){
 		collectSize(ty, sz, c);
@@ -383,18 +395,18 @@ void collectSize(Type ty, sz:(Size) `[<Expr e>]`, Collector c){
 	collect(e, c);
 	c.require("size argument", sz, [ty] + [e], void (Solver s) {
 		s.requireTrue(s.getType(ty) is listType, error(sz, "Setting size on a non-list element"));
-		s.requireSubType(s.getType(e), intType(), error(sz, "Size must be an integer"));
+		s.requireSubType(s.getType(e), numType(), error(sz, "Size must be an integer"));
 	});
 }
 
-void collectArgs(Type ty, Arguments? current, Collector c){
+void collectArgs(Type ty, Arguments current, Collector c){
 		currentScope = c.getScope();
-		for (aargs <- current, a <- aargs.args){
+		for (a <- current.args){
 			collect(a, c);
 		}
 		c.require("constructor arguments", current, 
-			  [ty] + [a |aargs <- current, a <- aargs.args], void (Solver s) {
-			if (aargs <- current && !isUserDefined(s.getType(ty)))
+			  [ty] + [a |a <- current.args], void (Solver s) {
+			if (!isUserDefined(s.getType(ty)))
 				s.report(error(current, "Constructor arguments only apply to user-defined types but got %t", ty));
 			if (isUserDefined(s.getType(ty))){
 				idStr = getUserDefinedName(s.getType(ty));
@@ -412,7 +424,7 @@ void collectArgs(Type ty, Arguments? current, Collector c){
 				//println(currentScope);
 				if (structType(refName,actuals) := t){
 					ct = s.getTypeInType(structType(refName, actuals), newConstructorId([Id] "<idStr>", ty@\loc), {consId()}, currentScope);
-					argTypes = atypeList([ s.getType(a) | aargs <- current, a <- aargs.args]);
+					argTypes = atypeList([ s.getType(a) | a <- current.args]);
 					s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments"));
 				}
 				else throw "Operation not supported";
@@ -490,7 +502,9 @@ void collect(current:(DeclInChoice) `<Type ty> <Arguments? args> <Size? size>`, 
 		s.requireTrue(isTokenType(s.getType(ty)), error(ty, "Non-initialized fields must be of a token type but it was %t", ty));
 	});
 	collect(ty, c);
-	collectArgs(ty, args, c);
+	
+	if (aargs <- args)
+		collectArgs(ty, aargs, c);
 	
 	for (sz <-size){
 		collectSize(ty, sz, c);
@@ -503,9 +517,11 @@ void collect(current:(UnaryExpr) `<UnaryOperator uo> <Expr e>`, Collector c){
 
 
 void collect(current:(Type)`<UInt v>`, Collector c) {
-	c.requireEqual(toInt("<v>"[1..]) % 8, 0, error(current, "The number of bits in a u? type must be a multiple of 8"));
-	if (toInt("<v>"[1..]) % 8 ==0)
-		c.fact(current, bytesType(n = just(toInt("<v>"[1..])/8)));
+	c.calculate("actual type", current, [],
+    	AType(Solver s) {
+    		s.requireTrue(toInt("<v>"[1..]) % 8 == 0, error(current, "The number of bits in a u? type must be a multiple of 8")); 
+            return bytesType(n = just(toInt("<v>"[1..])/8));
+        }); 
 }
 
 
@@ -524,6 +540,11 @@ void collect(current:(Type)`bool`, Collector c) {
 void collect(current:(Type)`int`, Collector c) {
 	c.fact(current, intType());
 }  
+
+void collect(current:(Type)`uint`, Collector c) {
+	c.fact(current, uintType());
+}  
+
 
 /*void collect(current:(Type)`<Id i>`, Collector c) {
 	c.use(i, {structId(), typeVariableId()}); 
@@ -572,21 +593,6 @@ void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c) {
 	c.calculate("anonymous struct type", current, [ty | <_, ty> <- fields], AType(Solver s){
 		return anonType([<id, s.getType(ty)> | <id, ty> <- fields]);
 	});
-} 
-
-void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     c.define("<id>", structId(), current, defType(structDef("<id>")));
-     //collect(id, formals, c);
-     c.enterScope(current); {
-     	actualFormals = [af | f <- formals, af <- f.formals];
-     	c.define("<id>", consId(), id, defType(actualFormals, AType(Solver s) {
-     		return consType(atypeList([s.getType(a) | a <- actualFormals]));
-     	}));
-     	collect(actualFormals, c);
-     	
-     	collect(decls, c);
-    }
-    c.leaveScope(current);
 }
 
 void collect(current:(Type)`<Type t> [ ]`, Collector c) {
@@ -920,7 +926,7 @@ AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope
 }
 
 private TypePalConfig getBirdConfig() = tconfig(
-    isSubType = isConvertible,
+    isSubType = isSubtype,
     getTypeNamesAndRole = birdGetTypeNameAndRole,
     getTypeInNamelessType = birdGetTypeInAnonymousStruct,
     instantiateTypeParameters = birdInstantiateTypeParameters
