@@ -25,7 +25,7 @@ data AType
 	| listType(AType ty)
 	| consType(AType formals)
 	| funType(str name, AType returnType, AType formals, str javaRef)
-	| structDeft(str name, list[str] typeFormals)
+	| structDef(str name, list[str] typeFormals)
 	| structType(str name, list[AType] typeActuals)
 	| anonType(lrel[str, AType] fields)
 	| bytesType(Maybe[int] n = nothing())
@@ -284,7 +284,7 @@ private loc relocsingleLine(loc osrc, loc base)
 }*/
 
 void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     c.define("<id>", structId(), current, defType(structDef("<id>", ["<tp>" | atypeFormals <- typeFormals, f <- atypeFormals.typeFormals])));
+     c.define("<id>", structId(), current, defType(structDef("<id>", ["<tf>" | atypeFormals <- typeFormals, tf <- atypeFormals.typeFormals])));
      //collect(id, formals, c);
      
      c.enterScope(current); {
@@ -558,11 +558,11 @@ void collect(current:(Type)`uint`, Collector c) {
      });
 }*/
 
-void collect(current: (Type) `<Id name> <TypeActuals actuals>`, Collector c){
+void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c){
     c.use(name, {structId(), typeVariableId()});
-	if (actuals is withTypeActuals){
-    	tpActuals = [tp | tp <- actuals.actuals];
-        c.calculate("actual type", current, name + tpActuals,
+    if (aactuals <- actuals){
+    	tpActuals = [tp | tp <- aactuals.actuals];
+        c.calculate("actual type", current, [name] + tpActuals,
             AType(Solver s) { return structType("<name>", [s.getType(tp) | tp <- tpActuals]);});
         collect(tpActuals, c);
     } else {
