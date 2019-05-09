@@ -53,8 +53,9 @@ data PathRole
 //default bool birdIsSubType(AType _, AType _) = false;
 
 bool isSubtype(voidType(), AType t) = true;
+bool isSubtype(listType(AType t1), listType(AType t2)) = isSubtype(t1, t2);
 bool isSubtype(AType t1, AType t2) = true
-	when t2 == t2;
+	when t1 == t2;
 default bool isSubtype(AType _, AType _) = false;
 
 
@@ -387,7 +388,6 @@ void collectSideCondition(Type ty, DId id, current:(SideCondition) `? ( <Compara
 
 default void collectSideCondition(Type ty, DId id, current:(SideCondition) `? ( <EqualityOperator uo> <Expr e>)`, Collector c){
 	collect(e, c);
-	println("is <ty> subtype of <e>");
 	c.requireSubType(ty, e, error(current, "Type of unary expression in side condition must be compatible with the declared type"));
 }
 
@@ -520,7 +520,7 @@ void collect(current:(Type)`<UInt v>`, Collector c) {
 	c.calculate("actual type", current, [],
     	AType(Solver s) {
     		s.requireTrue(toInt("<v>"[1..]) % 8 == 0, error(current, "The number of bits in a u? type must be a multiple of 8")); 
-            return listType(byteType(), byteType(n = just(toInt("<v>"[1..])/8)));
+            return listType(byteType(), n = just(toInt("<v>"[1..])/8));
         }); 
 }
 
@@ -631,15 +631,23 @@ void collect(current: (Expr) `<IntBitLiteral nat>`, Collector c){
     c.fact(current, intType());
 }
 
-void collect(current: (Expr) `<ByteHexLiteral nat>`, Collector c){
+void collect(current: (Expr) `<BytesDecLiteral nat>`, Collector c){
     c.fact(current, listType(byteType()));
 }
 
-void collect(current: (Expr) `<ByteBitLiteral nat>`, Collector c){
+void collect(current: (Expr) `<BytesHexLiteral nat>`, Collector c){
     c.fact(current, listType(byteType()));
 }
 
-void collect(current: (Expr) `<ByteStringLiteral nat>`, Collector c){
+void collect(current: (Expr) `<BytesBitLiteral nat>`, Collector c){
+    c.fact(current, listType(byteType()));
+}
+
+void collect(current: (Expr) `<BytesStringLiteral nat>`, Collector c){
+    c.fact(current, listType(byteType()));
+}
+
+void collect(current: (Expr) `<BytesArrLiteral nat>`, Collector c){
     c.fact(current, listType(byteType()));
 }
 

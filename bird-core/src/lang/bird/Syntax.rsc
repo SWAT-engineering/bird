@@ -83,10 +83,11 @@ syntax DeclInStruct
 // as described here: https://introcs.cs.princeton.edu/java/11precedence/
 syntax Expr 
 	= Expr ".as" "[" Type "]"
-	> ByteDecLiteral
-	| ByteHexLiteral
-	| ByteBitLiteral
-	| ByteStringLiteral
+	> BytesDecLiteral
+	| BytesHexLiteral
+	| BytesBitLiteral
+	| BytesStringLiteral
+	| BytesArrLiteral
 	| IntDecLiteral
 	| IntHexLiteral
 	| IntBitLiteral
@@ -182,10 +183,12 @@ syntax TypeActuals
 	
 syntax TypeLiteral = "typeOf" "[" Type "]";	
 
-lexical ByteDecLiteral = NatLiteral "B";
-lexical ByteHexLiteral = HexIntegerLiteral;
-lexical ByteBitLiteral = BitLiteral;
-lexical ByteStringLiteral = Characters;
+syntax BytesArrLiteral = "\<" { SingleHexIntegerLiteral "," }+ "\>";
+
+lexical BytesDecLiteral = NatLiteral "B";
+lexical BytesHexLiteral = HexIntegerLiteral;
+lexical BytesBitLiteral = BitLiteral;
+lexical BytesStringLiteral = Characters;
 
 lexical IntDecLiteral = NatLiteral;
 lexical IntHexLiteral = HexIntegerLiteral "I";
@@ -201,6 +204,9 @@ lexical NatLiteral
 
 lexical HexIntegerLiteral
 	=  [0] [X x] [0-9 A-F a-f _]+ !>> [0-9 A-F a-f _] ;
+	
+lexical SingleHexIntegerLiteral
+	=  [0] [X x] [0-9 A-F a-f _] [0-9 A-F a-f _];
 
 lexical BitLiteral 
 	= "0b" [0 1 _]+ !>> [0 1 _];
