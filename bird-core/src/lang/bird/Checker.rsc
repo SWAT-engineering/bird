@@ -127,8 +127,7 @@ bool isTokenType(listType(t)) = isTokenType(t);
 bool isTokenType(consType(_)) = true;  
 default bool isTokenType(AType t) = false;
 
-AType infixComparator(t1, t2) = boolType()
-	when isConvertible(t1, intType()) && isConvertible(t2, intType());
+AType infixComparator(intType(), intType()) = boolType();
 default AType infixComparator(AType t1, AType t2){ throw "Wrong operands for a comparator"; }
 
 AType infixLogical(t1, t2) = boolType()
@@ -153,10 +152,9 @@ AType infixShift(AType t1, AType t2) = t1
 default AType infixShift(AType t1, AType t2){ throw "Wrong operands for a shift operation"; }
 
 // TODO Maybe more combinations? Also, there is redundancy between the two following definitions.
-AType infixEquality(t1, t2) = boolType()
-	when isConvertible(t1, intType()) && isConvertible(t2, intType());
-AType infixEquality(t1, t2) = boolType()
-	when isConvertible(t1, strType()) && isConvertible(t2, strType());
+AType infixEquality(AType t1, AType t2) = boolType()
+	when isSubtype(t1, t2) || isSubtype(t2, t1);
+	
 default AType infixEquality(AType t1, AType t2){ throw "Wrong operands for equality"; }
 
 AType infixArithmetic(t1, t2) = intType()
