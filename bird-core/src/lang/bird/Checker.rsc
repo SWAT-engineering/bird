@@ -20,13 +20,13 @@ data AType
 	| typeType(AType ty)
 	| strType()
 	| boolType()
-	| listType(AType ty)
+	| listType(AType ty, Maybe[int] n = nothing())
 	| consType(AType formals)
 	| funType(str name, AType returnType, AType formals, str javaRef)
 	| structDef(str name, list[str] typeFormals)
 	| structType(str name, list[AType] typeActuals)
 	| anonType(lrel[str, AType] fields)
-	| bytesType(Maybe[int] n = nothing())
+	| byteType()
 	| moduleType()
 	| variableType(str s)
 	;
@@ -81,7 +81,7 @@ bool isConvertible(AType t1, AType t2) = true
 default bool isConvertible(AType _, AType _) = false;
 
 str prettyPrintAType(voidType()) = "void";
-str prettyPrintAType(bytesType()) = "bytes";
+str prettyPrintAType(byteType()) = "byte";
 str prettyPrintAType(intType()) = "int";
 str prettyPrintAType(typeType(t)) = "typeof(<prettyPrintAType(t)>)";
 str prettyPrintAType(strType()) = "str";
@@ -118,7 +118,7 @@ AType lub(strType(), t1:uType(_)) = strType();
 AType lub(t1:listType(ta),t2:listType(tb)) = listType(lub(ta,tb));
 default AType lub(AType t1, AType t2){ throw "Cannot find a lub for types <prettyPrintAType(t1)> and <prettyPrintAType(t2)>"; }
 
-bool isTokenType(bytesType()) = true;
+bool isTokenType(byteType()) = true;
 bool isTokenType(structType(_,_)) = true;
 bool isTokenType(variableType(_)) = true;
 bool isTokenType(anonType(_)) = true;
@@ -378,17 +378,17 @@ void collectSideCondition(Type ty, DId id, current:(SideCondition) `byparsing ( 
 
 
 
-void collectSideCondition(Type _, DId id, current:(SideCondition) `? ( <ComparatorOperator uo> <Expr e>)`, Collector c){
+void collectSideCondition(Type ty, DId id, current:(SideCondition) `? ( <ComparatorOperator uo> <Expr e>)`, Collector c){
 	collect(e, c);
 	c.require("side condition", current, [e], void (Solver s) {
 		s.requireSubType(s.getType(e), intType(), error(current, "Expression in unary comparing side condition must have numeric type"));
 	});
-	//c.requireEqual(ty, e, error(sc, "Unary expression in side condition must have the same type as declaration"));
 }
 
-default void collectSideCondition(Type _, DId id, current:(SideCondition) `? ( <UnaryOperator uo> <Expr e>)`, Collector c){
+default void collectSideCondition(Type ty, DId id, current:(SideCondition) `? ( <EqualityOperator uo> <Expr e>)`, Collector c){
 	collect(e, c);
-	//c.requireEqual(ty, e, error(sc, "Unary expression in side condition must have the same type as declaration"));
+	println("is <ty> subtype of <e>");
+	c.requireSubType(ty, e, error(current, "Type of unary expression in side condition must be compatible with the declared type"));
 }
 
 void collectSize(Type ty, sz:(Size) `[<Expr e>]`, Collector c){
@@ -520,13 +520,13 @@ void collect(current:(Type)`<UInt v>`, Collector c) {
 	c.calculate("actual type", current, [],
     	AType(Solver s) {
     		s.requireTrue(toInt("<v>"[1..]) % 8 == 0, error(current, "The number of bits in a u? type must be a multiple of 8")); 
-            return bytesType(n = just(toInt("<v>"[1..])/8));
+            return listType(byteType(), byteType(n = just(toInt("<v>"[1..])/8)));
         }); 
 }
 
 
-void collect(current:(Type)`bytes`, Collector c) {
-	c.fact(current, bytesType());
+void collect(current:(Type)`byte`, Collector c) {
+	c.fact(current, byteType());
 }  
 
 void collect(current:(Type)`str`, Collector c) {
@@ -615,21 +615,32 @@ void collect(current: (Expr) `<Expr e>.as[<Type t>]`, Collector c){
 	});
 }
 
-
 void collect(current: (Expr) `<StringLiteral lit>`, Collector c){
     c.fact(current, strType());
 }
 
-void collect(current: (Expr) `<HexIntegerLiteral nat>`, Collector c){
+void collect(current: (Expr) `<IntHexLiteral nat>`, Collector c){
     c.fact(current, intType());
 }
 
-void collect(current: (Expr) `<BitLiteral nat>`, Collector c){
+void collect(current: (Expr) `<IntDecLiteral nat>`, Collector c){
     c.fact(current, intType());
 }
 
-void collect(current: (Expr) `<NatLiteral nat>`, Collector c){
+void collect(current: (Expr) `<IntBitLiteral nat>`, Collector c){
     c.fact(current, intType());
+}
+
+void collect(current: (Expr) `<ByteHexLiteral nat>`, Collector c){
+    c.fact(current, listType(byteType()));
+}
+
+void collect(current: (Expr) `<ByteBitLiteral nat>`, Collector c){
+    c.fact(current, listType(byteType()));
+}
+
+void collect(current: (Expr) `<ByteStringLiteral nat>`, Collector c){
+    c.fact(current, listType(byteType()));
 }
 
 void collect(current: (Expr) `<Id id>`, Collector c){
