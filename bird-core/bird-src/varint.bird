@@ -1,30 +1,30 @@
 module varint 
 
 struct LEB128 {
-    u8[] raw while((it & 0b1000_0000) != 0) 
+    u8[] raw while((it & 0b1000_0000).as[int] != 0) 
     u8 lastOne
     // TODO: the type of this ac value is strange, we want to do byte stuff, and the type won't be a u8, but just a set of bytes
-    uint value = ( u8 ac = lastOne | ((ac << 7) | (r & 0b0111_1111)) | r <- raw[-1:0]).as[uint]  // iterate over it in reverse as to keep the bit shift simpeler
+    int value = ( u8 ac = lastOne | ((ac << 7) | (r & 0b0111_1111)) | r <- raw[-1:0]).as[int]  // iterate over it in reverse as to keep the bit shift simpeler
 }
 
 @(java.class.that.contains.this.function)
 int trailingZeroes(u128 number)
 
 choice PrefixVarint {
-    abstract uint value
+    abstract int value
     struct {
         u8 prefixHeader ?( (this & 0b1) == 0b1) // a single byte
-        uint value = prefixHeader >> 1
+        int value = (prefixHeader >> 1).as[int]
     }
     struct {
         u8 prefixHeader ?(!= 0x00) 
-        uint prefixLength = trailingZeroes(prefixHeader)
-        u8[] rest [prefixLength]
-        uint value = (prefixHeader >>> (prefixLength + 2)) | ( rest << 8 - prefixLength).as[uint]
+        int prefixLength = trailingZeroes(prefixHeader)
+        byte[] rest [prefixLength]
+        int value = ((prefixHeader >>> (prefixLength + 2)) | ( rest << (8 - prefixLength))).as[int]
     }
     struct {
         u8 prefixHeader ?(== 0x00) 
         u64 fullValue
-        uint value = fullValue.as[uint]
+        int value = fullValue.as[int]
     }
 }

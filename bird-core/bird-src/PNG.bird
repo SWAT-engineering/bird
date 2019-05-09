@@ -21,7 +21,7 @@ struct IEND {
     u32 crc ?(== <0xae, 0x42, 0x60, 0x82>)
 }
 
-struct PNG@(encoding = Encoding.ASCII, endian = Endianness.BIG) {
+struct PNG@(encoding = Encoding.ASCII, endianness = Endianness.BIG, signedness = Signedness.YES) {
     Signature _
     Chunk[] chunks
     IEND _
