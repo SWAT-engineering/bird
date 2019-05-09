@@ -132,7 +132,7 @@ public class FatLikeNestingTests {
         public static <T extends Token> NestedFile<T> parse(ByteStream source, Context ctx,
                 BiFunction<ByteStream, Context, T> tParser) {
             final UnsignedBytes size = source.readUnsigned(NestBigInteger.of(4), ctx);
-            final UnsignedBytes raw = source.readUnsigned(size.asValue().asInteger(Sign.UNSIGNED), ctx);
+            final UnsignedBytes raw = source.readUnsigned(size.asValue().asInteger(), ctx);
             final T parsedFile = tParser.apply(new ByteStream(raw), ctx);
             return new NestedFile<>(size, raw, parsedFile);
         }

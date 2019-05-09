@@ -45,7 +45,7 @@ public class Varint {
                 ac = (ac.shl(NestBigInteger.of(7))
                         .or(raw.get(index).asValue().and(NestValue.of(0b0111_1111, 1))));
             }
-            NestBigInteger value = ac.asInteger(Sign.UNSIGNED);
+            NestBigInteger value = ac.asInteger();
             return new LEB128(raw, lastOne, value);
         }
 
@@ -102,7 +102,7 @@ public class Varint {
                 if (!prefixHeader.asValue().and(NestValue.of(0b1, 1)).sameBytes(NestValue.of(0b1, 1))) {
                     throw new ParseError("PrefixVarint$1.prefixHeader", prefixHeader);
                 }
-                NestBigInteger value = prefixHeader.asValue().shr(NestBigInteger.ONE).asInteger(Sign.UNSIGNED);
+                NestBigInteger value = prefixHeader.asValue().shr(NestBigInteger.ONE).asInteger();
                 return new PrefixVarint$1(prefixHeader, value);
             }
 
@@ -138,7 +138,7 @@ public class Varint {
                 UnsignedBytes rest = source.readUnsigned(prefixLength, ctx.setByteOrder(ByteOrder.LITTLE_ENDIAN));
                 NestBigInteger value = prefixHeader.asValue().shr(prefixLength.add(NestBigInteger.ONE)).
                         or(rest.asValue().shl(NestBigInteger.of(8).subtract(prefixLength).subtract(NestBigInteger.ONE)))
-                        .asInteger(Sign.UNSIGNED);
+                        .asInteger();
                 return new PrefixVarint$2(prefixHeader, prefixLength, rest, value);
             }
 
@@ -166,7 +166,7 @@ public class Varint {
                     throw new ParseError("PrefixVarint$3.prefixHeader", prefixHeader);
                 }
                 UnsignedBytes fullValue = source.readUnsigned(8, ctx);
-                NestBigInteger value = fullValue.asValue().asInteger(Sign.UNSIGNED);
+                NestBigInteger value = fullValue.asValue().asInteger();
                 return new PrefixVarint$3(prefixHeader, fullValue, value);
             }
 

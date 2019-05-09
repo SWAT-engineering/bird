@@ -11,25 +11,31 @@ public class Context {
 	private final ByteOrder endianness;
 	private final Charset encoding;
 	private final ParseLogTarget logTarget;
+	private final Sign sign;
 
-	private Context(Charset encoding, ByteOrder endianness, ParseLogTarget logTarget) {
+	private Context(Charset encoding, ByteOrder endianness, ParseLogTarget logTarget, Sign sign) {
 		this.encoding = encoding;
 		this.endianness = endianness;
 		this.logTarget = logTarget;
+		this.sign = sign;
 	}
 	
-	public static Context DEFAULT = new Context(StandardCharsets.US_ASCII, ByteOrder.BIG_ENDIAN, ParseLogTarget.SINK);
+	public static Context DEFAULT = new Context(StandardCharsets.US_ASCII, ByteOrder.BIG_ENDIAN, ParseLogTarget.SINK, Sign.UNSIGNED);
 
 	public Context setEncoding(Charset encoding) {
-		return new Context(encoding, endianness, logTarget);
+		return new Context(encoding, endianness, logTarget, sign);
 	}
 
 	public Context setByteOrder(ByteOrder endianness) {
-		return new Context(encoding, endianness, logTarget);
+		return new Context(encoding, endianness, logTarget, sign);
 	}
 
 	public Context setParseLogTarget(ParseLogTarget logTarget) {
-		return new Context(encoding, endianness, logTarget);
+		return new Context(encoding, endianness, logTarget, sign);
+    }
+
+	public Context setSign(Sign sign) {
+		return new Context(encoding, endianness, logTarget, sign);
     }
 
 	public ByteOrder getByteOrder() {
@@ -38,6 +44,10 @@ public class Context {
 
 	public Charset getEncoding() {
 		return encoding;
+	}
+	
+	public Sign getSign() {
+		return sign;
 	}
 
 
@@ -51,12 +61,13 @@ public class Context {
 		}
 		Context context = (Context) o;
 		return endianness.equals(context.endianness) &&
-				encoding.equals(context.encoding);
+				encoding.equals(context.encoding) && 
+				sign == context.sign;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(endianness, encoding);
+		return Objects.hash(endianness, encoding, sign);
 	}
 
 	public void fail(String msg) {

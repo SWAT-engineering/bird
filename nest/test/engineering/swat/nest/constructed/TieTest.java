@@ -18,16 +18,16 @@ public class TieTest {
     void tieWorks() {
         Tie1 parsed = Tie1.parse(wrap(1, 2, 3, 4), Context.DEFAULT);
         assertEquals(4, parsed.size().intValueExact());
-        assertEquals(0x01 << 8 | 0x02, parsed.other.data1.asValue().asInteger(Sign.UNSIGNED).intValueExact());
-        assertEquals(0x03 << 8 | 0x04, parsed.other.data2.asValue().asInteger(Sign.UNSIGNED).intValueExact());
+        assertEquals(0x01 << 8 | 0x02, parsed.other.data1.asValue().asInteger().intValueExact());
+        assertEquals(0x03 << 8 | 0x04, parsed.other.data2.asValue().asInteger().intValueExact());
     }
 
     @Test
     void tieFlipWorks() {
         Tie2 parsed = Tie2.parse(wrap(1, 2, 3, 4), Context.DEFAULT);
         assertEquals(4, parsed.size().intValueExact());
-        assertEquals(0x01 << 8 | 0x02, parsed.data1.asValue().asInteger(Sign.UNSIGNED).intValueExact());
-        assertEquals(0x01 << 8 | 0x02, parsed.other.data2.asValue().asInteger(Sign.UNSIGNED).intValueExact());
+        assertEquals(0x01 << 8 | 0x02, parsed.data1.asValue().asInteger().intValueExact());
+        assertEquals(0x01 << 8 | 0x02, parsed.other.data2.asValue().asInteger().intValueExact());
     }
 
     private static class Tie1 extends UserDefinedToken {

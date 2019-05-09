@@ -174,7 +174,7 @@ public class LinkedListSeekTest {
                 throw new ParseError("Lead.next", next);
             }
             UnsignedBytes rawValue = source.readUnsigned(NestBigInteger.of(4), ctx);
-            NestBigInteger value = rawValue.asValue().asInteger(Sign.UNSIGNED);
+            NestBigInteger value = rawValue.asValue().asInteger();
             return new Leaf(value, rawValue, next);
         }
 
@@ -205,9 +205,9 @@ public class LinkedListSeekTest {
                 throw new ParseError("Node.next", next);
             }
             UnsignedBytes rawValue = source.readUnsigned(NestBigInteger.of(4), ctx);
-            LinkedListEntry nextEntry = LinkedListEntry.parse(source, ctx, next.asValue().asInteger(Sign.UNSIGNED));
+            LinkedListEntry nextEntry = LinkedListEntry.parse(source, ctx, next.asValue().asInteger());
 
-            NestBigInteger value = nextEntry.value.add(rawValue.asValue().asInteger(Sign.UNSIGNED));
+            NestBigInteger value = nextEntry.value.add(rawValue.asValue().asInteger());
             return new Node(value, next, rawValue, nextEntry);
         }
 

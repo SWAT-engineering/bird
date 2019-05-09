@@ -25,7 +25,7 @@ class B extends UserDefinedToken {
 		if (!(x.asValue().sameBytes(NestValue.of(2, 1)))) {
 			throw new ParseError("B.x", x);
 		}
-		NestBigInteger virtualField = x.asValue().asInteger(Sign.UNSIGNED).multiply(NestBigInteger.TWO);
+		NestBigInteger virtualField = x.asValue().asInteger().multiply(NestBigInteger.TWO);
 		return new B(virtualField, x);
 	}
 

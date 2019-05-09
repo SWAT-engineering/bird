@@ -114,13 +114,13 @@ public class JPEG  {
 				throw new ParseError("SizedSegment.marker", marker);
 			}
 			UnsignedBytes identifier = source.readUnsigned(1, ctx);
-			if (!(identifier.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xD8)) < 0
-					|| identifier.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xDA)) > 0)) {
+			if (!(identifier.asValue().asInteger().compareTo(NestBigInteger.of(0xD8)) < 0
+					|| identifier.asValue().asInteger().compareTo(NestBigInteger.of(0xDA)) > 0)) {
 				throw new ParseError("SizedSegment.identifier", identifier);
 			}
 			UnsignedBytes length = source.readUnsigned(2, ctx);
 			UnsignedBytes payload = source
-					.readUnsigned(length.asValue().asInteger(Sign.UNSIGNED).subtract(NestBigInteger.TWO), ctx);
+					.readUnsigned(length.asValue().asInteger().subtract(NestBigInteger.TWO), ctx);
 			return new SizedSegment(marker, identifier, length, payload);
 		}
 
@@ -180,8 +180,8 @@ public class JPEG  {
 			public static ScanEscape$2 parse(ByteStream source, Context ctx) {
 				UnsignedBytes escape = source.readUnsigned(2, ctx);
 				if (!(escape.sameBytes(NestValue.of(0xFF00, 2)) ||
-						(escape.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xFFCF)) > 0 &&
-								escape.asValue().asInteger(Sign.UNSIGNED).compareTo(NestBigInteger.of(0xFFD8)) < 0))) {
+						(escape.asValue().asInteger().compareTo(NestBigInteger.of(0xFFCF)) > 0 &&
+								escape.asValue().asInteger().compareTo(NestBigInteger.of(0xFFD8)) < 0))) {
 					throw new ParseError("ScanEscape$2.escape", escape);
 				}
 				return new ScanEscape$2(escape);
@@ -229,7 +229,7 @@ public class JPEG  {
 			}
 			UnsignedBytes length = source.readUnsigned(2, ctx);
 			UnsignedBytes payload = source
-					.readUnsigned(length.asValue().asInteger(Sign.SIGNED).subtract(NestBigInteger.TWO), ctx);
+					.readUnsigned(length.asValue().asInteger().subtract(NestBigInteger.TWO), ctx);
 			TokenList<ScanEscape> choices = TokenList.untilParseFailure(source, ctx, ScanEscape::parse);
 			return new ScanSegment(marker, identifier, length, payload, choices);
 		}

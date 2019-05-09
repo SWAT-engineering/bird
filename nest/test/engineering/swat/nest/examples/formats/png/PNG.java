@@ -101,9 +101,9 @@ public class PNG {
             if (type.asString().get().equals("IEND")) {
                 throw new ParseError("Chunk.type");
             }
-            UnsignedBytes data = source.readUnsigned(length.asValue().asInteger(Sign.UNSIGNED), ctx);
+            UnsignedBytes data = source.readUnsigned(length.asValue().asInteger(), ctx);
             UnsignedBytes crc = source.readUnsigned(4, ctx);
-            if (!(crc.asValue().asInteger(Sign.UNSIGNED).equals(UserDefinedPNG.crc32(TokenList.of(ctx, type, data))))) {
+            if (!(crc.asValue().asInteger().equals(UserDefinedPNG.crc32(TokenList.of(ctx, type, data))))) {
                 throw new ParseError("Chunk.crc");
             }
             return new Chunk(length, type, data, crc);
@@ -130,7 +130,7 @@ public class PNG {
 
         public static IEND parse(ByteStream source, Context ctx) {
             UnsignedBytes length = source.readUnsigned(4, ctx);
-            if (!(length.asValue().asInteger(Sign.UNSIGNED).equals(NestBigInteger.ZERO))) {
+            if (!(length.asValue().asInteger().equals(NestBigInteger.ZERO))) {
                 throw new ParseError("IED.length", length);
             }
 

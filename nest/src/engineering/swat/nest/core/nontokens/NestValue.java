@@ -241,8 +241,8 @@ public class NestValue {
         }
     }
 
-    public NestBigInteger asInteger(Sign sign) {
-        return NestBigInteger.of(origin, bytes, context.getByteOrder(), sign);
+    public NestBigInteger asInteger() {
+        return NestBigInteger.of(origin, bytes, context.getByteOrder(), context.getSign());
     }
 
     /**
