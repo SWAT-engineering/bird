@@ -52,6 +52,9 @@ data PathRole
 //	when t1 == t2;
 //default bool birdIsSubType(AType _, AType _) = false;
 
+bool isSubtype(atypeList(vs), atypeList(ws))
+	= (true | isSubtype(v, w) && it | <v,w> <- zip(vs, ws))
+	when (size(vs) == size(ws));
 bool isSubtype(voidType(), AType t) = true;
 bool isSubtype(listType(AType t1), listType(AType t2)) = isSubtype(t1, t2);
 bool isSubtype(AType t1, AType t2) = true
@@ -134,21 +137,11 @@ AType infixLogical(t1, t2) = boolType()
 	when isConvertible(t1, boolType()) && isConvertible(t2, boolType());
 default AType infixLogical(AType t1, AType t2){ throw "Wrong operands for a logical operation"; }
 
-
-AType infixBitwise(t1:uType(n), t2:uType(m)) = n>m?t1:t2;
-AType infixBitwise(t1:uType(_), intType()) = t1;
-AType infixBitwise(intType(), t1:uType(_)) = t1;
-AType infixBitwise(intType(), intType()) = intType();
-AType infixBitwise(t1:uType(_), listType(uType(_))) = t1;
-AType infixBitwise(listType(uType(_)), t1:uType(_)) = t1;
-AType infixBitwise(t1:listType(uType(n)), t2:listType(uType(m))) = n>m?t1:t2;
-AType infixBitwise(t1:listType(uType(_)),intType()) = t1;
-AType infixBitwise(intType(), t1:listType(uType(_))) = t1;
+AType infixBitwise(t1:listType(byteType()), t2:listType(byteType())) = listType(byteType());
 
 default AType infixBitwise(AType t1, AType t2){ throw "Wrong operands for a bitwise operation: "+ prettyPrintAType(t1) +", " + prettyPrintAType(t2); }
 
-AType infixShift(AType t1, AType t2) = t1
-	when isConvertible(t1, intType()) && isConvertible(t2, intType());
+AType infixShift(listType(byteType()), intType()) = listType(byteType());
 default AType infixShift(AType t1, AType t2){ throw "Wrong operands for a shift operation"; }
 
 // TODO Maybe more combinations? Also, there is redundancy between the two following definitions.
