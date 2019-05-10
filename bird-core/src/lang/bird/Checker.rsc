@@ -562,7 +562,7 @@ void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c){
     	c.calculate("actual type", current, [name] + tpActuals,
            AType(Solver s) {
            	if (structDef(_, fs) := s.getType(name))  
-            	s.requireTrue(size(fs) == size(tpActuals));
+            	s.requireTrue(size(fs) == size(tpActuals), error(current, "Incorrect number of provided type arguments"));
             else if (sructType(_,_) := s.getType(name))
             	s.report(error(current, "User-defined type %v does not require parameters", name));
             else
