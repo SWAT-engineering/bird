@@ -49,16 +49,14 @@ tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Impo
 	'
 	'public class <className>$ {
 	'	private <className>$(){}
-	'	<for (d <- decls) {>
+	'	<for (d <- decls, !(d is funDecl)) {>
 	'   <compile(d, useDefs, types)>
 	'	<}>
 	'}">
 	when [dirs*, className] := [x | x <-moduleName],
 		 str packageName := ((size(dirs) == 0)? "": ("."+ intercalate(".", dirs)))
 		 ;
-		 
 
-		 
 Type extractType((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`)	= ty;
 Type extractType((DeclInStruct) `<Type ty> <Id id> = <Expr e>`) = ty;
 
@@ -67,6 +65,9 @@ str extractId((DeclInStruct) `<Type ty> <Id id> = <Expr e>`) = "<id>";
 
 loc extractIdLoc((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`) = id@\loc;
 loc extractIdLoc((DeclInStruct) `<Type ty> <Id id> = <Expr e>`) = id@\loc;
+
+str generateNestType((Type) `int`)
+	= "NestBigInteger";
 
 str generateNestType((Type) `byte []`)
 	= "UnsignedBytes";
@@ -96,7 +97,38 @@ str compileAnno("endianness", str val)
 
 default str compileAnno(str prop, str val) {
 	throw "Now implementation for annotation <prop>";
-}	
+}
+
+str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types) =
+   "public static final class <sid> extends UserDefinedToken {
+   '
+   '	private final Token entry;
+   '
+   ' 	<for (<id, typ> <- allFieldsList){>public final <generateNestType(typ)> <id>;
+   '	<}>
+   '	private <sid>(<intercalate(", ", ["Token entry"] + ["<generateNestType(typ)> <id>" | <id, typ> <- allFieldsList])>){
+   '		this.entry = entry;
+   '	<for  (<id, _> <- allFieldsList){>	this.<id> = <id>;
+   '	<}>	
+   '	}
+   '
+   '	public static <sid> parse(ByteStream source, Context ctx) throws ParseError {
+   '		<for (aannos <- annos, (Anno) `<Id prop> = <Id val>` <- aannos.annos){><compileAnno("<prop>", "<val>")>
+   '		<}>
+   '	<for (DeclInChoice d <- decls){>
+   '		<compile(d, sid, useDefs, types)><}>
+   '		return new <sid>(<intercalate(", ", ["entry"] + [id | <id, _> <- fieldsList])>);
+   '	}
+   '
+   '	@Override
+   '    protected Token[] parsedTokens() {
+   '        return new Token[]{ entry };
+   '    }
+   '}"           	
+	when lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
+		 lrel[str, Type] fieldsList := [<"<id>", ty> | (DeclInChoice) `abstract <Type ty> <Id id>` <- decls],
+		 lrel[str, Type] allFieldsList := formalsList + [<id, ty> | <id, ty> <- fieldsList]
+		 ;
 
 str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types) =
    "public static final class <sid> extends UserDefinedToken {
@@ -120,8 +152,7 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
    '        return new Token[]{<intercalate(", ", ["<id>" | <id, _, isToken> <- fieldsList, isToken])>};
    '    }
    '}"           	
-	when map[str, str] tokenExps := (),
-		 lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
+	when lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
 		 lrel[str, Type, bool] fieldsList := [<makeId(d.id), d.ty, d is token> | DeclInStruct d <- decls],
 		 lrel[str, Type] allFieldsList := formalsList + [<id, ty> | <id, ty, _> <- fieldsList]
 		 ;		 
@@ -157,9 +188,6 @@ str compileCondition((SideCondition) `? (<EqualityOperator eo> <Expr e>)`, DId t
 	"<makeId(this)>.sameBytes(<compile(e, this, useDefs, types)>)"
 	when listType(byteType()) := types[e@\loc],
 		 listType(byteType()) := types[thisType@\loc];
-		 		 
-default str  compileCondition((SideCondition) `? (<EqualityOperator eo> <Expr e>)`, DId this, Type thisType, rel[loc,loc] useDefs, map[loc, AType] types) =
-	"";
 
 str generateSideCondition(current: (SideCondition) `? (<EqualityOperator eo> <Expr e>)`, Id parentId, DId this, Type thisType, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"if (<op>(<compileCondition(current, this, thisType, useDefs, types)>)) {
@@ -168,14 +196,33 @@ str generateSideCondition(current: (SideCondition) `? (<EqualityOperator eo> <Ex
 	when op := (eo is equality?"!":"");
 
 str generateSideCondition((SideCondition) `? (<Expr e>)`, Id parentId, DId this, Type _, rel[loc,loc] useDefs, map[loc, AType] types) 
-	= "if (<compile(e, this, useDefs, types)>) {
+	= "if (!(<compile(e, this, useDefs, types)>)) {
     '	throw new ParseError(\"<parentId>.<makeId(this)>\", <makeId(this)>);
     '}"
 	;
+	
+// Declarations in choices	
+// Token field
+// TODO Check if this does make sense for something that is not u8[].
+// 		If not, enforce constraint in type checker (together with type of it)
+str compile(current:(DeclInChoice) `<Type ty> <Arguments? args> <Size? size>`, Id parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
+	"";
+
+str compile(current:(DeclInChoice) `abstract <Type ty> <Id id>`, Id parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
+	"";	
+// Declarations in structs
+		 
+// Token field
+// TODO Check if this does make sense for something that is not u8[].
+// 		If not, enforce constraint in type checker (together with type of it)
+str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, Id parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
+	"TokenList\<<generateNestType(ty)>\> <makeId(id)> = TokenList.parseWhile(source, ctx,
+    '	(s, c) -\> s.readUnsigned(1, c),
+    '	it -\> !(<compile(e, id, useDefs, types)>)
+    ');";
 
 		 
-// Token field		 
-str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, Id parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
+default str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, Id parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
 	"<generateNestType(ty)> <makeId(id)> = <generateParsingInstruction(ty, useDefs, types)>;
 	'<for (sc <- sideCondition){ bprintln(sc);><generateSideCondition(sc, parentId, id, ty, useDefs, types)>
 	'<}>";
@@ -219,10 +266,17 @@ str compile(current:(Type)`<Id id>`, Id parentId, rel[loc,loc] useDefs, map[loc,
 
 str compile(current: (Expr) `<NatLiteral nat>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	 "<nat>";
+	 
+str compile(current: (Expr) `<IntHexLiteral hex>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
+	"<hex.number>";
 
+// TODO ask Davy about second argument
 str compile(current: (Expr) `<BytesHexLiteral hex>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"NestValue.of(<hex>, <len>)"
 	when len := (size("<hex>") - 2)/2;
+	
+str compile(current: (Expr) `<BytesBitLiteral bits>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	"NestValue.of(<bits>, 1)";
 	
 str compile(current: (Expr) `<BytesStringLiteral string>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"NestValue.of(<string>, ctx)";
@@ -230,12 +284,15 @@ str compile(current: (Expr) `<BytesStringLiteral string>`, DId this, rel[loc,loc
 str compile(current: (Expr) `\< <{SingleHexIntegerLiteral ","}+ bytes> \>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"NestValue.of(new byte[]{<intercalate(", ", ["(byte) <b>" | b <- bytes])>})";
 
+str compile(current: (Expr) `it`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
+	"it";
+
 str compile(current: (Expr) `this`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<makeId(this)>";
 	
 str compile(current: (Expr) `<Id id>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<id>"
-	when (Id) `this` !:= id;
+	when (Id) `this` !:= id && (Id) `it` !:= id ;
 	
 str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<javaName>.<id>(<intercalate(", ", [compile(e, this, useDefs, types) | e <- args.args])>)"
@@ -320,15 +377,13 @@ str compile(current: (Expr) e, Id this, rel[loc,loc] useDefs, map[loc, AType] ty
 str compile(current: (Expr) `[ <{Expr ","}* es>]`, rel[loc,loc] useDefs, map[loc, AType] types) = "con(<intercalate(", ",["<e>" | e <- es])>)"
 	when listType(ty) := types[current@\loc]; 
 	
-		 
-str compile(current: (Expr) `<Expr e1> <ComparatorOperator uo> <Expr e2>`, rel[loc,loc] useDefs, map[loc, AType] types) =
-	calculateOp("<uo>", {t1,t2}, [compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines), compile(e2, tokenExps, useDefs, types, index, scopes, defines)])
-	when t1 := types[e1@\loc],
-		 t2 := types[e2@\loc];
+// TODO check semantics for >= and <= 
+str compile(current: (Expr) `<Expr e1> <ComparatorOperator uo> <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	"(<compile(e1, this, useDefs, types)>.compareTo(<compile(e2, this, useDefs, types)>) <uo> 0)";
 		 
 str compile(current: (Expr) `<Expr e1> <EqualityOperator uo> <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"<op>(<compile(e1, this, useDefs, types)>.equals(<compile(e2, this, useDefs, types)>))"
-	when op := (uo is equality?"!":""); 
+	when op := (uo is equality?"":"!"); 
 		 
 		 
 str compile(current: (Expr) `<Expr e1> && <Expr e2>`, Id parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
@@ -352,15 +407,14 @@ str compile(current: (Expr) `<Expr e1> \<\< <Expr e2>`, Id parentId, rel[loc,loc
 		 t2 := types[e2@\loc];
 		 
 		 
-str compile(current: (Expr) `<Expr e1> || <Expr e2>`, Id parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
-	calculateOp("||", {t1,t2}, [compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines), compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)])
-	when t1 := types[e1@\loc],
-		 t2 := types[e2@\loc];
+str compileBinary(str op, Expr e1, Expr e2, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	"(<compile(e1, this, useDefs, types)>).<op>(<compile(e2, this, useDefs, types)>)";
 		 
-str compile(current: (Expr) `<Expr e1> & <Expr e2>`, Id parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
-	calculateOp("&", {t1,t2}, [compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines), compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)])
-	when t1 := types[e1@\loc],
-		 t2 := types[e2@\loc];		 
+str compile(current: (Expr) `<Expr e1> || <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	compileBinary("logicalOr", e1, e2, this, useDefs, types);
+		 
+str compile(current: (Expr) `<Expr e1> & <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	compileBinary("and", e1, e2, this, useDefs, types);		 
 		 
 str type2Java(AType t) = "ValueExpression"
 	when isTokenType(t);	  
