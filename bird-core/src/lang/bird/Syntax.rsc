@@ -34,9 +34,9 @@ syntax Import
  	;
 	
 syntax TopLevelDecl
-	= "struct" Id TypeFormals? Formals? Annos? "{" DeclInStruct* declarations "}"
-	| "choice" Id Formals? Annos? "{" DeclInChoice* declarations "}"
-	| "@" "(" JavaId ")" Type Id Formals?
+	= structDecl: "struct" Id TypeFormals? Formals? Annos? "{" DeclInStruct* declarations "}"
+	| choiceDecl: "choice" Id Formals? Annos? "{" DeclInChoice* declarations "}"
+	| funDecl: "@" "(" JavaId ")" Type Id Formals?
 	;
 	
 syntax Annos 
@@ -158,8 +158,8 @@ syntax Range
 	 ;
 	
 syntax DeclInChoice
-	= "abstract" Type tp Id id
-	| Type tp Arguments? args Size? sz
+	= abstract: "abstract" Type tp Id id
+	| token: Type tp Arguments? args Size? sz
 	;
 
 syntax AnonStruct
