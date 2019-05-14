@@ -1,5 +1,5 @@
 module crc
 
 // java classname
-@(engineering.swat.algorithms.CRC)
+@(engineering.swat.nest.examples.formats.png.UserDefinedPNG)
 int crc32(int x)

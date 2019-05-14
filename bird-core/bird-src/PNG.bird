@@ -12,7 +12,7 @@ struct Chunk {
     u32 length
     byte[] type[4] ?(!= "IEND")
     byte[] data[length.as[int]]
-    u32 crc ?(this.as[int] == crc32((type ++ data).as[int]))
+    u32 crc ?(this.as[int] == crc32(type ++ data))
 }
 
 struct IEND {
@@ -21,7 +21,7 @@ struct IEND {
     u32 crc ?(== <0xae, 0x42, 0x60, 0x82>)
 }
 
-struct PNG@(encoding = Encoding.ASCII, endianness = Endianness.BIG, signedness = Signedness.YES) {
+struct PNG@(encoding = US_ASCII, endianness = BIG) {
     Signature _
     Chunk[] chunks
     IEND _
