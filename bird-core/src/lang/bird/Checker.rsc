@@ -20,7 +20,7 @@ data AType
 	| typeType(AType ty)
 	| strType()
 	| boolType()
-	| listType(AType ty, Maybe[int] n = nothing())
+	| listType(AType ty, Maybe[Expr] n = nothing())
 	| consType(AType formals)
 	| funType(str name, AType returnType, AType formals, str javaRef)
 	| structDef(str name, list[str] typeFormals)
@@ -321,7 +321,12 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
 	if ("<id>" != "_"){
 		c.define("<id>", fieldId(), id, defType(ty));
 	}
-	collect(ty, c);
+	
+	Maybe[Expr] siz = nothing();
+	if (s <- size)
+		siz = just(s. expr);
+	
+	collect(ty, c, size = siz);
 	
 	if (aargs <- args)
 		collectArgs(ty, aargs, c);
@@ -507,28 +512,28 @@ void collect(current:(UnaryExpr) `<UnaryOperator uo> <Expr e>`, Collector c){
 }
 
 
-void collect(current:(Type)`<UInt v>`, Collector c) {
+void collect(current:(Type)`<UInt v>`, Collector c, Maybe[Expr] size = nothing()) {
 	c.calculate("actual type", current, [],
     	AType(Solver s) {
     		s.requireTrue(toInt("<v>"[1..]) % 8 == 0, error(current, "The number of bits in a u? type must be a multiple of 8")); 
-            return listType(byteType(), n = just(toInt("<v>"[1..])/8));
+            return listType(byteType(), n = just([Expr] "<toInt("<v>"[1..])/8>"));
         }); 
 }
 
 
-void collect(current:(Type)`byte`, Collector c) {
+void collect(current:(Type)`byte`, Collector c, Maybe[Expr] size = nothing()) {
 	c.fact(current, byteType());
 }  
 
-void collect(current:(Type)`str`, Collector c) {
+void collect(current:(Type)`str`, Collector c, Maybe[Expr] size = nothing()) {
 	c.fact(current, strType());
 }
 
-void collect(current:(Type)`bool`, Collector c) {
+void collect(current:(Type)`bool`, Collector c,  Maybe[Expr] size = nothing()) {
 	c.fact(current, boolType());
 }  
 
-void collect(current:(Type)`int`, Collector c) {
+void collect(current:(Type)`int`, Collector c, Maybe[Expr] size = nothing()) {
 	c.fact(current, intType());
 }  
 
@@ -545,18 +550,19 @@ void collect(current:(Type)`int`, Collector c) {
      });
 }*/
 
-void collect(current:(Type)`<Type t> [ ]`, Collector c) {
-	collect(t, c);
+void collect(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] size = nothing()) {
+	collect(t, c, size = size);
 	c.calculate("list type", current, [t], AType(Solver s) {
 		println("<t> &&& <s.getType(t)>");
-		return listType(s.getType(t)); });
+		return listType(s.getType(t), n = size);
+	});
 }  
 
-void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c){
+void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c, Maybe[Expr] size = nothing()){
 	println("checking <current>");
     c.use(name, {structId(), typeVariableId()});
     for (TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals)
-    	collect(t, c);
+    	collect(t, s, c);
     list[Type] tpActuals = [t | TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals];
     if (_ <- tpActuals){
     	c.calculate("actual type", current, [name] + tpActuals,
@@ -573,7 +579,7 @@ void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c){
     	c.fact(current, name);
 }
 
-void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c) {
+void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c, Maybe[Expr] size = nothing()) {
 	c.enterScope(current);
 		collect(decls, c);
 	c.leaveScope(current);
@@ -627,7 +633,7 @@ void collect(current: (Expr) `<BytesDecLiteral nat>`, Collector c){
 }
 
 void collect(current: (Expr) `<BytesHexLiteral nat>`, Collector c){
-    c.fact(current, listType(byteType()));
+	c.fact(current, listType(byteType()));
 }
 
 void collect(current: (Expr) `<BytesBitLiteral nat>`, Collector c){
