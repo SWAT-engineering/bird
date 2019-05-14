@@ -264,11 +264,11 @@ str compile(current:(Type)`<Id id>`, Id parentId, rel[loc,loc] useDefs, map[loc,
 
 // New expressions
 
-str compile(current: (Expr) `<NatLiteral nat>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	 "<nat>";
+str compile(current: (Expr) `<IntDecLiteral nat>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
+	 "NestBigInteger.of(<nat>)";
 	 
 str compile(current: (Expr) `<IntHexLiteral hex>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<hex.number>";
+	"NestBigInteger.of(<hex.number>)";
 
 // TODO ask Davy about second argument
 str compile(current: (Expr) `<BytesHexLiteral hex>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
