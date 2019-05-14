@@ -44,7 +44,7 @@ syntax Annos
 	;	
 	
 syntax Anno
-	= Id "=" Expr 
+	= Id "=" Id 
 	;	
 	
 syntax TypeFormals
@@ -74,8 +74,8 @@ syntax SideCondition
 	
 	
 syntax DeclInStruct
-	= Type ty DId id Arguments? Size? SideCondition? sideCondition
-	| Type ty Id id "=" Expr
+	= token: Type ty DId id Arguments? Size? SideCondition? sideCondition
+	| computed: Type ty Id id "=" Expr
 	;
 	
 	
@@ -137,8 +137,8 @@ lexical ComparatorOperator
 	;   
 	
 lexical EqualityOperator
-	= "=="
-	| "!="
+	= equality: "=="
+	| nonEquality: "!="
 	;		
 	
 lexical UnaryOperator
