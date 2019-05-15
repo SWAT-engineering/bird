@@ -14,7 +14,7 @@ struct SizedSegment{
 	u8 marker ?(==0xff)
 	u8 identifier ?(this.as[int] < 0xd8I || this.as[int] > 0xdaI)
 	u16 length
-	u8[] payload[length.as[int] - 2]
+	byte[] payload[length.as[int] - 2]
 }
 
 choice ScanEscape{
@@ -31,7 +31,7 @@ struct ScanSegment{
 	u8 marker ?(==0xff)
 	u8 identifier ?(== 0xda)
 	u16 length
-	u8[] payload[length.as[int] - 2]
+	byte[] payload[length.as[int] - 2]
 	ScanEscape[] choices
 }
 

@@ -1,7 +1,7 @@
 module varint 
 
 struct LEB128 {
-    u8[] raw while((it & 0b1000_0000).as[int] != 0) 
+    byte[] raw while((it & 0b1000_0000).as[int] != 0) 
     u8 lastOne
     // TODO: the type of this ac value is strange, we want to do byte stuff, and the type won't be a u8, but just a set of bytes
     int value = ( u8 ac = lastOne | ((ac << 7) | (r & 0b0111_1111)) | r <- raw[-1:0]).as[int]  // iterate over it in reverse as to keep the bit shift simpeler
