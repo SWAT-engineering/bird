@@ -18,6 +18,9 @@ bool biprintln(value v){
 	return true;
 }
 
+bool isTokenType(listType(byteType(_))) = true;
+default bool isTokenType(listType(byteType(_))) = false;
+
 tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types, map[loc,str] scopes, map[loc,Define] defines)
 	= <packageName,
 	"package engineering.swat.nest.examples.formats.bird_generated<packageName>;
@@ -47,28 +50,33 @@ tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Impo
 		 str packageName := ((size(dirs) == 0)? "": ("."+ intercalate(".", dirs)))
 		 ;
 		 
-str generateNestType(current: (Type) `struct { <DeclInStruct* decls>}`)
+str generateNestType(current: (Type) `struct { <DeclInStruct* decls>}`, map[loc, AType] types)
 	= "$anon_type_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>"
 	when lo := current@\loc;
 
-str generateNestType((Type) `int`)
+str generateNestType((Type) `int`, map[loc, AType] types)
 	= "NestBigInteger";
 
-str generateNestType((Type) `byte []`)
-	= "UnsignedBytes";
+str generateNestType(current: (Type) `byte []`, map[loc, AType] types)
+	= "TokenList\<UnsignedBytes\>"
+	when listType(byteType(), n = nothing()) := types[current@\loc];
 	
-str generateNestType((Type) `<Type t> []`)
-	= "TokenList\<<generateNestType(t)>\>"
+str generateNestType(current: (Type) `byte []`, map[loc, AType] types)
+	= "UnsignedBytes"
+	when listType(byteType(), n = just(_)) := types[current@\loc];	
+	
+str generateNestType((Type) `<Type t> []`, map[loc, AType] types)
+	= "TokenList\<<generateNestType(t, types)>\>"
 	when (Type) `byte` !:= t;
 	
-str generateNestType((Type) `byte`) {
+str generateNestType((Type) `byte`, map[loc, AType] types) {
 	throw "Single byte cannot be used as a type";
 }
 
-str generateNestType((Type) `<UInt v>`)
+str generateNestType((Type) `<UInt v>`, map[loc, AType] types)
 	= "UnsignedBytes";
 
-str generateNestType((Type) `<Id id> <TypeActuals? typeActuals>`)
+str generateNestType(current: (Type) `<Id id> <TypeActuals? typeActuals>`, map[loc, AType] types)
 	="<id>";
 	
 str makeId(Tree t) = ("<t>" =="_")?"$anon_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>":"<t>"
@@ -89,9 +97,9 @@ str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? a
    '	<for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? sz>` <- decls, ty is anonymousType){><generateAnonymousType(ty, useDefs, types)>
    '	<}>
    '	private final Token entry;
-   ' 	<for (<id, typ> <- allFieldsList){>public final <generateNestType(typ)> <id>;
+   ' 	<for (<id, typ> <- allFieldsList){>public final <generateNestType(typ, types)> <id>;
    '	<}>
-   '	private <sid>(<intercalate(", ", ["Token entry"] + ["<generateNestType(typ)> <id>" | <id, typ> <- allFieldsList])>){
+   '	private <sid>(<intercalate(", ", ["Token entry"] + ["<generateNestType(typ, types)> <id>" | <id, typ> <- allFieldsList])>){
    '		this.entry = entry;
    '	<for  (<id, _> <- allFieldsList){>	this.<id> = <id>;
    '	<}>	
@@ -101,18 +109,18 @@ str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? a
    '		<for (aannos <- annos, (Anno) `<Id prop> = <Id val>` <- aannos.annos){><compileAnno("<prop>", "<val>")>
    '		<}>
    '	<for (<id, ty> <- fieldsList){>
-   '		AtomicReference\<<generateNestType(ty)>\> <id> = new AtomicReference\<\>();
+   '		AtomicReference\<<generateNestType(ty, types)>\> <id> = new AtomicReference\<\>();
    '	<}>
    '		Token entry = Choice.between(source, ctx
    '	<for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? sz>` <- decls){>,
    '		(s, c) -\> {
-   '			<generateNestType(ty)> result = <generateParsingInstruction(ty, useDefs, types)>;
+   '			<generateNestType(ty, types)> result = <generateParsingInstruction(ty, useDefs, types)>;
    '			<for (<id, ty> <- fieldsList){><id>.set(result.<id>);
    '			<}>
    '			return result;
    '		}
    '		<}>);
-   '		return new <sid>(<intercalate(", ", ["entry"] + [id | <id, _> <- fieldsList])>);
+   '		return new <sid>(<intercalate(", ", ["entry"] + ["<id>.get()" | <id, _> <- fieldsList])>);
    '	}
    '
    '	@Override
@@ -130,9 +138,9 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
    "public static final class <sid> extends UserDefinedToken {
    '	<for ((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>` <- decls, ty is anonymousType){><generateAnonymousType(ty, useDefs, types)>
    '	<}>
-   ' 	<for (<id, typ> <- allFieldsList){>public final <generateNestType(typ)> <id>;
+   ' 	<for (<id, typ> <- allFieldsList){>public final <generateNestType(typ, types)> <id>;
    '	<}>
-   '	private <sid>(<intercalate(", ", ["<generateNestType(typ)> <id>" | <id, typ> <- allFieldsList])>){
+   '	private <sid>(<intercalate(", ", ["<generateNestType(typ, types)> <id>" | <id, typ> <- allFieldsList])>){
    '	<for  (<id, _> <- allFieldsList){>	this.<id> = <id>;
    '	<}>	
    '	}
@@ -157,9 +165,9 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
 		 
 str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"private static class <sid> extends UserDefinedToken {
-	' 	<for (<id, typ> <- fieldsList){>public final <generateNestType(typ)> <id>;
+	' 	<for (<id, typ> <- fieldsList){>public final <generateNestType(typ, types)> <id>;
     '	<}>
-    '	private <sid>(<intercalate(", ", ["<generateNestType(typ)> <id>" | <id, typ> <- fieldsList])>){
+    '	private <sid>(<intercalate(", ", ["<generateNestType(typ, types)> <id>" | <id, typ> <- fieldsList])>){
     '	<for  (<id, _> <- fieldsList){>	this.<id> = <id>;
     '	<}>	
     '	}
@@ -175,7 +183,7 @@ str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, rel
     '        return new Token[]{<intercalate(", ", ["<id>" | <id, _> <- tokensList])>};
     '    }
     '}"
-	when str sid := generateNestType(current),
+	when str sid := generateNestType(current, types),
 		 lrel[str, Type] fieldsList := [<makeId(d.id), d.ty> | DeclInStruct d <- decls],
 		 lrel[str, Type] tokensList := [<makeId(d.id), d.ty> | DeclInStruct d <- decls, d is token]
 		 ;
@@ -190,7 +198,7 @@ str generateParsingInstruction(current: (Type) `byte []`, rel[loc,loc] useDefs, 
 	when listType(byteType(), n = nothing()) :=  types[current@\loc];	
 	
 str generateParsingInstruction((Type) `<Type t> []`, rel[loc,loc] useDefs, map[loc, AType] types)
-	= "TokenList.untilParseFailure(source, ctx, (s, c) -\> <generateNestType(t)>.parse(s, c))"
+	= "TokenList.untilParseFailure(source, ctx, (s, c) -\> <generateNestType(t, types)>.parse(s, c))"
 	when (Type) `byte` !:= t;
 	
 // TODO This should be forbidden by the type checker	
@@ -206,7 +214,7 @@ str generateParsingInstruction((Type) `<Id id> <TypeActuals? typeActuals>`, rel[
  	="<id>.parse(source, ctx)";
  	
 str generateParsingInstruction(current: (Type) `struct { <DeclInStruct* decls>}`, rel[loc,loc] useDefs, map[loc, AType] types)
-	="<generateNestType(current)>.parse(source, ctx)";
+	="<generateNestType(current, types)>.parse(source, ctx)";
 			 
 str generateParsingInstruction(Type t, rel[loc,loc] useDefs, map[loc, AType] types) {
 	throw "Not yet generateParsingInstruction for type <t>";
@@ -236,20 +244,20 @@ str generateSideCondition((SideCondition) `? (<Expr e>)`, str parentId, DId this
 // TODO Check if `while` does make sense for something that is not u8[].
 // 		If not, enforce constraint in type checker (together with type of it)
 str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"TokenList\<<generateNestType(ty)>\> <makeId(id)> = TokenList.parseWhile(source, ctx,
+	"<generateNestType(ty, types)> <makeId(id)> = TokenList.parseWhile(source, ctx,
     '	(s, c) -\> s.readUnsigned(1, c),
     '	it -\> !(<compile(e, id, useDefs, types)>)
     ');";
 		 
 default str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"<generateNestType(ty)> <makeId(id)> = <generateParsingInstruction(ty, useDefs, types)>;
+	"<generateNestType(ty, types)> <makeId(id)> = <generateParsingInstruction(ty, useDefs, types)>;
 	'<for (sc <- sideCondition){ bprintln(sc);><generateSideCondition(sc, parentId, id, ty, useDefs, types)>
 	'<}>";
 
 // Computed field
 
 str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"";
+	"<generateNestType(ty, types)> <id> = <compile(e, [DId] "dummy", useDefs, types)>;";
 
 
 // Expressions
@@ -275,15 +283,20 @@ str compile(current: (Expr) `\< <{SingleHexIntegerLiteral ","}+ bytes> \>`, DId 
 	"NestValue.of(new byte[]{<intercalate(", ", ["(byte) <b>" | b <- bytes])>})";
 
 str compile(current: (Expr) `it`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"it";
+	"it.asValue()";
 
 str compile(current: (Expr) `this`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<makeId(this)>";
+	"<makeId(this)>.asValue()";
 	
 str compile(current: (Expr) `<Id id>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
+	"<id>.asValue()"
+	when (Id) `this` !:= id && (Id) `it` !:= id,
+		 isTokenType(types[current@\loc]);
+		 
+str compile(current: (Expr) `<Id id>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<id>"
-	when (Id) `this` !:= id && (Id) `it` !:= id ;
-	
+	when !isTokenType(types[current@\loc]);
+		 
 str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<javaName>.<id>(<intercalate(", ", [compile(e, this, useDefs, types) | e <- args.args])>)"
 	when funType(_, _, _, javaName) := types[id@\loc];
@@ -293,7 +306,7 @@ default str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, rel[lo
 }
 
 str compile(current: (Expr) `<Expr e>.as[int]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<compile(e, this, useDefs, types)>.asValue().asInteger()";
+	"<compile(e, this, useDefs, types)>.asInteger()";
 
 default str compile(current: (Expr) `<Expr e>.as[<Type t>]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines);
 
@@ -329,7 +342,12 @@ str compileBinary(str op, Expr e1, Expr e2, DId this, rel[loc,loc] useDefs, map[
 		 
 str compileBinaryInfix(str op, Expr e1, Expr e2, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"(<compile(e1, this, useDefs, types)> <op> <compile(e2, this, useDefs, types)>)";
+	
+str compile(current: (Expr) `<Expr e1> \>\> <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	compileBinary("shr", e1, e2, this, useDefs, types);
 
+str compile(current: (Expr) `<Expr e1> \<\< <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	compileBinary("shl", e1, e2, this, useDefs, types);
 
 str compile(current: (Expr) `<Expr e1> || <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	compileBinaryInfix("||", e1, e2, this, useDefs, types);
@@ -341,8 +359,14 @@ str compile(current: (Expr) `<Expr e1> && <Expr e2>`, DId this, rel[loc,loc] use
 str compile(current: (Expr) `<Expr e1> & <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	compileBinary("and", e1, e2, this, useDefs, types);
 	
+str compile(current: (Expr) `<Expr e1> | <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	compileBinary("or", e1, e2, this, useDefs, types);	
+	
 str compile(current: (Expr) `<Expr e1> - <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	compileBinary("subtract", e1, e2, this, useDefs, types);
+	
+str compile(current: (Expr) `<Expr e1> + <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	compileBinary("add", e1, e2, this, useDefs, types);
 	
 str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
     "TokenList.of(ctx, <compile(e1, this, useDefs, types)>, <compile(e2, this, useDefs, types)>)";
@@ -363,9 +387,6 @@ str compile(current: (Expr) `<Id id> ( <{Expr ","}* exprs>)`, str parentId, rel[
     when loc funLoc := Set::getOneFrom((useDefs[id@\loc])),
     	 funType(_,_,_,javaId) := types[funLoc];
     
-str compile(current: (Expr) `<Expr e1> + <Expr e2>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
-    "<getInfixOperator("+")>(<compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines)>, <compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)>)";    
-
 str compile(current: (Expr) `<Expr e1> * <Expr e2>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
     "<getInfixOperator("*")>(<compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines)>, <compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)>)";    
     
@@ -374,21 +395,11 @@ str compile(current: (Expr) `<Expr e1> (+) <Expr e2>`, str parentId, rel[loc,loc
 
 str compile(current: (Expr) `[ <{Expr ","}* es>]`, rel[loc,loc] useDefs, map[loc, AType] types) = "con(<intercalate(", ",["<e>" | e <- es])>)"
 	when listType(ty) := types[current@\loc]; 
-		 
-str compile(current: (Expr) `<Expr e1> \>\> <Expr e2>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
-	calculateOp("\>\>", {t1,t2}, [compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines), compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)])
-	when t1 := types[e1@\loc],
-		 t2 := types[e2@\loc];
-		 
+		 		 
 str compile(current: (Expr) `<Expr e1> \>\>\> <Expr e2>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
 	calculateOp("\>\>", {t1,t2}, [compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines), compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)])
 	when t1 := types[e1@\loc],
 		 t2 := types[e2@\loc];
-		 
-str compile(current: (Expr) `<Expr e1> \<\< <Expr e2>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
-	calculateOp("\<\<", {t1,t2}, [compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines), compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)])
-	when t1 := types[e1@\loc],
-		 t2 := types[e2@\loc]; 
 		 
 public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);
 
