@@ -172,7 +172,7 @@ syntax Type
 	| "str"
 	| "bool"
 	| UInt
-	| AnonStruct
+	| anonymousType: AnonStruct
 	| Id id TypeActuals? typeActuals
 	| Type "[" "]"
 	;
@@ -191,7 +191,7 @@ lexical BytesBitLiteral = BitLiteral;
 lexical BytesStringLiteral = Characters;
 
 lexical IntDecLiteral = NatLiteral;
-lexical IntHexLiteral = HexIntegerLiteral "I";
+lexical IntHexLiteral = HexIntegerLiteral number "I";
 lexical IntBitLiteral = BitLiteral "I";
 
 lexical StringLiteral = Characters "S";
