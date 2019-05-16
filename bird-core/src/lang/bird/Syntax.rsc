@@ -185,7 +185,7 @@ syntax TypeLiteral = "typeOf" "[" Type "]";
 
 syntax BytesArrLiteral = "\<" { SingleHexIntegerLiteral "," }+ "\>";
 
-lexical BytesDecLiteral = NatLiteral "B";
+lexical BytesDecLiteral = NatLiteral number "B";
 lexical BytesHexLiteral = HexIntegerLiteral;
 lexical BytesBitLiteral = BitLiteral;
 lexical BytesStringLiteral = Characters;
@@ -194,7 +194,7 @@ lexical IntDecLiteral = NatLiteral;
 lexical IntHexLiteral = HexIntegerLiteral number "I";
 lexical IntBitLiteral = BitLiteral "I";
 
-lexical StringLiteral = Characters "S";
+lexical StringLiteral = Characters chars "S";
 	
 lexical UInt = @category="Constant" "u" [0-9]+ !>> [0-9];
 

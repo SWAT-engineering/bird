@@ -1,11 +1,15 @@
 package engineering.swat.nest.examples.formats;
 
+import java.nio.ByteOrder;
+import java.util.BitSet;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.ByteUtils;
 import engineering.swat.nest.core.bytes.Context;
-import engineering.swat.nest.core.bytes.Sign;
-import engineering.swat.nest.core.bytes.TrackedByteSlice;
 import engineering.swat.nest.core.nontokens.NestBigInteger;
 import engineering.swat.nest.core.nontokens.NestValue;
 import engineering.swat.nest.core.tokens.Token;
@@ -13,9 +17,6 @@ import engineering.swat.nest.core.tokens.UserDefinedToken;
 import engineering.swat.nest.core.tokens.operations.Choice;
 import engineering.swat.nest.core.tokens.primitive.TokenList;
 import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
-import java.nio.ByteOrder;
-import java.util.BitSet;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class Varint {
     // based on varint.bird
@@ -39,13 +40,23 @@ public class Varint {
                     it -> !(it.asValue().and(NestValue.of(0b1000_0000, 1)).sameBytes(NestValue.of(0, 1)))
             );
             UnsignedBytes lastOne = source.readUnsigned(1, ctx);
-            NestValue ac = lastOne.asValue();
+            //NestValue ac = lastOne.asValue();
             // reverse slice
-            for (int index = raw.length() - 1; index >= 0; index--) {
+            /*for (int index = raw.length() - 1; index >= 0; index--) {
                 ac = (ac.shl(NestBigInteger.of(7))
                         .or(raw.get(index).asValue().and(NestValue.of(0b0111_1111, 1))));
-            }
-            NestBigInteger value = ac.asInteger();
+            
+            NestBigInteger value = ac.asInteger();*/
+            
+            // TODO: the type of this ac value is strange, we want to do byte stuff, and the type won't be a u8, but just a set of bytes
+            //int value = ( u8 ac = lastOne | ((ac << 7) | (r & 0b0111_1111)) | r <- raw[-1:0]).as[int]  // iterate over it in reverse as to keep the bit shift simpeler
+            
+            NestBigInteger value = IntStream.range(raw.length()-1, 0 - 1).mapToObj(i -> NestBigInteger.of(i))
+            		.reduce(lastOne.asValue(), (ac, r) ->
+            				(ac.shl(NestBigInteger.of(7))
+            						.or(raw.get(r.intValueExact()).asValue().and(NestValue.of(0b0111_1111, 1)))),
+            			(x,y) -> x).asInteger();
+            		
             return new LEB128(raw, lastOne, value);
         }
 
