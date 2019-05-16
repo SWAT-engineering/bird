@@ -38,7 +38,9 @@ tuple[str, str] compile(current: (Program) `module <{Id "::"}+ moduleName> <Impo
 	'import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
 	'import java.nio.ByteOrder;
 	'import java.nio.charset.StandardCharsets;
+	'import java.util.Collections;
 	'import java.util.concurrent.atomic.AtomicReference;
+	'import java.util.stream.IntStream;
 	'
 	'public class <className>$ {
 	'	private <className>$(){}
@@ -246,7 +248,7 @@ str generateSideCondition((SideCondition) `? (<Expr e>)`, str parentId, DId this
 str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
 	"<generateNestType(ty, types)> <makeId(id)> = TokenList.parseWhile(source, ctx,
     '	(s, c) -\> s.readUnsigned(1, c),
-    '	it -\> !(<compile(e, id, useDefs, types)>)
+    '	it -\> (<compile(e, id, useDefs, types)>)
     ');";
 		 
 default str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
@@ -273,8 +275,13 @@ str compile(current: (Expr) `<BytesHexLiteral hex>`, DId this, rel[loc,loc] useD
 	"NestValue.of(<hex>, <len>)"
 	when len := (size("<hex>") - 2)/2;
 	
+str compile(current: (Expr) `<BytesDecLiteral dec>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
+	"NestValue.of(<dec.number>, <len>)"
+	when len := ((toInt("<dec.number>") - 1) / 255) + 1;
+	
 str compile(current: (Expr) `<BytesBitLiteral bits>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"NestValue.of(<bits>, 1)";
+	//when noUnderscoreNat := replaceAll("<bits>","_","");
 	
 str compile(current: (Expr) `<BytesStringLiteral string>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"NestValue.of(<string>, ctx)";
@@ -282,14 +289,16 @@ str compile(current: (Expr) `<BytesStringLiteral string>`, DId this, rel[loc,loc
 str compile(current: (Expr) `\< <{SingleHexIntegerLiteral ","}+ bytes> \>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"NestValue.of(new byte[]{<intercalate(", ", ["(byte) <b>" | b <- bytes])>})";
 
+str compile(current: (Expr) `<StringLiteral lit>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = "<lit.chars>";
+
 str compile(current: (Expr) `it`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"it.asValue()";
+	"it";
 
 str compile(current: (Expr) `this`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<makeId(this)>.asValue()";
+	"<makeId(this)>";
 	
 str compile(current: (Expr) `<Id id>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<id>.asValue()"
+	"<id>"
 	when (Id) `this` !:= id && (Id) `it` !:= id,
 		 isTokenType(types[current@\loc]);
 		 
@@ -301,22 +310,25 @@ str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, rel[loc,loc] u
 	"<javaName>.<id>(<intercalate(", ", [compile(e, this, useDefs, types) | e <- args.args])>)"
 	when funType(_, _, _, javaName) := types[id@\loc];
 	
-default str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) {
-	throw "Not yet implemented";
-}
+str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = {
+		throw "Not yet implemented";
+	}
+	when !(types[id@\loc] is funType);
+	
+str compile(current:(Expr) `<Expr e>[<Expr init> : <Expr end>]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	"TokenList.of(ctx, IntStream.rangeClosed(<compile(end, this, useDefs, types)>.intValueExact(), <compile(e, this, useDefs, types)>.length()+(<compile(init, this, useDefs, types)>.intValueExact()))
+	'	.boxed().sorted(Collections.reverseOrder()).map(i -\> <compile(e, this, useDefs, types)>.get(i)).toArray(i -\> new UnsignedBytes[i]))";
+	
+str compile(current: (Expr) `( <Type accuType> <Id accuId> = <Expr init> | <Expr update> | <Id loopVar> \<- <Expr source>)`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	"<compile(source, this, useDefs, types)>
+    '    		.stream().reduce(<compile(init, this, useDefs, types)>.asValue(), (<accuId>, <loopVar>) -\>
+    '    				(<compile(update, this, useDefs, types)>),
+    '    			(x,y) -\> x)";
 
 str compile(current: (Expr) `<Expr e>.as[int]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<compile(e, this, useDefs, types)>.asInteger()";
+	"<compile(e, this, useDefs, types)>.asValue().asInteger()";
 
 default str compile(current: (Expr) `<Expr e>.as[<Type t>]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines);
-
-str compile(current: (Expr) `<StringLiteral lit>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = "con(<lit>)";
-
-str compile(current: (Expr) `<HexIntegerLiteral nat>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = "con(<nat>)";
-
-str compile(current: (Expr) `<BitLiteral nat>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = "con(<noUnderscoreNat>)"
-	when noUnderscoreNat := replaceAll("<nat>","_","");
-
 
 str compile(current: (Expr) `(<Expr e>)`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	compile(e, this, useDefs, types);
@@ -336,9 +348,12 @@ str compile(current: (Expr) `<Expr e1> <EqualityOperator uo> <Expr e2>`, DId thi
 	when op := (uo is equality?"":"!"),
 		 listType(byteType()) != types[e1@\loc],
 		 listType(byteType()) != types[e2@\loc];
-	
+
+str compile(current: (Expr) `- <Expr e>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	"<compile(e, this, useDefs, types)>.negate()";
+
 str compileBinary(str op, Expr e1, Expr e2, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
-	"(<compile(e1, this, useDefs, types)>).<op>(<compile(e2, this, useDefs, types)>)";
+	"(<compile(e1, this, useDefs, types)>).asValue().<op>(<compile(e2, this, useDefs, types)>)";
 		 
 str compileBinaryInfix(str op, Expr e1, Expr e2, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"(<compile(e1, this, useDefs, types)> <op> <compile(e2, this, useDefs, types)>)";
