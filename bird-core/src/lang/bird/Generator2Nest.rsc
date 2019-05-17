@@ -345,7 +345,12 @@ str compile(current: (Expr) `( <Type accuType> <Id accuId> = <Expr init> | <Expr
 str compile(current: (Expr) `<Expr e>.as[int]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<compile(e, this, useDefs, types)>.asValue().asInteger()";
 
-default str compile(current: (Expr) `<Expr e>.as[<Type t>]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines);
+// TODO
+str compile(current: (Expr) `<Expr e>.as[<Type t>]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines)
+	when (Type) `int` := t;
+
+str compile(current: (Expr) `<Expr e>.<Id field>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
+	"<compile(e, this, useDefs, types)>.<field>";
 
 str compile(current: (Expr) `(<Expr e>)`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	compile(e, this, useDefs, types);
