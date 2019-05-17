@@ -129,6 +129,11 @@ str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? a
    '    protected Token[] parsedTokens() {
    '        return new Token[]{ entry };
    '    }
+   '
+   '    @Override
+   '    protected Token[] allTokens() {
+   '        return new Token[]{ entry };
+   '    }
    '}"           	
 	when lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
 		 lrel[str, Type] fieldsList := [<"<id>", ty> | (DeclInChoice) `abstract <Type ty> <Id id>` <- decls],
@@ -152,17 +157,23 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
    '		<}>
    '	<for (DeclInStruct d <- decls){>
    '		<compile(d, "<sid>", useDefs, types)><}>
-   '		return new <sid>(<intercalate(", ", [id | <id, _, _> <- fieldsList])>);
+   '		return new <sid>(<intercalate(", ", [id | <id, _, _, _> <- fieldsList])>);
    '	}
    '
    '	@Override
    '    protected Token[] parsedTokens() {
-   '        return new Token[]{<intercalate(", ", ["<id>" | <id, _, isToken> <- fieldsList, isToken])>};
+   '        return new Token[]{<intercalate(", ", ["<id>" | <id, _, isToken, isTie> <- fieldsList, isToken, !isTie])>};
+   '    }
+   '
+   '    @Override
+   '    protected Token[] allTokens() {
+   '        return new Token[]{<intercalate(", ", ["<id>" | <id, _, isToken, _> <- fieldsList, isToken])>};
    '    }
    '}"           	
 	when lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
-		 lrel[str, Type, bool] fieldsList := [<makeId(d.id), d.ty, d is token> | DeclInStruct d <- decls],
-		 lrel[str, Type] allFieldsList := formalsList + [<id, ty> | <id, ty, _> <- fieldsList]
+		 lrel[str, Type, bool, bool] fieldsList := 
+		 	[<makeId(d.id), d.ty, d is token, (DeclInStruct) `<Type _> <DId _> <Arguments? _> <Size? _> byparsing (<Expr _>)`:= d>| DeclInStruct d <- decls],
+		 lrel[str, Type] allFieldsList := formalsList + [<id, ty> | <id, ty, _, _> <- fieldsList]
 		 ;		 
 		 
 str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, rel[loc,loc] useDefs, map[loc, AType] types) =
@@ -250,7 +261,13 @@ str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? 
     '	(s, c) -\> s.readUnsigned(1, c),
     '	it -\> (<compile(e, id, useDefs, types)>)
     ');";
-		 
+    
+// TODO restrict in type checker that a byparsing-guarded token should not
+//		have arguments nor size?     
+str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> byparsing (<Expr e>)`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
+	"<generateNestType(ty, types)> <makeId(id)> = <generateNestType(ty, types)>.parse(new ByteStream(<compile(e, id, useDefs, types)>), ctx);";
+		 	    
+		 		 
 default str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
 	"<generateNestType(ty, types)> <makeId(id)> = <generateParsingInstruction(ty, useDefs, types)>;
 	'<for (sc <- sideCondition){ bprintln(sc);><generateSideCondition(sc, parentId, id, ty, useDefs, types)>
