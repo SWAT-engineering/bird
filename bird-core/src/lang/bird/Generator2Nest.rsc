@@ -290,7 +290,7 @@ str compile(current: (Expr) `<IntHexLiteral hex>`, DId this, rel[loc,loc] useDef
 // TODO ask Davy about second argument
 str compile(current: (Expr) `<BytesHexLiteral hex>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"NestValue.of(<hex>, <len>)"
-	when len := (size("<hex>") - 2)/2;
+	when len := ((size("<hex>") == 3)?1:(size("<hex>") - 2)/2);
 	
 str compile(current: (Expr) `<BytesDecLiteral dec>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"NestValue.of(<dec.number>, <len>)"
