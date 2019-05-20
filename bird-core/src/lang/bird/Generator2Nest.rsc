@@ -96,18 +96,18 @@ default str compileAnno(str prop, str val) {
 
 str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types) =
    "public static final class <sid> extends UserDefinedToken {
-   '	<for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? sz>` <- decls, ty is anonymousType){><generateAnonymousType(ty, useDefs, types)>
+   '	<for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? sz>` <- decls, ty is anonymousType){><generateAnonymousType(ty, formalsList, useDefs, types)>
    '	<}>
    '	private final Token entry;
-   ' 	<for (<id, typ> <- allFieldsList){>public final <generateNestType(typ, types)> <id>;
+   ' 	<for (<id, typ> <- fieldsList){>public final <generateNestType(typ, types)> <id>;
    '	<}>
-   '	private <sid>(<intercalate(", ", ["Token entry"] + ["<generateNestType(typ, types)> <id>" | <id, typ> <- allFieldsList])>){
+   '	private <sid>(<intercalate(", ", ["Token entry"] + ["<generateNestType(typ, types)> <id>" | <id, typ> <- fieldsList])>){
    '		this.entry = entry;
-   '	<for  (<id, _> <- allFieldsList){>	this.<id> = <id>;
+   '	<for  (<id, _> <- fieldsList){>	this.<id> = <id>;
    '	<}>	
    '	}
    '
-   '	public static <sid> parse(ByteStream source, Context ctx) throws ParseError {
+   '	public static <sid> parse(ByteStream source, Context ctx<intercalate(", ", [""] +["<generateNestType(typ, types)> <id>" | <id, typ> <- formalsList])>) throws ParseError {
    '		<for (aannos <- annos, (Anno) `<Id prop> = <Id val>` <- aannos.annos){><compileAnno("<prop>", "<val>")>
    '		<}>
    '	<for (<id, ty> <- fieldsList){>
@@ -116,7 +116,7 @@ str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? a
    '		Token entry = Choice.between(source, ctx
    '	<for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? sz>` <- decls){>,
    '		(s, c) -\> {
-   '			<generateNestType(ty, types)> result = <generateParsingInstruction(ty, useDefs, types)>;
+   '			<generateNestType(ty, types)> result = <generateParsingInstruction(ty, args, [id | <id, _> <- formalsList], useDefs, types)>;
    '			<for (<id, ty> <- fieldsList){><id>.set(result.<id>);
    '			<}>
    '			return result;
@@ -152,11 +152,11 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
    '	<}>	
    '	}
    '
-   '	public static <sid> parse(ByteStream source, Context ctx) throws ParseError {
+   '	public static <sid> parse(ByteStream source, Context ctx<intercalate(", ", [""] +["<generateNestType(typ, types)> <id>" | <id, typ> <- formalsList])>) throws ParseError {
    '		<for (aannos <- annos, (Anno) `<Id prop> = <Id val>` <- aannos.annos){><compileAnno("<prop>", "<val>")>
    '		<}>
    '	<for (DeclInStruct d <- decls){>
-   '		<compile(d, "<sid>", useDefs, types)><}>
+   '		<compileDeclInStruct(d, "<sid>", [id | <id ,_>  <- formalsList], useDefs, types)><}>
    '		return new <sid>(<intercalate(", ", [id | <id, _, _, _> <- fieldsList])>);
    '	}
    '
@@ -176,7 +176,7 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
 		 lrel[str, Type] allFieldsList := formalsList + [<id, ty> | <id, ty, _, _> <- fieldsList]
 		 ;		 
 		 
-str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, rel[loc,loc] useDefs, map[loc, AType] types) =
+str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, lrel[str, Type] formals, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"private static class <sid> extends UserDefinedToken {
 	' 	<for (<id, typ> <- fieldsList){>public final <generateNestType(typ, types)> <id>;
     '	<}>
@@ -185,9 +185,9 @@ str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, rel
     '	<}>	
     '	}
     '
-    '	public static <sid> parse(ByteStream source, Context ctx) throws ParseError {
+    '	public static <sid> parse(ByteStream source, Context ctx<for (<id, ty> <- formals){>, <generateNestType(ty, types)> <id><}>) throws ParseError {
     '	<for (DeclInStruct d <- decls){>
-    '		<compile(d, sid, useDefs, types)><}>
+    '		<compileDeclInStruct(d, "<sid>", [], useDefs, types)><}>
     '		return new <sid>(<intercalate(", ", [id | <id, _> <- fieldsList])>);
     '	}
     '
@@ -202,34 +202,34 @@ str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, rel
 		 ;
 
 		 
-str generateParsingInstruction(current: (Type) `byte []`, rel[loc,loc] useDefs, map[loc, AType] types)
+str generateParsingInstruction(current: (Type) `byte []`, Arguments? args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types)
 	= "source.readUnsigned(<compile(expr, [DId] "dummy", useDefs, types)>, ctx)"
 	when listType(byteType(), n = just(expr)) :=  types[current@\loc];
 	
-str generateParsingInstruction(current: (Type) `byte []`, rel[loc,loc] useDefs, map[loc, AType] types)
+str generateParsingInstruction(current: (Type) `byte []`, Arguments? args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types)
 	= "TODO;"
 	when listType(byteType(), n = nothing()) :=  types[current@\loc];	
 	
-str generateParsingInstruction((Type) `<Type t> []`, rel[loc,loc] useDefs, map[loc, AType] types)
+str generateParsingInstruction((Type) `<Type t> []`, Arguments? args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types)
 	= "TokenList.untilParseFailure(source, ctx, (s, c) -\> <generateNestType(t, types)>.parse(s, c))"
 	when (Type) `byte` !:= t;
 	
 // TODO This should be forbidden by the type checker	
-str generateParsingInstruction((Type) `byte`, rel[loc,loc] useDefs, map[loc, AType] types) {
+str generateParsingInstruction((Type) `byte`, Arguments? args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types) {
 	throw "Single byte cannot be used as a type";
 }
 
-str generateParsingInstruction(current: (Type) `<UInt v>`, rel[loc,loc] useDefs, map[loc, AType] types)
+str generateParsingInstruction(current: (Type) `<UInt v>`, Arguments? args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types)
 	= "source.readUnsigned(<n>, ctx)"
 	when listType(byteType(), n = just(n)) :=  types[current@\loc];
 
-str generateParsingInstruction((Type) `<Id id> <TypeActuals? typeActuals>`, rel[loc,loc] useDefs, map[loc, AType] types)
- 	="<id>.parse(source, ctx)";
+str generateParsingInstruction((Type) `<Id id> <TypeActuals? typeActuals>`, Arguments? args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types)
+ 	="<id>.parse(source, ctx<for (aargs <- args, e <-aargs.args){>, <compile(e, [DId] "dummy", useDefs, types)><}>)";
  	
-str generateParsingInstruction(current: (Type) `struct { <DeclInStruct* decls>}`, rel[loc,loc] useDefs, map[loc, AType] types)
-	="<generateNestType(current, types)>.parse(source, ctx)";
+str generateParsingInstruction(current: (Type) `struct { <DeclInStruct* decls>}`, Arguments? args, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types)
+	="<generateNestType(current, types)>.parse(source, ctx<for (id <- formalIds){>, <id><}>)";
 			 
-str generateParsingInstruction(Type t, rel[loc,loc] useDefs, map[loc, AType] types) {
+default str generateParsingInstruction(Type t, Arguments? args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types) {
 	throw "Not yet generateParsingInstruction for type <t>";
 }
 
@@ -256,7 +256,7 @@ str generateSideCondition((SideCondition) `? (<Expr e>)`, str parentId, DId this
 
 // TODO Check if `while` does make sense for something that is not u8[].
 // 		If not, enforce constraint in type checker (together with type of it)
-str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
+str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
 	"<generateNestType(ty, types)> <makeId(id)> = TokenList.parseWhile(source, ctx,
     '	(s, c) -\> s.readUnsigned(1, c),
     '	it -\> (<compile(e, id, useDefs, types)>)
@@ -264,18 +264,18 @@ str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? 
     
 // TODO restrict in type checker that a byparsing-guarded token should not
 //		have arguments nor size?     
-str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> byparsing (<Expr e>)`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
+str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> byparsing (<Expr e>)`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
 	"<generateNestType(ty, types)> <makeId(id)> = <generateNestType(ty, types)>.parse(new ByteStream(<compile(e, id, useDefs, types)>), ctx);";
 		 	    
 		 		 
-default str compile(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"<generateNestType(ty, types)> <makeId(id)> = <generateParsingInstruction(ty, useDefs, types)>;
+default str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
+	"<generateNestType(ty, types)> <makeId(id)> = <generateParsingInstruction(ty, args, formalIds, useDefs, types)>;
 	'<for (sc <- sideCondition){ bprintln(sc);><generateSideCondition(sc, parentId, id, ty, useDefs, types)>
 	'<}>";
 
 // Computed field
 
-str compile(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =		 
+str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
 	"<generateNestType(ty, types)> <id> = <compile(e, [DId] "dummy", useDefs, types)>;";
 
 
