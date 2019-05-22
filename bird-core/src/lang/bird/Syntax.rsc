@@ -44,7 +44,7 @@ syntax Annos
 	;	
 	
 syntax Anno
-	= Id "=" Id 
+	= Id "=" Expr
 	;	
 	
 syntax TypeFormals
