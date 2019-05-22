@@ -270,6 +270,14 @@ private loc relocsingleLine(loc osrc, loc base)
     }
     c.leaveScope(current);
 }*/
+void collectAnnos(Annos? annos, Collector c) {
+	for (aannos <- annos, a:(Anno) `<Id id> = <Expr e>` <- aannos.annos){
+		c.enterScope(a); {
+			collect(e, c);
+		}
+		c.leaveScope(a);
+	}
+}
 
 void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
      list[Id] tformals = [tf |atypeFormals <- typeFormals, tf <- atypeFormals.typeFormals];
@@ -282,7 +290,8 @@ void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <
      c.enterScope(current); {
      	for (Id tf <- tformals)
      		c.define("<tf>", typeVariableId(), tf, defType(variableType("<tf>")));
-     	collectFormals(id, formals, c);
+     	collectFormals(current, id, formals, c);
+     	collectAnnos(annos, c);
      	collect(decls, c);
     }
     c.leaveScope(current);
@@ -355,7 +364,9 @@ void collectSideCondition(Type ty, DId id, current:(SideCondition) `? ( <Expr e>
 void collectSideCondition(Type ty, DId id, current:(SideCondition) `while ( <Expr e>)`, Collector c){
 	c.enterScope(current);
 	c.define("it", variableId(), newFieldNameId(id, id@\loc), defType([ty], AType (Solver s) {
-	    if (listType(t) := s.getType(ty)) {
+	    if (listType(byteType()) := s.getType(ty)) {
+	    	return s.getType(ty);
+	  	} else if (listType(t) := s.getType(ty)) {
 	       return t;
 	    }
 	    s.report(error(current, "while side condition can only guard list types"));
@@ -419,6 +430,7 @@ void collectArgs(Type ty, Arguments current, Collector c){
 				//println(conId);
 				//println(currentScope);
 				if (structType(refName,actuals) := t){
+					// TODO check if this is aligned now
 					ct = s.getTypeInType(structType(refName, actuals), newConstructorId([Id] "<idStr>", ty@\loc), {consId()}, currentScope);
 					argTypes = atypeList([ s.getType(a) | a <- current.args]);
 					s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments"));
@@ -449,9 +461,9 @@ void collectFunctionArgs(Id id, Arguments current, Collector c){
 	
 }
 
-void collectFormals(Id id, Formals? current, Collector c){
+void collectFormals(TopLevelDecl decl, Id id, Formals? current, Collector c){
 	actualFormals = [af | fformals <- current, af <- fformals.formals];
-	constructorFakeTree = newConstructorId(id, id@\loc);
+	constructorFakeTree = newConstructorId(id, decl@\loc);
 	c.define("<constructorFakeTree>", consId(), constructorFakeTree, defType(actualFormals, AType(Solver s) {
      		return consType(atypeList([s.getType(a) | a <- actualFormals]));
     }));
@@ -461,8 +473,10 @@ void collectFormals(Id id, Formals? current, Collector c){
 void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`,  Collector c) {
 	 // TODO  explore `Solver.getAllDefinedInType` for implementing the check of abstract fields
 	 c.define("<id>", structId(), current, defType(structType("<id>",[])));
-     c.enterScope(current); {
-     	collectFormals(id, formals, c);
+	 
+	 c.enterScope(current); {
+     	collectFormals(current, id, formals, c);
+     	collectAnnos(annos, c);
      	collect(decls, c);
      	ts = [ d.tp | d <- decls];
      	currentScope = c.getScope();
@@ -558,11 +572,11 @@ void collect(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] size = nothi
 	});
 }  
 
-void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c, Maybe[Expr] size = nothing()){
+void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c, Maybe[Expr] sz = nothing()){
 	println("checking <current>");
     c.use(name, {structId(), typeVariableId()});
     for (TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals)
-    	collect(t, s, c);
+    	collect(t, c);
     list[Type] tpActuals = [t | TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals];
     if (_ <- tpActuals){
     	c.calculate("actual type", current, [name] + tpActuals,
