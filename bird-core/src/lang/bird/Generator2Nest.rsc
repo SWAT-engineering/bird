@@ -13,6 +13,8 @@ import String;
 
 extend analysis::typepal::TypePal;
 
+DId DUMMY_DID = [DId] "dummy";
+
 bool biprintln(value v){
 	iprintln(v);
 	return true;
@@ -84,13 +86,19 @@ str generateNestType(current: (Type) `<Id id> <TypeActuals? typeActuals>`, map[l
 str makeId(Tree t) = ("<t>" =="_")?"$anon_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>":"<t>"
 	when lo := t@\loc;
 	
-str compileAnno("encoding", str val)
+str compileAnno("encoding", (Expr) `<Id val>`, rel[loc,loc] useDefs, map[loc, AType] types)
 	= "ctx = ctx.setEncoding(StandardCharsets.<val>);";
 	
-str compileAnno("endianness", str val)
+str compileAnno("endianness", (Expr) `<Id val>`, rel[loc,loc] useDefs, map[loc, AType] types)
 	= "ctx = ctx.setByteOrder(ByteOrder.<val>_ENDIAN);";
-
-default str compileAnno(str prop, str val) {
+	
+str compileAnno("endianness", (Expr) `<Id val>`, rel[loc,loc] useDefs, map[loc, AType] types)
+	= "ctx = ctx.setByteOrder(ByteOrder.<val>_ENDIAN);";
+	
+str compileAnno("offset", Expr e, rel[loc,loc] useDefs, map[loc, AType] types)
+	= "source = source.fork(<compile(e, DUMMY_DID, useDefs, types)>);";	
+	
+default str compileAnno(str prop, Expr e, rel[loc,loc] useDefs, map[loc, AType] types) {
 	throw "No implementation for annotation <prop>";
 }
 
@@ -108,7 +116,7 @@ str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? a
    '	}
    '
    '	public static <sid> parse(ByteStream source, Context ctx<intercalate(", ", [""] +["<generateNestType(typ, types)> <id>" | <id, typ> <- formalsList])>) throws ParseError {
-   '		<for (aannos <- annos, (Anno) `<Id prop> = <Id val>` <- aannos.annos){><compileAnno("<prop>", "<val>")>
+   '		<for (aannos <- annos, (Anno) `<Id prop> = <Expr e>` <- aannos.annos){><compileAnno("<prop>", e, useDefs, types)>
    '		<}>
    '	<for (<id, ty> <- fieldsList){>
    '		AtomicReference\<<generateNestType(ty, types)>\> <id> = new AtomicReference\<\>();
@@ -117,7 +125,7 @@ str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? a
    '	<for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? sz>` <- decls){>,
    '		(s, c) -\> {
    '			<generateNestType(ty, types)> result = <generateParsingInstruction(ty, args, [id | <id, _> <- formalsList], useDefs, types)>;
-   '			<for (<id, ty> <- fieldsList){><id>.set(result.<id>);
+   '			<for (<id, _> <- fieldsList){><id>.set(result.<id>);
    '			<}>
    '			return result;
    '		}
@@ -142,10 +150,11 @@ str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? a
 		 ;
 
 str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types) =
-   "public static final class <sid> extends UserDefinedToken {
+   "public static final class <sid><(size(typeFormalsList) > 0)?"\<<intercalate(",", typeFormalsList)>\>":""> extends UserDefinedToken {
    '	<for ((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>` <- decls, ty is anonymousType){><generateAnonymousType(ty, useDefs, types)>
    '	<}>
-   ' 	<for (<id, typ> <- allFieldsList){>public final <generateNestType(typ, types)> <id>;
+   '	<for (<id, typ> <- allFieldsList){>
+   '		public final <generateNestType(typ, types)> <id>;
    '	<}>
    '	private <sid>(<intercalate(", ", ["<generateNestType(typ, types)> <id>" | <id, typ> <- allFieldsList])>){
    '	<for  (<id, _> <- allFieldsList){>	this.<id> = <id>;
@@ -153,11 +162,11 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
    '	}
    '
    '	public static <sid> parse(ByteStream source, Context ctx<intercalate(", ", [""] +["<generateNestType(typ, types)> <id>" | <id, typ> <- formalsList])>) throws ParseError {
-   '		<for (aannos <- annos, (Anno) `<Id prop> = <Id val>` <- aannos.annos){><compileAnno("<prop>", "<val>")>
+   '		<for (aannos <- annos, (Anno) `<Id prop> = <Expr e>` <- aannos.annos){><compileAnno("<prop>", e, useDefs, types)>
    '		<}>
    '	<for (DeclInStruct d <- decls){>
    '		<compileDeclInStruct(d, "<sid>", [id | <id ,_>  <- formalsList], useDefs, types)><}>
-   '		return new <sid>(<intercalate(", ", [id | <id, _, _, _> <- fieldsList])>);
+   '		return new <sid>(<intercalate(", ", [id | <id, _> <- allFieldsList])>);
    '	}
    '
    '	@Override
@@ -173,7 +182,8 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
 	when lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
 		 lrel[str, Type, bool, bool] fieldsList := 
 		 	[<makeId(d.id), d.ty, d is token, (DeclInStruct) `<Type _> <DId _> <Arguments? _> <Size? _> byparsing (<Expr _>)`:= d>| DeclInStruct d <- decls],
-		 lrel[str, Type] allFieldsList := formalsList + [<id, ty> | <id, ty, _, _> <- fieldsList]
+		 lrel[str, Type] allFieldsList := formalsList + [<id, ty> | <id, ty, _, _> <- fieldsList],
+		 list[str] typeFormalsList := ["<t> extends Token" | atypeFormals <- typeFormals, t <- atypeFormals.typeFormals]
 		 ;		 
 		 
 str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, lrel[str, Type] formals, rel[loc,loc] useDefs, map[loc, AType] types) =
@@ -203,7 +213,7 @@ str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, lre
 
 		 
 str generateParsingInstruction(current: (Type) `byte []`, Arguments? args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types)
-	= "source.readUnsigned(<compile(expr, [DId] "dummy", useDefs, types)>, ctx)"
+	= "source.readUnsigned(<compile(expr, DUMMY_DID, useDefs, types)>, ctx)"
 	when listType(byteType(), n = just(expr)) :=  types[current@\loc];
 	
 str generateParsingInstruction(current: (Type) `byte []`, Arguments? args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types)
@@ -224,7 +234,7 @@ str generateParsingInstruction(current: (Type) `<UInt v>`, Arguments? args, list
 	when listType(byteType(), n = just(n)) :=  types[current@\loc];
 
 str generateParsingInstruction((Type) `<Id id> <TypeActuals? typeActuals>`, Arguments? args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types)
- 	="<id>.parse(source, ctx<for (aargs <- args, e <-aargs.args){>, <compile(e, [DId] "dummy", useDefs, types)><}>)";
+ 	="<id>.parse(source, ctx<for (aargs <- args, e <-aargs.args){>, <compile(e, DUMMY_DID, useDefs, types)><}>)";
  	
 str generateParsingInstruction(current: (Type) `struct { <DeclInStruct* decls>}`, Arguments? args, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types)
 	="<generateNestType(current, types)>.parse(source, ctx<for (id <- formalIds){>, <id><}>)";
@@ -276,7 +286,7 @@ default str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Argu
 // Computed field
 
 str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"<generateNestType(ty, types)> <id> = <compile(e, [DId] "dummy", useDefs, types)>;";
+	"<generateNestType(ty, types)> <id> = <compile(e, DUMMY_DID, useDefs, types)>;";
 
 
 // Expressions
