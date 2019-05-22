@@ -1,0 +1,10 @@
+module typeParameters1
+
+struct GenT<T> {
+	T field1
+	T field2	
+}
+
+struct Main{
+	Gen<u8> parsed
+}
