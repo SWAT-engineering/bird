@@ -1,6 +1,6 @@
 module while1
 
 struct WhileUnevenParse{
-	u8[] contents while ((it & 0x1)  == 1B)
+	byte[] contents while ((it & 0x1)  == 1B)
 	u8 terminatedAt
 }
