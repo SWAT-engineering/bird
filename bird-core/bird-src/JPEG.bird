@@ -41,7 +41,7 @@ choice SizedScan{
 	ScanSegment
 }
 	
-struct Format{
+struct Format @(endianness = BIG){
 	Header _
 	SizedScan[] _
 	Footer _
