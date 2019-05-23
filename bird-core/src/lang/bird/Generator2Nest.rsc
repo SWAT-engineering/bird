@@ -234,11 +234,19 @@ str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[
 	= "<src>.readUnsigned(1, <ctx>)"
 	when listType(byteType(), n = nothing()) :=  types[current@\loc];	
 	
-str generateParsingInstruction((Type) `<Type t> []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
-	= "TokenList.untilParseFailure(source, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], useDefs, types, src = "<src1>", ctx = "<ctx1>")>)"
+str generateParsingInstruction(current: (Type) `<Type t> []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
+	= "TokenList.times(source, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], useDefs, types, src = "<src1>", ctx = "<ctx1>")>, <compile(expr, DUMMY_DID, useDefs, types)>.intValueExact())"
 	when (Type) `byte` !:= t,
+	     listType(_, n = just(expr)) :=  types[current@\loc],
 		 src1 := makeUnique(t, "src"),
 		 ctx1 := makeUnique(t, "ctx");
+		 
+str generateParsingInstruction(current: (Type) `<Type t> []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
+	= "TokenList.untilParseFailure(source, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], useDefs, types, src = "<src1>", ctx = "<ctx1>")>)"
+	when (Type) `byte` !:= t,
+		 listType(_, n = nothing()) :=  types[current@\loc],
+		 src1 := makeUnique(t, "src"),
+		 ctx1 := makeUnique(t, "ctx");		 
 	
 // TODO This should be forbidden by the type checker	
 str generateParsingInstruction((Type) `byte`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx") {

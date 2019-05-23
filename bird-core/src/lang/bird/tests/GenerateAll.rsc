@@ -16,7 +16,8 @@ list[str] BIRD_FILE_NAMES = [
 	"fatLikeNesting1",
 	"A",
 	"B",
-	"AorB"
+	"AorB",
+	"rep1"
 ];
 
 void main() {
