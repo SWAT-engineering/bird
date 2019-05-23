@@ -444,6 +444,10 @@ str compile(current: (Expr) `<Expr e1> - <Expr e2>`, DId this, rel[loc,loc] useD
 str compile(current: (Expr) `<Expr e1> + <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	compileBinary("add", e1, e2, this, useDefs, types);
 	
+str compile(current: (Expr) `<Expr e1> * <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	compileBinary("multiply", e1, e2, this, useDefs, types);
+	
+	
 str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
     "TokenList.of(ctx, <compile(e1, this, useDefs, types)>, <compile(e2, this, useDefs, types)>)";
     
