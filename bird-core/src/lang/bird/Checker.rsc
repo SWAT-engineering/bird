@@ -194,26 +194,26 @@ private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
 
 str getFileName((ModuleId) `<{Id "::"}+ moduleName>`) = replaceAll("<moduleName>.bird", "::", "/");
 
-tuple[bool, loc] lookupModule(ModuleId name, PathConfig pcfg) {
+tuple[bool, loc] lookupModule(str name, PathConfig pcfg) {
     for (s <- pcfg.srcs + pcfg.libs) {
-        result = (s + "/" + getFileName(name)); 
+        result = (s + replaceAll(name, "::", "/"))[extension = "bird"];
         println(result);
         if (exists(result)) {
-            return <true, result>;
+        	return <true, result>;
         }
     }
     return <false, |invalid:///|>;
 }
 
-void collect(current:(Import) `import <ModuleId name>`, Collector c) {
-    c.addPathToDef(name, {moduleId()}, importPath());
-    c.push(__BIRD_IMPORT_QUEUE, name);
+void collect(current:(Import) `import <ModuleId moduleName>`, Collector c) {
+    c.addPathToDef(moduleName, {moduleId()}, importPath());
+    c.push(__BIRD_IMPORT_QUEUE, "<moduleName>");
 }
 
 void handleImports(Collector c, Tree root, PathConfig pcfg) {
-    imported = {};
-    while (list[ModuleId] modulesToImport := c.getStack(__BIRD_IMPORT_QUEUE) && modulesToImport != []) {
-        c.clearStack(__BIRD_IMPORT_QUEUE);
+    set[str] imported = {};
+    while (list[str] modulesToImport := c.getStack(__BIRD_IMPORT_QUEUE) && modulesToImport != []) {
+    	c.clearStack(__BIRD_IMPORT_QUEUE);
         for (m <- modulesToImport, m notin imported) {
             if (<true, l> := lookupModule(m, pcfg)) {
                 collect(parse(#start[Program], l).top, c);
@@ -231,11 +231,11 @@ void handleImports(Collector c, Tree root, PathConfig pcfg) {
 
 void collect(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, Collector c){
  	c.define("<moduleName>", moduleId(), current, defType(moduleType()));
-    c.enterScope(current);
-    collect(imports, c);
-    currentScope = c.getScope();
+ 	//c.enterScope(current); {
+ 		collect(imports, c);
     	collect(decls, c);
-    c.leaveScope(current);
+    //}
+    //c.leaveScope(current);
 }
  
 Tree newConstructorId(Id id, loc root) {
@@ -273,7 +273,9 @@ private loc relocsingleLine(loc osrc, loc base)
 void collectAnnos(Annos? annos, Collector c) {
 	for (aannos <- annos, a:(Anno) `<Id id> = <Expr e>` <- aannos.annos){
 		c.enterScope(a); {
-			collect(e, c);
+			if ("<id>" notin {"endianness", "encoding", "signedness"}){ 
+				collect(e, c);
+			};
 		}
 		c.leaveScope(a);
 	}
@@ -281,10 +283,12 @@ void collectAnnos(Annos? annos, Collector c) {
 
 void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
      list[Id] tformals = [tf |atypeFormals <- typeFormals, tf <- atypeFormals.typeFormals];
-     if (_ <- tformals)
+     if (_ <- tformals) {
      	c.define("<id>", structId(), current, defType(structDef("<id>", ["<tf>" | tf <- tformals])));
-     else
+     }
+     else {
      	c.define("<id>", structId(), current, defType(structType("<id>", [])));
+     }
      //collect(id, formals, c);
      
      c.enterScope(current); {
@@ -581,6 +585,7 @@ void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c, Ma
     if (_ <- tpActuals){
     	c.calculate("actual type", current, [name] + tpActuals,
            AType(Solver s) {
+           	println("inside this case");
            	if (structDef(_, fs) := s.getType(name))  
             	s.requireTrue(size(fs) == size(tpActuals), error(current, "Incorrect number of provided type arguments"));
             else if (sructType(_,_) := s.getType(name))
@@ -589,8 +594,15 @@ void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c, Ma
             	s.report(error(current, "Type %v does not receive parameters", name));
             return structType("<name>", [s.getType(tp) | tp <- tpActuals]);});
     }
-    else 
+    else {
     	c.fact(current, name);
+    	/*c.calculate("struct type no type arguments", current, [name],
+    		AType(Solver s) {
+    			println("So far so good: <s.getType(name)>");
+    			return s.getType(name);
+    		});
+    	*/	
+    }
 }
 
 void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c, Maybe[Expr] size = nothing()) {
@@ -933,7 +945,7 @@ void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, T
 // ----  Examples & Tests --------------------------------
 TModel birdTModelFromTree(Tree pt, bool debug = false){
     if (pt has top) pt = pt.top;
-    c = newCollector("collectAndSolve", pt, config=getBirdConfig());    // TODO get more meaningfull name
+    c = newCollector("collectAndSolve", pt, config=getBirdConfig(debug = debug));    // TODO get more meaningfull name
     collect(pt, c);
     handleImports(c, pt, pathConfig(pt@\loc));
     return newSolver(pt, c.run()).run();
@@ -953,15 +965,20 @@ AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope
     }
 }
 
-private TypePalConfig getBirdConfig() = tconfig(
+private TypePalConfig getBirdConfig(bool debug = false) = tconfig(
     isSubType = isSubtype,
     getTypeNamesAndRole = birdGetTypeNameAndRole,
     getTypeInNamelessType = birdGetTypeInAnonymousStruct,
-    instantiateTypeParameters = birdInstantiateTypeParameters
+    instantiateTypeParameters = birdInstantiateTypeParameters,
+    verbose=debug, 
+    logTModel = debug, 
+    logAttempts = debug, 
+    logSolverIterations= debug, 
+    logSolverSteps = debug
 );
 
 
-public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/<name>.bird|);
+public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);
 
 list[Message] runBird(str name, bool debug = false) {
     Tree pt = sampleBird(name);
