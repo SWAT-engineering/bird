@@ -461,33 +461,7 @@ str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, DId this, rel[loc,loc] use
     
 str compile(current: (Expr) e, DId this, rel[loc,loc] useDefs, map[loc, AType] types){
     throw "Expression not yet implemented: <e>";
-}        
-	
-// Legacy expressions	
-	
-/*str compile(current: (Expr) `parse (<Expr e>) with <Type t>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"tie(<compiledType>, <compiledExpr>)"
-	when compiledType := compile(t, parentId, tokenExps, useDefs, types, index, scopes, defines),
-		 compiledExpr := compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines);*/
-
-str compile(current: (Expr) `<Id id> ( <{Expr ","}* exprs>)`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
-    "new <javaId>().apply(<intercalate(", ", [compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines) | Expr e <- exprs])>)"
-    when loc funLoc := Set::getOneFrom((useDefs[id@\loc])),
-    	 funType(_,_,_,javaId) := types[funLoc];
-    
-str compile(current: (Expr) `<Expr e1> * <Expr e2>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
-    "<getInfixOperator("*")>(<compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines)>, <compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)>)";    
-    
-str compile(current: (Expr) `<Expr e1> (+) <Expr e2>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
-    "<getInfixOperator("(+)")>(<compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines)>, <compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)>)";    	 
-
-str compile(current: (Expr) `[ <{Expr ","}* es>]`, rel[loc,loc] useDefs, map[loc, AType] types) = "con(<intercalate(", ",["<e>" | e <- es])>)"
-	when listType(ty) := types[current@\loc]; 
-		 		 
-str compile(current: (Expr) `<Expr e1> \>\>\> <Expr e2>`, str parentId, rel[loc,loc] useDefs, map[loc, AType] types) =
-	calculateOp("\>\>", {t1,t2}, [compile(e1, parentId, tokenExps, useDefs, types, index, scopes, defines), compile(e2, parentId, tokenExps, useDefs, types, index, scopes, defines)])
-	when t1 := types[e1@\loc],
-		 t2 := types[e2@\loc];
+}
 		 
 public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);
 
