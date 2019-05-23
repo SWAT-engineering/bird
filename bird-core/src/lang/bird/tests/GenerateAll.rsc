@@ -13,7 +13,10 @@ list[str] BIRD_FILE_NAMES = [
 	"PNG",
 	"crc",
 	"typeParameters1",
-	"fatLikeNesting1"
+	"fatLikeNesting1",
+	"A",
+	"B",
+	"AorB"
 ];
 
 void main() {

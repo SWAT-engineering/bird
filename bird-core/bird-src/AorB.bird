@@ -1,0 +1,11 @@
+module AorB
+
+import A
+import B
+
+choice AorB {
+	abstract int virtualField
+	abstract u8 x
+	A
+	B
+}
