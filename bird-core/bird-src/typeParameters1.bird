@@ -5,6 +5,15 @@ struct GenT<T> {
 	T field2	
 }
 
-struct Main{
-	Gen<u8> parsed
+struct A {
+	u8 a
+}
+
+struct Main {
+	GenT<u8> parsed
+	
+}
+
+struct Main2 {
+	GenT<A> parsed
 }
