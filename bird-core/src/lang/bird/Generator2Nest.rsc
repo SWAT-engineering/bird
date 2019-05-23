@@ -29,7 +29,7 @@ tuple[str package, str class] toJavaName(ModuleId moduleName) =
 		 str packageName := ((size(dirs) == 0)? "": ("."+ intercalate(".", dirs)));
 	
 
-tuple[str, str] compile(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types, map[loc,str] scopes, map[loc,Define] defines)
+tuple[str, str] compile(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
 	= <packageName,
 	"package engineering.swat.nest.examples.formats.bird_generated<packageName>;
     '
@@ -391,10 +391,10 @@ str compile(current: (Expr) `<Expr e>.as[int]`, DId this, rel[loc,loc] useDefs, 
 str compile(current: (Expr) `<Expr e>.as[str]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<compile(e, this, useDefs, types)>.asValue().asString().get()";
 
-
-// TODO
-str compile(current: (Expr) `<Expr e>.as[<Type t>]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = compile(e, parentId, tokenExps, useDefs, types, index, scopes, defines)
-	when (Type) `int` := t;
+str compile(current: (Expr) `<Expr e>.as[<Type t>]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = {
+	throw "Cannot cast to <t>";
+} when (Type) `int` !:= t,
+	   (Type) `str` !:= t;
 
 str compile(current: (Expr) `<Expr e>.<Id field>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<compile(e, this, useDefs, types)>.<field>";
@@ -474,20 +474,7 @@ tuple[str,str] compileBird(start[Program] pt) {
 	TModel model = birdTModelFromTree(pt);
     map[loc, AType] types = getFacts(model);
     rel[loc, loc] useDefs = getUseDef(model);
-    Defines defines = model.defines;
-	//alias Define  = tuple[loc scope, str id, IdRole idRole, loc defined, DefInfo defInfo];
-	//alias Defines = set[Define];                                 // All defines
-
-    map[loc, str] scopes = ();
-    map[loc, Define] definesMap = ();
-    for (Define d <- defines) {
-    	if (d.scope in types, structDef(name, _) := types[d.scope]) {
-    		scopes += (d.defined : name);
-    	}
-    	definesMap += (d.defined : d);
-    }
-    
-    return compile(pt.top, useDefs, types, scopes, definesMap);
+    return compile(pt.top, useDefs, types);
 }
 
 void compileBirdTo(str name, loc file) {
