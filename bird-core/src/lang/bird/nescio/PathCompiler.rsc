@@ -34,6 +34,14 @@ FieldsAndBody createBody(rootType(typeName(packages, clazz)), str className, Str
 	>
 	;
 
+FieldsAndBody createBody(path: deepMatchType(Path src, TypeName tn), str className, StructuredGraph graph) =
+	<
+		["<field>.<fieldName>" | field <- fields, <_, fieldName, tn> <- graph, tn in pathTypes]
+	, 
+		body
+	>
+	when <fields, body> := createBody(src, className, graph),
+		 set[TypeName] pathTypes := getTypes(path, graph);	
 
 FieldsAndBody createBody(field(Path src, str fieldName), str className, StructuredGraph graph) =
 	<
@@ -50,9 +58,7 @@ FieldsAndBody createBody(path: fieldType(Path src, TypeName tn), str className, 
 		body
 	>
 	when <fields, body> := createBody(src, className, graph),
-		 set[TypeName] pathTypes := getTypes(path, graph),
-		 bprintln("<path>"),
-		 bprintln("<pathTypes>");
+		 set[TypeName] pathTypes := getTypes(path, graph);
 		 
 
 str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, str rootPackageName, list[NamedPattern] patterns, StructuredGraph graph) =
@@ -140,7 +146,8 @@ void compilePathTo(loc file) {
 	println("<graph>");
 	NamedPattern p1 = pattern("crc",       field(field(rootType(typeName([], "PNG")), "end"), "crc"));
 	NamedPattern p2 = pattern("crcByType", field(fieldType(rootType(typeName([], "PNG")), typeName([], "IEND")), "crc"));
-	str src = compile(png.top, "engineering.swat.nest.examples.formats.bird_generated", [p1, p2], graph);
+	NamedPattern p3 = pattern("crcByTypeDeepMatch", field(deepMatchType(rootType(typeName([], "PNG")), typeName([], "IEND")), "crc"));
+	str src = compile(png.top, "engineering.swat.nest.examples.formats.bird_generated", [p1, p2, p3], graph);
 	writeFile(file, src);
 }
 	
