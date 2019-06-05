@@ -32,10 +32,12 @@ str toStr(structType(name, args)) = name;
 str toStr(variableType(s)) = s;
 str toStr(structDef(name, formals)) = name;
 str toStr(AType t){
-	throw "Unknown type";
+	throw "Unknown type: <t>";
 }
 
-  
+// Duplicate from generator to nest
+str makeId(Tree t) = ("<t>" =="_")?"$anon_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>":"<t>"
+	when lo := t@\loc;
   
 bool isAnonymousField((DeclInStruct) `<Type ty> _ <Arguments? _> <Size? _> <SideCondition? _>`)
 	= true;
@@ -50,6 +52,14 @@ StructuredGraph calculateFields((Program) `module <ModuleId moduleName> <Import*
 	= ({} | it + calculateFields(d, moduleName, useDefs, types) | d <- decls);
 	
 StructuredGraph calculateFields(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, ModuleId currentModule, rel[loc,loc] useDefs, map[loc, AType] types) =
-	{ <typeName([], "<sid>"), "<d.id>", typeName([], toStr(types[(d.ty)@\loc]))> | d <- filteredDecls }
-	when filteredDecls := [d | d <- decls, !isAnonymousField(d), !(d.ty is anonymousType)]; 
+	{ <typeName([], "<sid>"), "<d.id>", typeName([], toStr(types[(d.ty)@\loc]))> | d <- decls,  !isAnonymousField(d), !(d.ty is anonymousType) }
+	+
+	{ <typeName([], "<sid>"), makeId(d.id), typeName([], toStr(types[(d.ty)@\loc]))> | d <- decls,  isAnonymousField(d), !(d.ty is anonymousType) } 
+	;
+	
+StructuredGraph calculateFields(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`, ModuleId currentModule, rel[loc,loc] useDefs, map[loc, AType] types) =
+	{ <typeName([], "<sid>"), "<id>", typeName([], toStr(types[tp@\loc]))> | (DeclInChoice) `abstract <Type tp> <Id id>` <- decls }
+	+ 
+	{ <typeName([], "<sid>"), "entry", typeName([], toStr(types[tp@\loc]))> | d:(DeclInChoice) `<Type tp> <Arguments? _> <Size? _>` <- decls, !(d.tp is anonymousType)}
+	;
 
