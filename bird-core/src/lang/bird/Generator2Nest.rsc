@@ -95,7 +95,7 @@ str generateNestType(current: (Type) `<Id id> <TypeActuals? typeActuals>`, map[l
 str makeUnique(Tree t, str prefix) = "$<prefix>_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>"
 	when lo := t@\loc;
 	
-str makeId(Tree t, str prefix = "anon") = ("<t>" =="_")?"$<prefix>_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>":"<t>"
+str makeId(Tree t) = ("<t>" =="_")?"$anon_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>":"<t>"
 	when lo := t@\loc;
 	
 str compileAnno("encoding", (Expr) `<Id val>`, rel[loc,loc] useDefs, map[loc, AType] types)
@@ -221,8 +221,8 @@ str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, lre
     '    }
     '}"
 	when str sid := generateNestType(current, types),
-		 lrel[str, Type] fieldsList := [<makeId(d.id), d.ty> | DeclInStruct d <- decls],
-		 lrel[str, Type] tokensList := [<makeId(d.id), d.ty> | DeclInStruct d <- decls, d is token]
+		 lrel[str, Type] fieldsList := [<makeId(d.id)> | DeclInStruct d <- decls],
+		 lrel[str, Type] tokensList := [<makeId(d.id)> | DeclInStruct d <- decls, d is token]
 		 ;
 
 		 
