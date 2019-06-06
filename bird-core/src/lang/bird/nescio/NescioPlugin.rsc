@@ -6,17 +6,41 @@ import lang::nescio::API;
 import util::Reflective;
 
 import ParseTree;
+import Map;
+import Set;
+import Relation;
+
+import IO;
 
 StructuredGraph birdGraphCalculator(str moduleName, PathConfig pcfg) {
  	start[Program] pt = sampleBird(moduleName, pcfg);
  	return birdGraphCalculator(pt);
  }
+ 
+str findModuleId(loc typeLoc , TModel model) {
+	println(typeLoc);
+	loc l = typeLoc in domain(model.useDef) ? getOneFrom(model.useDef[typeLoc]) : typeLoc;
+	println(l);
+	while (l in model.scopes) {
+		l = model.scopes[l];
+	}
+	println(l);
+	if (<l, id, _, _, _> <- model.defines)
+		return id;
+	else
+		return "";
+}
 
 StructuredGraph birdGraphCalculator(start[Program] pt) {
  	TModel model = birdTModelFromTree(pt);
  	map[loc, AType] types = getFacts(model);
-    rel[loc, loc] useDefs = getUseDef(model);
-    return calculateFields(pt.top, useDefs, types);
+   //alias Scopes  = map[loc inner, loc outer];                   // Syntactic containment
+    Scopes scopes = model.scopes;
+    map[loc, tuple[str, str]] qualifiedNames = ();
+    for (loc typeLoc <- types, structDef(name, _) := types[typeLoc]) {
+    	qualifiedNames += (typeLoc : <findModuleId(typeLoc, model), name>);
+    }
+    return calculateFields(pt.top, model, types);
  }
   
 public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);
@@ -31,6 +55,8 @@ str toStr(listType(t)) = toStr(t);
 str toStr(structType(name, args)) = name;
 str toStr(variableType(s)) = s;
 str toStr(structDef(name, formals)) = name;
+str toStr(moduleType()) = "module";
+str toStr(consType(_)) = "cons";
 str toStr(AType t){
 	throw "Unknown type: <t>";
 }
@@ -46,20 +72,26 @@ default bool isAnonymousField(DeclInStruct d)
 	= false;
 	
 	
+loc getTypeIdLoc((Type) `<Id id> <TypeActuals? _>`) = id@\loc;
+
+loc getTypeIdLoc((Type) `<Type t> []`) = getTypeIdLoc(t);
+
+default loc getTypeIdLoc(Type t) = t@\loc;
+	
 // TODO what about type variables?	
 //alias Fields = rel[str typeName, str field, str fieldType];
-StructuredGraph calculateFields((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)  
-	= ({} | it + calculateFields(d, moduleName, useDefs, types) | d <- decls);
+StructuredGraph calculateFields((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, TModel model, map[loc, AType] types)  
+	= ({} | it + calculateFields(d, moduleName, model, types) | d <- decls);
 	
-StructuredGraph calculateFields(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, ModuleId currentModule, rel[loc,loc] useDefs, map[loc, AType] types) =
-	{ <typeName([], "<sid>"), "<d.id>", typeName([], toStr(types[(d.ty)@\loc]))> | d <- decls,  !isAnonymousField(d), !(d.ty is anonymousType) }
+StructuredGraph calculateFields(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, ModuleId currentModule, TModel model, map[loc, AType] types) =
+	{ <typeName([findModuleId(current@\loc, model)], "<sid>"), "<d.id>", typeName([findModuleId(getTypeIdLoc(d.ty), model)], toStr(types[(d.ty)@\loc]))> | d <- decls,  !isAnonymousField(d), !(d.ty is anonymousType) }
 	+
-	{ <typeName([], "<sid>"), makeId(d.id), typeName([], toStr(types[(d.ty)@\loc]))> | d <- decls,  isAnonymousField(d), !(d.ty is anonymousType) } 
+	{ <typeName([findModuleId(current@\loc, model)], "<sid>"), makeId(d.id), typeName([findModuleId(getTypeIdLoc(d.ty), model)], toStr(types[(d.ty)@\loc]))> | d <- decls,  isAnonymousField(d), !(d.ty is anonymousType) } 
 	;
 	
-StructuredGraph calculateFields(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`, ModuleId currentModule, rel[loc,loc] useDefs, map[loc, AType] types) =
-	{ <typeName([], "<sid>"), "<id>", typeName([], toStr(types[tp@\loc]))> | (DeclInChoice) `abstract <Type tp> <Id id>` <- decls }
+StructuredGraph calculateFields(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`, ModuleId currentModule, TModel model, map[loc, AType] types) =
+	{ <typeName([findModuleId(current@\loc, model)], "<sid>"), "<id>", typeName([findModuleId(getTypeIdLoc(tp), model)], toStr(types[tp@\loc]))> | (DeclInChoice) `abstract <Type tp> <Id id>` <- decls }
 	+ 
-	{ <typeName([], "<sid>"), "entry", typeName([], toStr(types[tp@\loc]))> | d:(DeclInChoice) `<Type tp> <Arguments? _> <Size? _>` <- decls, !(d.tp is anonymousType)}
+	{ <typeName([findModuleId(current@\loc, model)], "<sid>"), "entry", typeName([findModuleId(getTypeIdLoc(tp), model)], toStr(types[tp@\loc]))> | d:(DeclInChoice) `<Type tp> <Arguments? _> <Size? _>` <- decls, !(d.tp is anonymousType)}
 	;
 
