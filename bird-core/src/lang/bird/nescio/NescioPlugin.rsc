@@ -9,6 +9,7 @@ import ParseTree;
 import Map;
 import Set;
 import Relation;
+import String;
 
 import IO;
 
@@ -16,31 +17,11 @@ StructuredGraph birdGraphCalculator(str moduleName, PathConfig pcfg) {
  	start[Program] pt = sampleBird(moduleName, pcfg);
  	return birdGraphCalculator(pt);
  }
- 
-str findModuleId(loc typeLoc , TModel model) {
-	println(typeLoc);
-	loc l = typeLoc in domain(model.useDef) ? getOneFrom(model.useDef[typeLoc]) : typeLoc;
-	println(l);
-	while (l in model.scopes) {
-		l = model.scopes[l];
-	}
-	println(l);
-	if (<l, id, _, _, _> <- model.defines)
-		return id;
-	else
-		return "";
-}
 
 StructuredGraph birdGraphCalculator(start[Program] pt) {
  	TModel model = birdTModelFromTree(pt);
  	map[loc, AType] types = getFacts(model);
-   //alias Scopes  = map[loc inner, loc outer];                   // Syntactic containment
-    Scopes scopes = model.scopes;
-    map[loc, tuple[str, str]] qualifiedNames = ();
-    for (loc typeLoc <- types, structDef(name, _) := types[typeLoc]) {
-    	qualifiedNames += (typeLoc : <findModuleId(typeLoc, model), name>);
-    }
-    return calculateFields(pt.top, model, types);
+    return calculateFields(model);
  }
   
 public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);
@@ -57,6 +38,8 @@ str toStr(variableType(s)) = s;
 str toStr(structDef(name, formals)) = name;
 str toStr(moduleType()) = "module";
 str toStr(consType(_)) = "cons";
+str toStr(funType(name, _, _, _)) = name;
+str toStr(anonType(_)) = "$anon";
 str toStr(AType t){
 	throw "Unknown type: <t>";
 }
@@ -94,4 +77,45 @@ StructuredGraph calculateFields(current:(TopLevelDecl) `choice <Id sid> <Formals
 	+ 
 	{ <typeName([findModuleId(current@\loc, model)], "<sid>"), "entry", typeName([findModuleId(getTypeIdLoc(tp), model)], toStr(types[tp@\loc]))> | d:(DeclInChoice) `<Type tp> <Arguments? _> <Size? _>` <- decls, !(d.tp is anonymousType)}
 	;
+	
+list[str] findModuleId(loc typeLoc , TModel model) {
+	loc l = typeLoc in domain(model.useDef) ? getOneFrom(model.useDef[typeLoc]) : typeLoc;
+	if (model.facts[l] is anonType)
+		return [];
+	if (l in model.scopes) {
+		scLoc = model.scopes[l];
+		if (<_, id, moduleId(), scLoc, _> <- model.defines)
+			return split("::", id);
+		else
+			throw "Struct or choice need to be defined inside a module";
+	}
+	else
+		return [];
+}
+
+StructuredGraph calculateFields(TModel model) {
+	g = {};
+	for (<structScope, id, fieldId(), defined, defType(ty)> <- model.defines) {
+		println("{<<structScope, id, defined>>}");
+		println(model.facts[ty@\loc]);
+		if (<_, sid, structId(), structScope, _> <- model.defines)
+			g+= <typeName(findModuleId(structScope, model), sid), id, typeName(findModuleId(getTypeIdLoc(ty), model), toStr(model.facts[ty@\loc]))>;
+		
+	}
+		
+	for (loc structScope <- model.anonymousFields) {
+		set[Type] types = model.anonymousFields[structScope];
+		if (<_, sid, structId(), structScope, _> <- model.defines) {
+			TypeName src = typeName(findModuleId(structScope, model), sid);
+			int i = 0;
+			for (ty <- types) {
+				g+= <src, "__anonymous<i>", typeName(findModuleId(getTypeIdLoc(ty), model), toStr(model.facts[ty@\loc]))>;
+				i = i + 1;
+			}
+		}
+	}
+	
+	return g;
+}	
+
 
