@@ -1,3 +1,4 @@
+
 module lang::bird::Checker
 
 import lang::bird::Syntax;
@@ -13,6 +14,12 @@ extend analysis::typepal::TypePal;
 extend analysis::typepal::TestFramework;
 
 lexical ConsId =  "$" ([a-z A-Z 0-9 _] !<< [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z A-Z 0-9 _])\Reserved;
+
+alias AnonymousFields = map[loc structIdentifier, set[Type] types];
+
+data TModel (
+    AnonymousFields anonymousFields = ()
+);
 
 data AType
 	= voidType()
@@ -192,6 +199,8 @@ PathConfig pathConfig(loc file) {
 
 private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
 
+private str __ANONYMOUS_FIELDS = "__anonymousFields";
+
 str getFileName((ModuleId) `<{Id "::"}+ moduleName>`) = replaceAll("<moduleName>.bird", "::", "/");
 
 tuple[bool, loc] lookupModule(str name, PathConfig pcfg) {
@@ -231,11 +240,11 @@ void handleImports(Collector c, Tree root, PathConfig pcfg) {
 
 void collect(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, Collector c){
  	c.define("<moduleName>", moduleId(), current, defType(moduleType()));
- 	//c.enterScope(current); {
+ 	c.enterScope(current); {
  		collect(imports, c);
     	collect(decls, c);
-    //}
-    //c.leaveScope(current);
+    }
+    c.leaveScope(current);
 }
  
 Tree newConstructorId(Id id, loc root) {
@@ -297,6 +306,8 @@ void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <
      	collectFormals(current, id, formals, c);
      	collectAnnos(annos, c);
      	collect(decls, c);
+     	
+     	c.push(__ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInStruct) `<Type ty> _ <Arguments? _> <Size? _> <SideCondition? _>` <- decls}>);
     }
     c.leaveScope(current);
 }
@@ -476,7 +487,7 @@ void collectFormals(TopLevelDecl decl, Id id, Formals? current, Collector c){
 
 void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`,  Collector c) {
 	 // TODO  explore `Solver.getAllDefinedInType` for implementing the check of abstract fields
-	 c.define("<id>", structId(), current, defType(structType("<id>",[])));
+	 c.define("<id>", structId(), current, defType(structDef("<id>", [])));
 	 
 	 c.enterScope(current); {
      	collectFormals(current, id, formals, c);
@@ -501,6 +512,8 @@ void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? a
      		};
      			
      	});
+     	
+     	c.push(__ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInChoice) `<Type ty> <Arguments? _> <Size? _>` <- decls}>);
     }
     c.leaveScope(current);
     
@@ -565,7 +578,6 @@ void collect(current:(Type)`int`, Collector c, Maybe[Expr] size = nothing()) {
     	else
     		return s.getType(i);
   
-     });
 }*/
 
 void collect(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] size = nothing()) {
@@ -579,13 +591,13 @@ void collect(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] size = nothi
 void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c, Maybe[Expr] sz = nothing()){
 	println("checking <current>");
     c.use(name, {structId(), typeVariableId()});
+        
     for (TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals)
     	collect(t, c);
     list[Type] tpActuals = [t | TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals];
     if (_ <- tpActuals){
     	c.calculate("actual type", current, [name] + tpActuals,
            AType(Solver s) {
-           	println("inside this case");
            	if (structDef(_, fs) := s.getType(name))  
             	s.requireTrue(size(fs) == size(tpActuals), error(current, "Incorrect number of provided type arguments"));
             else if (sructType(_,_) := s.getType(name))
@@ -947,12 +959,18 @@ TModel birdTModelFromTree(Tree pt, bool debug = false){
     if (pt has top) pt = pt.top;
     c = newCollector("collectAndSolve", pt, config=getBirdConfig(debug = debug));    // TODO get more meaningfull name
     collect(pt, c);
+    AnonymousFields anonymousFields = ();
+    if (lrel[loc, set[Type]] anonFields := c.getStack(__ANONYMOUS_FIELDS)) {
+    	anonymousFields = (() | it + (structLoc : types) | <structLoc, types> <- anonFields);
+    }
     handleImports(c, pt, pathConfig(pt@\loc));
-    return newSolver(pt, c.run()).run();
+    TModel model = newSolver(pt, c.run()).run();
+    model.anonymousFields = anonymousFields;
+    return model;
 }
 
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structType(str name,_)) = <[name], {structId()}>;
-tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structDef(str name,_)) = <[name], {structId()}>; // TODO this *has to be* deprecated
+tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structDef(str name, _)) = <[name], {structId()}>; // TODO this *has to be* deprecated
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(funType(str name, _, _, _)) = <[name], {funId()}>;
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(AType t) = <[], {}>;
 
@@ -991,4 +1009,5 @@ bool testBird(int n, bool debug = false, set[str] runOnly = {}) {
         return birdTModelFromTree(t, debug=debug);
     }, runOnly = runOnly);
 }
+
 
