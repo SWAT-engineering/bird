@@ -1,5 +1,7 @@
 module uvw
 
+import x
+
 struct U {
 	V v
 	W w
@@ -17,12 +19,9 @@ struct W {
 	Z z
 }
 
-struct X {
-	u8 x1?(== "x")
-}	
-
 struct Y {
 	u8 y1?(=="y")
+
 }	
 
 struct V {
