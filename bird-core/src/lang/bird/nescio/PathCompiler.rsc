@@ -28,11 +28,11 @@ data Path
 alias FieldsAndBody = tuple[list[str] fields, str body];
 
 // TODO this is a simplifivation. It is necessary to consider the packages for multiple modules.
-str(str) createBody(rootType(typeName(packages, clazz)), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[str className, str fieldName], AType]  fields) = str(str hole){
+str(str) createBody(rootType(tn: typeName(packages, clazz)), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole){
 	return
 		"if (root instanceof <className>$.<clazz>) {
-		'	List\<<className>$.<clazz>\> nodes<depth> = Arrays.asList((<className>$.<clazz>) root);
-		'	for (<className>$.<clazz> node<depth>:nodes<depth>) {
+		'	List\<<toJavaType(tn)>\> nodes<depth> = Arrays.asList((<className>$.<clazz>) root);
+		'	for (<toJavaType(tn)> node<depth>:nodes<depth>) {
 		'		<hole>
 		'	}
 		'}
@@ -45,45 +45,59 @@ str findPath(TypeName src, TypeName tgt, StructuredGraph graph) =
 	when Graph[TypeName] g := {<t1, t2> | <t1, _, t2> <- graph},
 		 list[TypeName] types := shortestPathPair(g, src, tgt);
 		
-str toJavaType(str className, "byte") = 
+/*str toJavaType(str className, "byte") = 
 	"UnsignedBytes";
 
 		 
 default str toJavaType(str className, str clazz) = 
 	"<className>$.<clazz>";	
+*/	
 	
-str toJavaExpression(str className, parent: typeName(_, pclazz), tn:typeName(_, clazz), str fieldName, int depth, map[TypeName, AType] atypes, map[tuple[str className, str fieldName], AType]  fields) =
+
+str toJavaType(typeName([], "byte")) = 
+	"UnsignedBytes";		
+
+str toJavaType(typeName(list[str] package, str clazz)) = 
+	"<intercalate(".", package)>$.<clazz>"
+	when clazz !:= "byte";		
+
+		
+str toJavaExpression(str className, parent: typeName(_, pclazz), tn:typeName(_, clazz), str fieldName, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) =
 	"Arrays.asList(node<depth+1>.<fieldName>)"
-	when bprintln(fields[<pclazz, fieldName>]),
-		 listType(byteType()) := fields[<pclazz, fieldName>];			 	
+	when bprintln(fields[<parent, fieldName>]),
+		 listType(byteType()) := fields[<parent, fieldName>];			 	
 		 
-str toJavaExpression(str className, parent: typeName(_, pclazz), tn:typeName(_, clazz), str fieldName, int depth, map[TypeName, AType] atypes, map[tuple[str className, str fieldName], AType]  fields) =
+str toJavaExpression(str className, parent: typeName(_, pclazz), tn:typeName(_, clazz), str fieldName, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) =
 	"Arrays.asList(node<depth+1>.<fieldName>)"
-	when bprintln(fields[<pclazz, fieldName>]),
-		 listType(_) !:= fields[<pclazz, fieldName>];
+	when bprintln(fields[<parent, fieldName>]),
+		 listType(_) !:= fields[<parent, fieldName>];
 	
-str toJavaExpression(str className, parent: typeName(_, pclazz), tn:typeName(_, clazz), str fieldName, int depth, map[TypeName, AType] atypes, map[tuple[str className, str fieldName], AType]  fields) =
+str toJavaExpression(str className, parent: typeName(_, pclazz), tn:typeName(_, clazz), str fieldName, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) =
 	"node<depth+1>.<fieldName>.stream().collect(Collectors.toList())"
-	when bprintln(fields[<pclazz, fieldName>]),
-		 listType(t) := fields[<pclazz, fieldName>],
+	when bprintln(fields[<parent, fieldName>]),
+		 listType(t) := fields[<parent, fieldName>],
 		 byteType() !:= t;
 
-str(str) createBody(path:field(Path src, str fieldName), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[str className, str fieldName], AType]  fields) = str(str hole) {
+str(str) createBody(path:field(Path src, str fieldName), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
+	println(src);
+	println(graph);
 	set[TypeName] parentTns = getTypes(src, graph);
+	println(src);
 	TypeName parentTn = getOneFrom(parentTns);
 	
 	set[TypeName] tns = getTypes(path, graph);
+	println(path);
 	TypeName tn = getOneFrom(tns);
 	str clazz = tn.name;
 	str inner =
-	"List\<<toJavaType(className, clazz)>\> nodes<depth> =  <toJavaExpression(className, parentTn, tn, fieldName, depth, atypes, fields)>;
-	'for (<toJavaType(className, clazz)> node<depth>:nodes<depth>) {
+	"List\<<toJavaType(tn)>\> nodes<depth> =  <toJavaExpression(className, parentTn, tn, fieldName, depth, atypes, fields)>;
+	'for (<toJavaType(tn)> node<depth>:nodes<depth>) {
 	'		<hole>
 	'}";
 	return (createBody(src, className, graph, depth + 1, atypes, fields))(inner);
 	};
 	
-str(str) createBody(path:fieldType(Path src, TypeName tn0), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[str className, str fieldName], AType]  fields) = str(str hole) {
+str(str) createBody(path:fieldType(Path src, TypeName tn0), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
 	set[TypeName] tns = getTypes(src, graph);
 	TypeName tn = getOneFrom(tns);
 	str clazz = tn0.name;
@@ -91,8 +105,8 @@ str(str) createBody(path:fieldType(Path src, TypeName tn0), str className, Struc
 	println(tn0);
 	set[str] fieldNames = {fieldName | <tn, fieldName, tn0> <- graph};
 	str inner =
-	"List\<<toJavaType(className, clazz)>\> nodes<depth> =  Arrays.asList(<intercalate(", ", ["node<depth+1>.<fieldName>" | fieldName <- fieldNames])>);
-	'for (<toJavaType(className, clazz)> node<depth>:nodes<depth>) {
+	"List\<<toJavaType(tn0)>\> nodes<depth> =  Arrays.asList(<intercalate(", ", ["node<depth+1>.<fieldName>" | fieldName <- fieldNames])>);
+	'for (<toJavaType(tn0)> node<depth>:nodes<depth>) {
 	'		<hole>
 	'}";
 	return (createBody(src, className, graph, depth + 1, atypes, fields))(inner);
@@ -133,16 +147,20 @@ str(str) createBody(path: deepMatchType(Path src, TypeName tn0), str className, 
 	};	
 */	
 	
-str(str) createBody(path: deepMatchType(Path src, TypeName tn0), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[str className, str fieldName], AType]  fields) = str(str hole) {
+str(str) createBody(path: deepMatchType(Path src, TypeName tn0), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
 	set[TypeName] tns = getTypes(src, graph);
+	for (line <- graph)
+		println(line);
+	println(path);
+	println(tns);
 	TypeName tn = getOneFrom(tns);
 	str clazz = tn0.name;
 	println(tn);
 	println(tn0);
 	list[str] paths =getAllPaths(tn,  tn0, graph, depth, atypes);
 	str inner =
-	"List\<<toJavaType(className, clazz)>\> nodes<depth> =  node<depth+1>.accept(new DeepMatchVisitor\<<toJavaType(className, clazz)>\>(<toJavaType(className, clazz)>.class));
-	'for (<toJavaType(className, clazz)> node<depth>:nodes<depth>) {
+	"List\<<toJavaType(tn0)>\> nodes<depth> =  node<depth+1>.accept(new DeepMatchVisitor\<<toJavaType(tn0)>\>(<toJavaType(tn0)>.class));
+	'for (<toJavaType(tn0)> node<depth>:nodes<depth>) {
 	'		<hole>
 	'}";
 	return (createBody(src, className, graph, depth +1, atypes, fields))(inner);
@@ -158,7 +176,7 @@ FieldsAndBody createBody(path: fieldType(Path src, TypeName tn), str className, 
 		 set[TypeName] pathTypes := getTypes(path, graph);
 		 
 
-str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, str rootPackageName, list[NamedPattern] patterns, StructuredGraph graph, map[TypeName, AType] atypes, map[tuple[str className, str fieldName], AType] fields) =
+str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, str rootPackageName, list[NamedPattern] patterns, StructuredGraph graph, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType] fields) =
 	"package engineering.swat.nest.examples.formats.bird_generated.nescio;
 	'
 	'import java.io.IOException;
@@ -185,7 +203,10 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'import engineering.swat.nest.nescio.util.DeepMatchVisitor;
 	'import engineering.swat.nest.nescio.util.StreamUtil;
 	'import <containerClassName>;
-	'
+	'<for ((Import) `import <ModuleId mid>` <- imports) {>
+	'import <rootPackageName>.<intercalate(".", ["<id>" | Id id <- mid.moduleName])>$;
+	'import <rootPackageName>.<intercalate(".", ["<id>" | Id id <- mid.moduleName])>$.*;
+	'<}>
 	'public class <className>Matcher {
 	'	<for (pattern(name, path) <- patterns){ str s = createBody(path, "<className>", graph, 0, atypes, fields)("locs.add(getLocation(node0));"); >
 	'	public static List\<Location\> <name>(Object root) {
@@ -241,47 +262,45 @@ void main() {
 
 void compilePathTo(loc file) {
 	start[Program] png = sampleBird("PNG");
+	TModel model = birdTModelFromTree(png);
 	StructuredGraph graph = birdGraphCalculator(png);
-	println("<graph>");
-	NamedPattern p1 = pattern("crc",       field(field(rootType(typeName([], "PNG")), "end"), "crc"));
-	NamedPattern p2 = pattern("crcByType", field(fieldType(rootType(typeName([], "PNG")), typeName([], "IEND")), "crc"));
-	NamedPattern p3 = pattern("crcByTypeDeepMatch", field(deepMatchType(rootType(typeName([], "PNG")), typeName([], "IEND")), "crc"));
-	str src = compile(png.top, "engineering.swat.nest.examples.formats.bird_generated", [p1, p2, p3], graph);
+	map[loc, AType] types = getFacts(model);
+	map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(png.top, model, types);
+	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, model):types[locType] | locType <- types);
+	atypes += (typeName([], "byte"):byteType());
+	NamedPattern p1 = pattern("crc",       field(field(rootType(typeName(["PNG"], "PNG")), "end"), "crc"));
+	NamedPattern p2 = pattern("crcByType", field(fieldType(rootType(typeName(["PNG"], "PNG")), typeName(["PNG"], "IEND")), "crc"));
+	NamedPattern p3 = pattern("crcByTypeDeepMatch", field(deepMatchType(rootType(typeName(["PNG"], "PNG")), typeName(["PNG"], "IEND")), "crc"));
+	str src = compile(png.top, "engineering.swat.nest.examples.formats.bird_generated", [p1, p2, p3], graph, atypes, fields);
 	writeFile(file, src);
 }
 	
 void compilePath2To(loc file) {
 	start[Program] jpeg = sampleBird("JPEG");
 	TModel model = birdTModelFromTree(jpeg);
-	map[loc, AType] types = getFacts(model);
-	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, model):types[locType] | locType <- types, isUserDefined(types[locType]));
-	atypes += (typeName([""], "byte"):byteType());
 	StructuredGraph graph = birdGraphCalculator(jpeg);
-	println("<graph>");
-	NamedPattern p1 = pattern("lengthByTypeDeepMatch", field(deepMatchType(rootType(typeName([], "Format")), typeName([], "ScanSegment")), "length"));
-	str src = compile(jpeg.top, "engineering.swat.nest.examples.formats.bird_generated", [p1], graph, atypes);
+	map[loc, AType] types = getFacts(model);
+	map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(jpeg.top, model, types);
+	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, model):types[locType] | locType <- types, !(types[locType] is funType));
+	atypes += (typeName([], "byte"):byteType());
+	NamedPattern p1 = pattern("lengthByTypeDeepMatch", field(deepMatchType(rootType(typeName(["JPEG"], "Format")), typeName(["JPEG"], "ScanSegment")), "length"));
+	str src = compile(jpeg.top, "engineering.swat.nest.examples.formats.bird_generated", [p1], graph, atypes, fields);
 	writeFile(file, src);
 }
 
-TypeName getTypeName(structType(str name, list[AType] typeActuals), loc locType, TModel model) = typeName([findModuleId(locType, model)], name);
+TypeName getTypeName(structType(str name, list[AType] typeActuals), loc locType, TModel model) = typeName(findModuleId(locType, model), name);
 TypeName getTypeName(listType(AType t), loc locType, TModel model) = getTypeName(t, locType, model);
 TypeName getTypeName(AType t, loc locType, TModel model) = typeName([], toStr(t));
 
-map[tuple[str className, str fieldName], AType] atypesForFields(Program p, map[loc, AType] types) {
-	map[tuple[str, str], AType] res = ();
-	for ((TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }` <- p.declarations) {
-		for (DeclInStruct dis <- decls) {
-			res += (<"<id>", "<dis.id>"> : types[dis.ty@\loc]);
-		};
+map[tuple[TypeName tn, str fieldName], AType] atypesForFields(Program p, TModel model, map[loc, AType] types) {
+	map[tuple[TypeName tn, str fieldName], AType] res = ();
+	map[loc structLoc, str structName] structNames = ();
+	for (<_, structName, structId(), definedStructLoc, _> <- model.defines) {
+		structNames += (definedStructLoc : structName);
 	};
-	
-	for ((TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }` <- p.declarations) {
-		for (DeclInChoice dis <- decls, dis is abstract) {
-			res += (<"<id>", "<dis.id>"> : types[dis.tp@\loc]);
-		};
-		for (DeclInChoice dis <- decls, !(dis is abstract)) {
-			res += (<"<id>", "entry"> : types[dis.tp@\loc]);
-		};
+	for (<structLoc, fieldName, fieldId(), definedFieldLoc, defType(ty)> <- model.defines, !(
+	types[structLoc] is funType || types[structLoc] is anonType)) {
+		res += (<typeName(findModuleId(structLoc, model), structNames[structLoc]), fieldName> : model.facts[ty@\loc]);
 	};
 	return res;
 }
@@ -291,15 +310,23 @@ void compilePath3To(loc file) {
 	TModel model = birdTModelFromTree(uvw);
 	StructuredGraph graph = birdGraphCalculator(uvw);
 	map[loc, AType] types = getFacts(model);
-	map[tuple[str className, str fieldName], AType]  fields = atypesForFields(uvw.top, types);
+	map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(uvw.top, model, types);
 	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, model):types[locType] | locType <- types);
-	atypes += (typeName([""], "byte"):byteType());
+	atypes += (typeName([], "byte"):byteType());
 	//NamedPattern p1 = pattern("findX", field(deepMatchType(rootType(typeName([], "U")), typeName([], "X")), "x1"));
 	NamedPattern p1 = pattern("findX", field(field(rootType(typeName(["uvw"], "U")), "x"), "x1"));
-	NamedPattern p2 = pattern("findXType", field(fieldType(rootType(typeName(["uvw"], "U")), typeName(["uvw"], "X")), "x1"));
+	NamedPattern p2 = pattern("findXType", field(fieldType(rootType(typeName(["uvw"], "U")), typeName(["x"], "X")), "x1"));
 	NamedPattern p3 = pattern("findZ", field(field(field(rootType(typeName(["uvw"], "U")), "p"), "v"), "z1"));
-	NamedPattern p4 = pattern("findXDeep", field(deepMatchType(rootType(typeName(["uvw"], "U")), typeName(["uvw"], "X")), "x1"));
+	NamedPattern p4 = pattern("findXDeep", field(deepMatchType(rootType(typeName(["uvw"], "U")), typeName(["x"], "X")), "x1"));
 	str src = compile(uvw.top, "engineering.swat.nest.examples.formats.bird_generated", [p1, p2, p3, p4], graph, atypes, fields);
 	writeFile(file, src);
 }
 	
+void test1() {
+	start[Program] uvw = sampleBird("uvw");
+	TModel model = birdTModelFromTree(uvw);
+	for (<scope, id, fieldId(), defined, defType(ty)> <- model.defines) {
+		println("{<<scope, id, defined>>}");
+		println(model.facts[ty@\loc]);
+	}
+}
