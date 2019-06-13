@@ -67,6 +67,9 @@ str generateNestType(current: (Type) `struct { <DeclInStruct* decls>}`, map[loc,
 
 str generateNestType((Type) `int`, map[loc, AType] types)
 	= "NestBigInteger";
+	
+str generateNestType((Type) `str`, map[loc, AType] types)
+	= "String";	
 
 str generateNestType(current: (Type) `byte []`, map[loc, AType] types)
 	= "TokenList\<UnsignedBytes\>"
@@ -221,8 +224,8 @@ str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, lre
     '    }
     '}"
 	when str sid := generateNestType(current, types),
-		 lrel[str, Type] fieldsList := [<makeId(d.id)> | DeclInStruct d <- decls],
-		 lrel[str, Type] tokensList := [<makeId(d.id)> | DeclInStruct d <- decls, d is token]
+		 lrel[str, Type] fieldsList := [<makeId(d.id), d.ty> | DeclInStruct d <- decls],
+		 lrel[str, Type] tokensList := [<makeId(d.id), d.ty> | DeclInStruct d <- decls, d is token]
 		 ;
 
 		 
@@ -231,8 +234,10 @@ str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[
 	when listType(byteType(), n = just(expr)) :=  types[current@\loc];
 	
 str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
-	= "<src>.readUnsigned(1, <ctx>)"
-	when listType(byteType(), n = nothing()) :=  types[current@\loc];	
+	= "TokenList.untilParseFailure(<src>, <ctx>, (<src1>, <ctx1>) -\> <src1>.readUnsigned(1, <ctx1>))"
+	when listType(byteType(), n = nothing()) :=  types[current@\loc],
+		 src1 := makeUnique(current, "src"),
+		 ctx1 := makeUnique(current, "ctx");
 	
 str generateParsingInstruction(current: (Type) `<Type t> []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
 	= "TokenList.times(source, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], useDefs, types, src = "<src1>", ctx = "<ctx1>")>, <compile(expr, DUMMY_DID, useDefs, types)>.intValueExact())"
@@ -260,7 +265,8 @@ str generateParsingInstruction(current: (Type) `<UInt v>`, list[Expr] args, list
 str generateParsingInstruction(current: (Type) `<Id id> <TypeActuals? typeActuals>`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
  	= "<id>.parse(<src>, <ctx><for (e <-args){>, <compile(e, DUMMY_DID, useDefs, types)><}><for (atypeActuals <- typeActuals, Type ta <- atypeActuals.typeActuals){>, (<src1>, <ctx1>) -\> <generateParsingInstruction(ta, [], [], useDefs, types, src = src1, ctx = ctx1)><}>)"
  	
- 	when variableType(_) !:= types[current@\loc],
+ 	when bprintln(id),
+ 	     variableType(_) !:= types[current@\loc],
  		 src1 := makeUnique(id, "src"),
  		 ctx1 := makeUnique(id, "ctx");
  	
