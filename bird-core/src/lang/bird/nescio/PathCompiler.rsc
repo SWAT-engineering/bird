@@ -201,7 +201,6 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'import java.util.Arrays;
 	'import engineering.swat.nest.nescio.Location;
 	'import engineering.swat.nest.nescio.util.DeepMatchVisitor;
-	'import engineering.swat.nest.nescio.util.StreamUtil;
 	'import <containerClassName>;
 	'<for ((Import) `import <ModuleId mid>` <- imports) {>
 	'import <rootPackageName>.<intercalate(".", ["<id>" | Id id <- mid.moduleName])>$;
