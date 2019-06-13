@@ -139,15 +139,10 @@ lexical ComparatorOperator
 lexical EqualityOperator
 	= equality: "=="
 	| nonEquality: "!="
-	;		
-	
-lexical UnaryOperator
-	= ComparatorOperator
-	| EqualityOperator
 	;
 	
 syntax UnaryExpr
-	= UnaryOperator op Expr e
+	= EqualityOperator op Expr e
 	;  
 	
 syntax Range 
