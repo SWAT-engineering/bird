@@ -1,4 +1,3 @@
-
 module lang::bird::Checker
 
 import lang::bird::Syntax;
@@ -131,6 +130,7 @@ default AType lub(AType t1, AType t2){ throw "Cannot find a lub for types <prett
 
 bool isTokenType(byteType()) = true;
 bool isTokenType(structType(_,_)) = true;
+bool isTokenType(structDef(_,_)) = true;
 bool isTokenType(variableType(_)) = true;
 bool isTokenType(anonType(_)) = true;
 bool isTokenType(listType(t)) = isTokenType(t);
@@ -170,10 +170,12 @@ default AType infixString(AType t1, AType t2){ throw "Wrong operands for a strin
 AType infixConcat(lt:listType(_), lt) = lt;
 
 bool isUserDefined(structType(_,_)) = true;
+bool isUserDefined(structDef(_,_)) = true;
 bool isUserDefined(listType(t)) = isUserDefined(t);
 default bool isUserDefined(AType t) = false;
 
 str getUserDefinedName(structType(id, _)) = id;
+str getUserDefinedName(structDef(id, _)) = id;
 str getUserDefinedName(listType(t)) = getUserDefinedName(t);
 default str getUserDefinedName(AType t){ throw "Operation not defined on non-user defined types."; }
 
@@ -291,6 +293,7 @@ void collectAnnos(Annos? annos, Collector c) {
 }
 
 void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
+     println("defining struct <id>");
      list[Id] tformals = [tf |atypeFormals <- typeFormals, tf <- atypeFormals.typeFormals];
      if (_ <- tformals) {
      	c.define("<id>", structId(), current, defType(structDef("<id>", ["<tf>" | tf <- tformals])));
@@ -333,7 +336,7 @@ void collect(current:(DeclInStruct) `<Type ty> <Id id> = <Expr expr>`,  Collecto
 	collect(expr, c);
 	c.require("good assignment", current, [expr] + [ty],
         void (Solver s) { 
-        	println("<expr> \>\>\> <s.getType(expr)>");
+        	//println("<expr> \>\>\> <s.getType(expr)>");
         	s.requireSubType(s.getType(expr), s.getType(ty), 
         		error(current, "Expression should be <prettyPrintAType(s.getType(ty))>, found <prettyPrintAType(s.getType(expr))>")); });
 }    
@@ -360,7 +363,10 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
 		collectSize(ty, sz, c);
 	}
 	for (sc <- cond){
+		println("before");
+		println("<current>");
 		collectSideCondition(ty, id, sc, c);
+		println("after");
 	}
 }
 
@@ -400,13 +406,14 @@ void collectSideCondition(Type ty, DId id, current:(SideCondition) `byparsing ( 
 }
 
 
-
+/*
 void collectSideCondition(Type ty, DId id, current:(SideCondition) `? ( <ComparatorOperator uo> <Expr e>)`, Collector c){
 	collect(e, c);
 	c.require("side condition", current, [e], void (Solver s) {
 		s.requireSubType(s.getType(e), intType(), error(current, "Expression in unary comparing side condition must have numeric type"));
 	});
 }
+*/
 
 default void collectSideCondition(Type ty, DId id, current:(SideCondition) `? ( <EqualityOperator uo> <Expr e>)`, Collector c){
 	collect(e, c);
@@ -450,7 +457,9 @@ void collectArgs(Type ty, Arguments current, Collector c){
 					argTypes = atypeList([ s.getType(a) | a <- current.args]);
 					s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments"));
 				}
-				else throw "Operation not supported";
+				elseif (structDef(refName, []) !:= t) {
+					throw "Operation not supported for type <t>";
+				}
 				
 			}
 		});
@@ -487,7 +496,7 @@ void collectFormals(TopLevelDecl decl, Id id, Formals? current, Collector c){
 
 void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`,  Collector c) {
 	 // TODO  explore `Solver.getAllDefinedInType` for implementing the check of abstract fields
-	 c.define("<id>", structId(), current, defType(structDef("<id>", [])));
+	 c.define("<id>", structId(), current, defType(structType("<id>", [])));
 	 
 	 c.enterScope(current); {
      	collectFormals(current, id, formals, c);
@@ -538,7 +547,7 @@ void collect(current:(DeclInChoice) `<Type ty> <Arguments? args> <Size? size>`, 
 	}
 }
 
-void collect(current:(UnaryExpr) `<UnaryOperator uo> <Expr e>`, Collector c){
+void collect(current:(UnaryExpr) `<EqualityOperator uo> <Expr e>`, Collector c){
 	collect(e, c);
 }
 
@@ -583,7 +592,7 @@ void collect(current:(Type)`int`, Collector c, Maybe[Expr] size = nothing()) {
 void collect(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] size = nothing()) {
 	collect(t, c, size = size);
 	c.calculate("list type", current, [t], AType(Solver s) {
-		println("<t> &&& <s.getType(t)>");
+		//println("<t> &&& <s.getType(t)>");
 		return listType(s.getType(t), n = size);
 	});
 }  
@@ -727,7 +736,8 @@ void collect(current: (Expr) `<Expr e>.<Id field>`, Collector c){
 	c.fact(current, field);
 	collect(e, c);
 	c.require("trivial", current, [field], void (Solver s) {
-		println("<field> ||||| <s.getType(field)>");
+		//println("<field> ||||| <s.getType(field)>");
+		;
 	}); 
 	//c.calculate("field type", current, [e], AType(Solver s) {
 	//	return s.getTypeInType(s.getType(e), field, {fieldId()}, currentScope); });
@@ -959,18 +969,17 @@ TModel birdTModelFromTree(Tree pt, bool debug = false){
     if (pt has top) pt = pt.top;
     c = newCollector("collectAndSolve", pt, config=getBirdConfig(debug = debug));    // TODO get more meaningfull name
     collect(pt, c);
+    handleImports(c, pt, pathConfig(pt@\loc));
     AnonymousFields anonymousFields = ();
     if (lrel[loc, set[Type]] anonFields := c.getStack(__ANONYMOUS_FIELDS)) {
     	anonymousFields = (() | it + (structLoc : types) | <structLoc, types> <- anonFields);
     }
-    handleImports(c, pt, pathConfig(pt@\loc));
     TModel model = newSolver(pt, c.run()).run();
     model.anonymousFields = anonymousFields;
     return model;
 }
 
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structType(str name,_)) = <[name], {structId()}>;
-tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structDef(str name, _)) = <[name], {structId()}>; // TODO this *has to be* deprecated
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(funType(str name, _, _, _)) = <[name], {funId()}>;
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(AType t) = <[], {}>;
 
