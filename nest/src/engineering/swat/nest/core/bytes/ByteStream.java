@@ -53,6 +53,10 @@ public class ByteStream {
 		}
 	}
 
+	public UnsignedBytes readUnsignedUntilEnd(Context ctx) {
+		return readUnsigned(limit.subtract(offset), ctx);
+	}
+
 	/**
 	 * Read size bytes from the stream but create a new slice that can be used for nested parsing
 	 */
