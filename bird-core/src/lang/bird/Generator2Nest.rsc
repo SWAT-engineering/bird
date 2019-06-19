@@ -72,7 +72,7 @@ str generateNestType((Type) `str`, map[loc, AType] types)
 	= "String";	
 
 str generateNestType(current: (Type) `byte []`, map[loc, AType] types)
-	= "TokenList\<UnsignedBytes\>"
+	= "UnsignedBytes"
 	when listType(byteType(), n = nothing()) := types[current@\loc];
 	
 str generateNestType(current: (Type) `byte []`, map[loc, AType] types)
@@ -265,8 +265,7 @@ str generateParsingInstruction(current: (Type) `<UInt v>`, list[Expr] args, list
 str generateParsingInstruction(current: (Type) `<Id id> <TypeActuals? typeActuals>`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
  	= "<id>.parse(<src>, <ctx><for (e <-args){>, <compile(e, DUMMY_DID, useDefs, types)><}><for (atypeActuals <- typeActuals, Type ta <- atypeActuals.typeActuals){>, (<src1>, <ctx1>) -\> <generateParsingInstruction(ta, [], [], useDefs, types, src = src1, ctx = ctx1)><}>)"
  	
- 	when bprintln(id),
- 	     variableType(_) !:= types[current@\loc],
+ 	when variableType(_) !:= types[current@\loc],
  		 src1 := makeUnique(id, "src"),
  		 ctx1 := makeUnique(id, "ctx");
  	
@@ -307,14 +306,14 @@ str generateSideCondition((SideCondition) `? (<Expr e>)`, str parentId, DId this
 // 		If not, enforce constraint in type checker (together with type of it)
 str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
 	"<generateNestType(ty, types)> <makeId(id)> = TokenList.parseWhile(source, ctx,
-    '	(s, c) -\> <generateParsingInstruction(ty, [], [], useDefs, types, src = "s", ctx = "c")>,
+    '	(s, c) -\> <generateParsingInstruction(ty, [e | aargs <- args, e <- aargs.args], [], useDefs, types, src = "s", ctx = "c")>,
     '	it -\> (<compile(e, id, useDefs, types)>)
     ');";
     
 // TODO restrict in type checker that a byparsing-guarded token should not
 //		have arguments nor size?     
 str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> byparsing (<Expr e>)`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"<generateNestType(ty, types)> <makeId(id)> = <generateParsingInstruction(ty, [], [], useDefs, types, src = "new ByteStream(<compile(e, id, useDefs, types)>)")>;";
+	"<generateNestType(ty, types)> <makeId(id)> = <generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], [], useDefs, types, src = "new ByteStream(<compile(e, id, useDefs, types)>)")>;" ;
 		 	    
 		 		 
 default str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
@@ -423,6 +422,9 @@ str compile(current: (Expr) `<Expr e1> <EqualityOperator uo> <Expr e2>`, DId thi
 	when op := (uo is equality?"":"!"),
 		 listType(byteType()) != types[e1@\loc],
 		 listType(byteType()) != types[e2@\loc];
+
+str compile(current: (Expr) `<Expr e>[<Expr index>]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	"<compile(e, this, useDefs, types)>.get(<compile(index, this, useDefs, types)>.intValueExact())";
 
 str compile(current: (Expr) `- <Expr e>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"<compile(e, this, useDefs, types)>.negate()";
