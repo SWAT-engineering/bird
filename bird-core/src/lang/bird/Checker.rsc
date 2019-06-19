@@ -12,7 +12,7 @@ import util::Maybe;
 extend analysis::typepal::TypePal;
 extend analysis::typepal::TestFramework;
 
-lexical ConsId =  "$" ([a-z A-Z 0-9 _] !<< [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z A-Z 0-9 _])\Reserved;
+lexical ConsId =  "$$" ([a-z A-Z 0-9 _] !<< [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z A-Z 0-9 _])\Reserved;
 
 alias AnonymousFields = map[loc structIdentifier, set[Type] types];
 
@@ -250,7 +250,7 @@ void collect(current: (Program) `module <ModuleId moduleName> <Import* imports> 
 }
  
 Tree newConstructorId(Id id, loc root) {
-    return visit(parse(#ConsId, "$<id>")) {
+    return visit(parse(#ConsId, "$$<id>")) {
         case Tree t => t[@\loc = relocsingleLine(t@\loc, root)] 
             when t has \loc
     };
@@ -318,7 +318,9 @@ void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <
 void collect(current:(TopLevelDecl) `@( <JavaId jid> ) <Type t> <Id id> <Formals? formals>`,  Collector c) {
      actualFormals = [af | fformals <- formals, af <- fformals.formals];
      collect(t, c);
-     collect(actualFormals, c);
+     c.enterScope(current);
+     	collect(actualFormals, c);
+     c.leaveScope(current);
      c.define("<id>", funId(), current, defType([t] + actualFormals, AType(Solver s) {
      	return funType("<id>", s.getType(t), atypeList([s.getType(a) | a <- actualFormals]), "<jid>");
      	})); 
@@ -331,7 +333,7 @@ void collect(current:(Formal) `<Type ty> <Id id>`, Collector c){
 }
 
 void collect(current:(DeclInStruct) `<Type ty> <Id id> = <Expr expr>`,  Collector c) {
-	c.define("<id>", fieldId(), id, defType(expr));
+	c.define("<id>", fieldId(), id, defType(ty));
 	collect(ty, c);
 	collect(expr, c);
 	c.require("good assignment", current, [expr] + [ty],
@@ -363,10 +365,7 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
 		collectSize(ty, sz, c);
 	}
 	for (sc <- cond){
-		println("before");
-		println("<current>");
 		collectSideCondition(ty, id, sc, c);
-		println("after");
 	}
 }
 
@@ -1001,7 +1000,8 @@ private TypePalConfig getBirdConfig(bool debug = false) = tconfig(
     logTModel = debug, 
     logAttempts = debug, 
     logSolverIterations= debug, 
-    logSolverSteps = debug
+    logSolverSteps = debug,
+    lookup = lookupWide
 );
 
 
