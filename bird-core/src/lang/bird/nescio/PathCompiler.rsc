@@ -28,11 +28,11 @@ data Path
 alias FieldsAndBody = tuple[list[str] fields, str body];
 
 // TODO this is a simplifivation. It is necessary to consider the packages for multiple modules.
-str(str) createBody(rootType(tn: typeName(packages, clazz)), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole){
+str(str) createBody(rootType(tn: typeName(packages, clazz)),  str rootPackageName, str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole){
 	return
 		"if (root instanceof <className>$.<clazz>) {
-		'	List\<<toJavaType(tn)>\> nodes<depth> = Arrays.asList((<className>$.<clazz>) root);
-		'	for (<toJavaType(tn)> node<depth>:nodes<depth>) {
+		'	List\<<toJavaType(rootPackageName, tn)>\> nodes<depth> = Arrays.asList((<className>$.<clazz>) root);
+		'	for (<toJavaType(rootPackageName, tn)> node<depth>:nodes<depth>) {
 		'		<hole>
 		'	}
 		'}
@@ -54,11 +54,11 @@ default str toJavaType(str className, str clazz) =
 */	
 	
 
-str toJavaType(typeName([], "byte")) = 
+str toJavaType(str rootPackageName, typeName([], "byte")) = 
 	"UnsignedBytes";		
 
-str toJavaType(typeName(list[str] package, str clazz)) = 
-	"<intercalate(".", package)>$.<clazz>"
+str toJavaType(str rootPackageName, typeName(list[str] package, str clazz)) = 
+	"<intercalate(".", (rootPackageName == "" ? package : [rootPackageName] + package))>$.<clazz>"
 	when clazz !:= "byte";		
 
 		
@@ -78,7 +78,7 @@ str toJavaExpression(str className, parent: typeName(_, pclazz), tn:typeName(_, 
 		 listType(t) := fields[<parent, fieldName>],
 		 byteType() !:= t;
 
-str(str) createBody(path:field(Path src, str fieldName), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
+str(str) createBody(path:field(Path src, str fieldName),  str rootPackageName, str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
 	println(src);
 	println(graph);
 	set[TypeName] parentTns = getTypes(src, graph);
@@ -90,14 +90,14 @@ str(str) createBody(path:field(Path src, str fieldName), str className, Structur
 	TypeName tn = getOneFrom(tns);
 	str clazz = tn.name;
 	str inner =
-	"List\<<toJavaType(tn)>\> nodes<depth> =  <toJavaExpression(className, parentTn, tn, fieldName, depth, atypes, fields)>;
-	'for (<toJavaType(tn)> node<depth>:nodes<depth>) {
+	"List\<<toJavaType(rootPackageName, tn)>\> nodes<depth> =  <toJavaExpression(className, parentTn, tn, fieldName, depth, atypes, fields)>;
+	'for (<toJavaType(rootPackageName, tn)> node<depth>:nodes<depth>) {
 	'		<hole>
 	'}";
-	return (createBody(src, className, graph, depth + 1, atypes, fields))(inner);
+	return (createBody(src, rootPackageName, className, graph, depth + 1, atypes, fields))(inner);
 	};
 	
-str(str) createBody(path:fieldType(Path src, TypeName tn0), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
+str(str) createBody(path:fieldType(Path src, TypeName tn0),  str rootPackageName, str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
 	set[TypeName] tns = getTypes(src, graph);
 	TypeName tn = getOneFrom(tns);
 	str clazz = tn0.name;
@@ -105,11 +105,11 @@ str(str) createBody(path:fieldType(Path src, TypeName tn0), str className, Struc
 	println(tn0);
 	set[str] fieldNames = {fieldName | <tn, fieldName, tn0> <- graph};
 	str inner =
-	"List\<<toJavaType(tn0)>\> nodes<depth> =  Arrays.asList(<intercalate(", ", ["node<depth+1>.<fieldName>" | fieldName <- fieldNames])>);
-	'for (<toJavaType(tn0)> node<depth>:nodes<depth>) {
+	"List\<<toJavaType(rootPackageName, tn0)>\> nodes<depth> =  Arrays.asList(<intercalate(", ", ["node<depth+1>.<fieldName>" | fieldName <- fieldNames])>);
+	'for (<toJavaType(rootPackageName, tn0)> node<depth>:nodes<depth>) {
 	'		<hole>
 	'}";
-	return (createBody(src, className, graph, depth + 1, atypes, fields))(inner);
+	return (createBody(src, rootPackageName, className, graph, depth + 1, atypes, fields))(inner);
 	};	
 	
 list[str] getAllSuccessors(str acc, t1:typeName(_, str type1), t2:typeName(_, str type2), LGraph[TypeName, str] g) {
@@ -147,7 +147,7 @@ str(str) createBody(path: deepMatchType(Path src, TypeName tn0), str className, 
 	};	
 */	
 	
-str(str) createBody(path: deepMatchType(Path src, TypeName tn0), str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
+str(str) createBody(path: deepMatchType(Path src, TypeName tn0), str rootPackageName, str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
 	set[TypeName] tns = getTypes(src, graph);
 	for (line <- graph)
 		println(line);
@@ -159,37 +159,46 @@ str(str) createBody(path: deepMatchType(Path src, TypeName tn0), str className, 
 	println(tn0);
 	list[str] paths =getAllPaths(tn,  tn0, graph, depth, atypes);
 	str inner =
-	"List\<<toJavaType(tn0)>\> nodes<depth> =  node<depth+1>.accept(new DeepMatchVisitor\<<toJavaType(tn0)>\>(<toJavaType(tn0)>.class));
-	'for (<toJavaType(tn0)> node<depth>:nodes<depth>) {
+	"List\<<toJavaType(rootPackageName, tn0)>\> nodes<depth> =  node<depth+1>.accept(new DeepMatchVisitor\<<toJavaType(rootPackageName, tn0)>\>(<toJavaType(rootPackageName, tn0)>.class));
+	'for (<toJavaType(rootPackageName, tn0)> node<depth>:nodes<depth>) {
 	'		<hole>
 	'}";
-	return (createBody(src, className, graph, depth +1, atypes, fields))(inner);
+	return (createBody(src, rootPackageName, className, graph, depth +1, atypes, fields))(inner);
 	};		
 	
-FieldsAndBody createBody(path: fieldType(Path src, TypeName tn), str className, StructuredGraph graph, map[TypeName, AType] atypes) =
+FieldsAndBody createBody(path: fieldType(Path src, TypeName tn), str rootPackageName, str className, StructuredGraph graph, map[TypeName, AType] atypes) =
 	<
 		["<field>.<fieldName>" | field <- fields, <_, fieldName, tn> <- graph, tn in pathTypes]
 	, 
 		body
 	>
-	when <fields, body> := createBody(src, className, graph, atypes),
+	when <fields, body> := createBody(src, rootPackageName, className, graph, atypes),
 		 set[TypeName] pathTypes := getTypes(path, graph);
 		 
+str toJavaValue(javaStringType(), str val) = "\"<val>\"";
+default str toJavaValue(JavaType _, str val) = val;
 
-str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, str rootPackageName, list[NamedPattern] patterns, StructuredGraph graph, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType] fields) =
-	"package engineering.swat.nest.examples.formats.bird_generated.nescio;
+str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, str rootPackageName, TypeName initialNonTerminal, Rules rules, StructuredGraph graph, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType] fields) =
+	"package <absolutePackageName>;
 	'
 	'import java.io.IOException;
 	'import java.lang.reflect.InvocationTargetException;
 	'import java.lang.reflect.Method;
 	'import java.net.URISyntaxException;
+	'import java.net.URL;
 	'import java.nio.file.Files;
 	'import java.nio.file.Path;
 	'import java.nio.file.Paths;
 	'import java.util.ArrayList;
 	'import java.util.List;
+	'import java.util.Map;
+	'import java.util.HashMap;
 	'import java.util.Objects;
 	'import java.util.stream.Collectors;
+	'import engineering.swat.nescio.Anonymizer;
+	'import engineering.swat.nescio.Range;
+	'import engineering.swat.nescio.MatchingException;
+	'import engineering.swat.nescio.TransformationDescription;
 	'import engineering.swat.nest.CommonTestHelper;
 	'import engineering.swat.nest.core.bytes.ByteStream;
 	'import engineering.swat.nest.core.bytes.Context;
@@ -197,30 +206,79 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'import engineering.swat.nest.core.bytes.source.ByteSliceBuilder;
 	'import engineering.swat.nest.core.nontokens.NestBigInteger;
 	'import engineering.swat.nest.core.tokens.primitive.UnsignedBytes;
+	'import engineering.swat.nest.core.tokens.Token;
 	'import java.util.ArrayList;
 	'import java.util.Arrays;
-	'import engineering.swat.nest.nescio.Location;
 	'import engineering.swat.nest.nescio.util.DeepMatchVisitor;
 	'import <containerClassName>;
 	'<for ((Import) `import <ModuleId mid>` <- imports) {>
 	'import <rootPackageName>.<intercalate(".", ["<id>" | Id id <- mid.moduleName])>$;
 	'import <rootPackageName>.<intercalate(".", ["<id>" | Id id <- mid.moduleName])>$.*;
 	'<}>
-	'public class <className>Matcher {
-	'	<for (pattern(name, path) <- patterns){ str s = createBody(path, "<className>", graph, 0, atypes, fields)("locs.add(getLocation(node0));"); >
-	'	public static List\<Location\> <name>(Object root) {
-	'		List\<Location\> locs = new ArrayList\<Location\>();
+	'public class <className>Anonymizer extends Anonymizer {
+	'	<for (pattern(name, path) <- patterns){ str s = createBody(path, rootPackageName, "<className>", graph, 0, atypes, fields)("locs.add(getRange(node0));"); >
+	'	public static List\<Range\> __<name>(Object root) {
+	'		List\<Range\> locs = new ArrayList\<Range\>();
 	'		<s>
 	'		return locs;
 	'	}	
 	'	<}>
-	'	private static Location getLocation(UnsignedBytes bytes) {
+	'	private static Range getRange(UnsignedBytes bytes) {
 	'		TrackedByteSlice slice = bytes.getTrackedBytes();
 	'		int offset = slice.getOrigin(NestBigInteger.ZERO).getOffset().intValueExact();
-	'		return new Location(offset, slice.size().intValueExact());
+	'		return new Range(offset, slice.size().intValueExact());
 	'	}
-	
-	'	public static void main(String[] args)
+	'
+	'	private static Range getRange(Token token) {
+	'		TrackedByteSlice slice = token.getTrackedBytes();
+	'		int offset = slice.getOrigin(NestBigInteger.ZERO).getOffset().intValueExact();
+	'		return new Range(offset, slice.size().intValueExact());
+	'	}
+	'
+	'	@Override
+	'	public Map\<String, TransformationDescription\> match(Path input) throws MatchingException{
+	'		Map\<String, TransformationDescription\> trafos = new HashMap\<\>();
+	'		<toJavaType(rootPackageName, initialNonTerminal)> r; 
+	'		try {		
+	'			ByteStream stream = new ByteStream(ByteSliceBuilder.convert(Files.newInputStream(input), input.toUri()));
+	'			r= <toJavaType(rootPackageName, initialNonTerminal)>.parse(stream, Context.DEFAULT);
+	'		
+	'		} catch (IOException e) {
+	'			throw new MatchingException(e);
+	'		}
+	'		List\<Range\> ranges;
+	'		<for (str ruleName <- rules, <Path path, <str javaClass, lrel[JavaType, str] args>> := rules[ruleName]) {>
+	'		ranges = new ArrayList\<\>();
+	'		for (Range range: __<ruleName>(r)) {
+	'			System.out.println(range);
+	'			ranges.add(range);
+	'		}
+	'		trafos.put(\"<ruleName>\", 
+	'			new TransformationDescription(
+	'				bytes -\> <javaClass>(<intercalate(", ", ["bytes"] + [toJavaValue(typ, val) | <JavaType typ, str val> <- args])>),
+	'				ranges));
+	'				
+	'		<}>
+	'		return trafos;
+	'	}
+	'
+	'	public static void main(String[] args) throws URISyntaxException, IOException, MatchingException {
+	'		ClassLoader context = Objects.requireNonNull(CommonTestHelper.class.getClassLoader(),
+	'				\"Unexpected missing classloader\");
+	'		String inputFile = args[0];
+	'		String outputFile = args[1];
+	'		if (inputFile == null)
+	'			throw new RuntimeException(\"File to parse must be specified\");
+	'		if (outputFile == null)
+	'			throw new RuntimeException(\"Output file must be specified\");
+	'	
+	'		Path input = Paths.get(context.getResource(inputFile).toURI());
+	'		Path output = Paths.get(new URL(context.getResource(\".\").toURI().toURL(), outputFile).toURI());
+	'		Anonymizer anonimizer = new TCP_IP_non_modularAnonymizer();
+	'		anonimizer.anonymize(input, output);
+	'	}
+	'
+	'	public static void mainOld(String[] args)
 	'			throws IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 	'		ClassLoader context = Objects.requireNonNull(CommonTestHelper.class.getClassLoader(),
 	'				\"Unexpected missing classloader\");
@@ -239,7 +297,7 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'		Object r = method.invoke(null, stream, Context.DEFAULT);
 	'		<for (pattern(str name, _) <- patterns) {>
 	'		System.out.println(\"<name>\");
-	'		for (Location l : <name>(r)) {
+	'		for (Range l : __<name>(r)) {
 	'			System.out.println(l);
 	'		}
 	'		<}>
@@ -249,7 +307,9 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	when [dirs*, className] := [x | x <- moduleName.moduleName],
 		 str packageName := ((size(dirs) == 0)? "": ("."+ intercalate(".", dirs))),
 		 str absolutePackageName := "<((rootPackageName != "")?"<rootPackageName>":"")><packageName>",
-		 str containerClassName := "<absolutePackageName>.<className>$";
+		 str containerClassName := "<absolutePackageName>.<className>$",
+		 list[NamedPattern] patterns := [pattern(ruleName, path) | str ruleName <- rules, <Path path, _> := rules[ruleName]];
+	
 	
 public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);	
 	
@@ -328,4 +388,42 @@ void test1() {
 		println("{<<scope, id, defined>>}");
 		println(model.facts[ty@\loc]);
 	}
+}
+
+void compilePath4To(loc file) {
+	start[Program] uvw = sampleBird("network/TCP_IP_non_modular");
+	TModel model = birdTModelFromTree(uvw);
+	StructuredGraph graph = birdGraphCalculator(uvw);
+	map[loc, AType] types = getFacts(model);
+	map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(uvw.top, model, types);
+	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, model):types[locType] | locType <- types);
+	atypes += (typeName([], "byte"):byteType());
+	NamedPattern p1 = pattern("findDNSNId", field(field(deepMatchType(rootType(typeName(["network", "TCP_IP_non_modular"], "PCAP")), typeName(["network", "TCP_IP_non_modular"], "DNS")), "header"), "identifier"));
+	NamedPattern p2 = pattern("findQuestionName", field(deepMatchType(rootType(typeName(["network", "TCP_IP_non_modular"], "PCAP")), typeName(["network", "TCP_IP_non_modular"], "Question")), "questionName"));
+	str src = compile(uvw.top, "engineering.swat.nest.examples.formats.bird_generated", [p1, p2], graph, atypes, fields);
+	writeFile(file, src);
+}
+
+void compilePath(loc modelFile, loc nescioFile, loc outputFile) {
+	start[Program] birdProgram = parse(#start[Program], modelFile);
+	TModel birdModel = birdTModelFromTree(birdProgram);
+	map[loc, AType] types = getFacts(birdModel);
+	map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(birdProgram.top, birdModel, types);
+	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, birdModel):types[locType] | locType <- types);
+	atypes += (typeName([], "byte"):byteType());
+	
+	loc initialBirdDir = |project://bird-core/bird-src/|;
+	
+	StructuredGraph graph = computeAggregatedStructuredGraph(nescioFile, buildBirdModulesComputer(initialBirdDir), birdGraphCalculator);
+	
+	println("the graph: <graph>");
+	
+	Rules rules = evalNescio(nescioFile, graph);
+	
+	TypeName root = getRoot(nescioFile, graph);
+	
+	// create list of named patterns from rules 
+	
+	str src = compile(birdProgram.top, "engineering.swat.nest.examples.formats.bird_generated", root, rules, graph, atypes, fields);
+	writeFile(outputFile, src);
 }
