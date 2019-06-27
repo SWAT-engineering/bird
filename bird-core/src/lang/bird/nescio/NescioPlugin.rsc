@@ -13,18 +13,52 @@ import String;
 
 import IO;
 
-StructuredGraph birdGraphCalculator(str moduleName, PathConfig pcfg) {
- 	start[Program] pt = sampleBird(moduleName, pcfg);
- 	return birdGraphCalculator(pt);
- }
+loc(TypeName) buildBirdModuleMapper(loc baseLoc) = loc(TypeName tn){
+	if (typeName(path, name) := tn) {
+		return baseLoc + "<intercalate("/", path)>/<name>.bird";
+	}
+};
 
-StructuredGraph birdGraphCalculator(start[Program] pt) {
+TypeName birdModuleIdToTypeName((ModuleId) `<{Id "::"}+ moduleName>`) = typeName(lst[0..-1], lst[-1])
+	when lst := ["<id>" | Id id <- moduleName];
+
+list[loc](TypeName) buildBirdModulesComputer(loc baseLoc) = list[loc](TypeName m) {
+	loc file = (buildBirdModuleMapper(baseLoc))(m);
+	if (exists(file)) {
+		start[Program] p = parseBird(file);
+		set[TypeName] types = { birdModuleIdToTypeName(mid) | (Program) `module <ModuleId mid> <Import* imports> <TopLevelDecl* decls>` := p.top } + { birdModuleIdToTypeName(mid) | (Import) `import <ModuleId mid>` <- p.top.imports };
+		return [(buildBirdModuleMapper(baseLoc))(tn)  |TypeName tn <- types];
+	}
+	else
+		return [];
+
+};
+ 
+StructuredGraph birdGraphCalculatorAux(TModel model) = calculateFields(model);
+
+StructuredGraph birdGraphCalculatorAux(start[Program] pt) {
  	TModel model = birdTModelFromTree(pt);
  	map[loc, AType] types = getFacts(model);
-    return calculateFields(model);
+    return birdGraphCalculator(model);
  }
+ 
+StructuredGraph birdGraphCalculator(list[loc] birdFiles) {
+	set[StructuredGraph] graphs = {};
+	for (loc birdFile <- birdFiles) {
+		start[Program] pt = parseBird(birdFile);
+ 		TModel model = birdTModelFromTree(pt);
+ 		map[loc, AType] types = getFacts(model);
+ 		StructuredGraph current = birdGraphCalculatorAux(model);
+    	graphs = graphs + { current };
+    }
+    return union(graphs);
+ } 
   
-public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);
+public start[Program] parseBird(loc file) = parse(#start[Program], file);
+
+public start[Program] sampleBird(str name, PathConfig pcfg) = parse(#start[Program], |project://bird-core/bird-src/<newName>.bird|)
+	when newName := replaceAll(name, "::", "/"),
+		bprintln(|project://bird-core/bird-src/<newName>.bird|);
 
 str toStr(voidType()) = "void";
 str toStr(byteType()) = "byte";
@@ -97,10 +131,9 @@ StructuredGraph calculateFields(TModel model) {
 	g = {};
 	for (<structScope, id, fieldId(), defined, defType(ty)> <- model.defines) {
 		println("{<<structScope, id, defined>>}");
-		println(model.facts[ty@\loc]);
-		if (<_, sid, structId(), structScope, _> <- model.defines)
+		if (<_, sid, structId(), structScope, _> <- model.defines) {
 			g+= <typeName(findModuleId(structScope, model), sid), id, typeName(findModuleId(getTypeIdLoc(ty), model), toStr(model.facts[ty@\loc]))>;
-		
+		}
 	}
 		
 	for (loc structScope <- model.anonymousFields) {
@@ -117,5 +150,3 @@ StructuredGraph calculateFields(TModel model) {
 	
 	return g;
 }	
-
-
