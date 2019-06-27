@@ -27,7 +27,20 @@ tuple[str package, str class] toJavaName(ModuleId moduleName) =
 	<packageName, "<className>$"> 
 	when [dirs*, className] := [x | x <- moduleName.moduleName],
 		 str packageName := ((size(dirs) == 0)? "": ("."+ intercalate(".", dirs)));
-	
+		 
+
+str toJavaFQName(ModuleId moduleName) = 
+	"__$<tokenName>"
+	when [tokenName] := [x | x <- moduleName.moduleName];			 
+		 
+str toJavaFQName(ModuleId moduleName) = 
+	dirs == "engineering.swat.nest.examples.formats.bird_generated.<className>$.__$<tokenName>"
+	when [className, tokenName] := [x | x <- moduleName.moduleName];		 
+		 
+str toJavaFQName(ModuleId moduleName) = 
+	dirs == []? "__$<className>": "engineering.swat.nest.examples.formats.bird_generated.<intercalate(".", ["<x>" | x <- dirs]  + ["<className>$"] + ["__$<tokenName>"])>"
+	when [dirs*, className, tokenName] := [x | x <- moduleName.moduleName],
+		 dirs != [];
 
 tuple[str, str] compile(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
 	= <packageName,
@@ -90,8 +103,8 @@ str generateNestType((Type) `byte`, map[loc, AType] types) {
 str generateNestType((Type) `<UInt v>`, map[loc, AType] types)
 	= "UnsignedBytes";
 
-str generateNestType(current: (Type) `<Id id> <TypeActuals? typeActuals>`, map[loc, AType] types)
-	="<id><nestTypeActuals>"
+str generateNestType(current: (Type) `<ModuleId id> <TypeActuals? typeActuals>`, map[loc, AType] types)
+	="<toJavaFQName(id)><nestTypeActuals>"
 	when list[Type] typeActualsList := [ta | atypeActuals <- typeActuals, Type ta <- atypeActuals.typeActuals],
 		 str nestTypeActuals := ((size(typeActualsList) > 0)?"\<<intercalate(",", [generateNestType(ta, types) | Type ta <- typeActualsList])>\>":"");
 
@@ -102,60 +115,60 @@ str makeId(Tree t) = ("<t>" =="_")?"$anon_<lo.offset>_<lo.length>_<lo.begin.line
 	when lo := t@\loc;
 	
 str compileAnno("encoding", (Expr) `<Id val>`, rel[loc,loc] useDefs, map[loc, AType] types)
-	= "ctx = ctx.setEncoding(StandardCharsets.<val>);";
+	= "__$ctx = __$ctx.setEncoding(StandardCharsets.<val>);";
 	
 str compileAnno("endianness", (Expr) `<Id val>`, rel[loc,loc] useDefs, map[loc, AType] types)
-	= "ctx = ctx.setByteOrder(ByteOrder.<val>_ENDIAN);";
+	= "__$ctx = __$ctx.setByteOrder(ByteOrder.<val>_ENDIAN);";
 	
 str compileAnno("endianness", (Expr) `<Id val>`, rel[loc,loc] useDefs, map[loc, AType] types)
-	= "ctx = ctx.setByteOrder(ByteOrder.<val>_ENDIAN);";
+	= "__$ctx = __$ctx.setByteOrder(ByteOrder.<val>_ENDIAN);";
 	
 str compileAnno("offset", Expr e, rel[loc,loc] useDefs, map[loc, AType] types)
-	= "source = source.fork(<compile(e, DUMMY_DID, useDefs, types)>);";	
+	= "__$src = __$src.fork(<compile(e, DUMMY_DID, useDefs, types)>);";	
 	
 default str compileAnno(str prop, Expr e, rel[loc,loc] useDefs, map[loc, AType] types) {
 	throw "No implementation for annotation <prop>";
 }
 
 str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? annos> { <DeclInChoice* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types) =
-   "public static final class <sid> extends UserDefinedToken {
+   "public static final class __$<sid> extends UserDefinedToken {
    '	<for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? sz>` <- decls, ty is anonymousType){><generateAnonymousType(ty, formalsList, useDefs, types)>
    '	<}>
-   '	private final Token entry;
+   '	private final Token __$$entry;
    ' 	<for (<id, typ> <- fieldsList){>public final <generateNestType(typ, types)> <id>;
    '	<}>
-   '	private <sid>(<intercalate(", ", ["Token entry"] + ["<generateNestType(typ, types)> <id>" | <id, typ> <- fieldsList])>){
-   '		this.entry = entry;
+   '	private __$<sid>(<intercalate(", ", ["Token __$$entry"] + ["<generateNestType(typ, types)> <id>" | <id, typ> <- fieldsList])>){
+   '		this.__$$entry = __$$entry;
    '	<for  (<id, _> <- fieldsList){>	this.<id> = <id>;
    '	<}>	
    '	}
    '
-   '	public static <sid> parse(ByteStream source, Context ctx<intercalate(", ", [""] +["<generateNestType(typ, types)> <id>" | <id, typ> <- formalsList])>) throws ParseError {
+   '	public static __$<sid> parse(ByteStream __$src, Context __$ctx<intercalate(", ", [""] +["<generateNestType(typ, types)> <id>" | <id, typ> <- formalsList])>) throws ParseError {
    '		<for (aannos <- annos, (Anno) `<Id prop> = <Expr e>` <- aannos.annos){><compileAnno("<prop>", e, useDefs, types)>
    '		<}>
    '	<for (<id, ty> <- fieldsList){>
    '		AtomicReference\<<generateNestType(ty, types)>\> <id> = new AtomicReference\<\>();
    '	<}>
-   '		Token entry = Choice.between(source, ctx
+   '		Token __$$entry = Choice.between(__$src, __$ctx
    '	<for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? sz>` <- decls){>,
    '		(s, c) -\> {
-   '			<generateNestType(ty, types)> result = <generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], [id | <id, _> <- formalsList], useDefs, types)>;
-   '			<for (<id, _> <- fieldsList){><id>.set(result.<id>);
+   '			<generateNestType(ty, types)> __$result = <generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], [id | <id, _> <- formalsList], useDefs, types)>;
+   '			<for (<id, _> <- fieldsList){><id>.set(__$result.<id>);
    '			<}>
-   '			return result;
+   '			return __$result;
    '		}
    '		<}>);
-   '		return new <sid>(<intercalate(", ", ["entry"] + ["<id>.get()" | <id, _> <- fieldsList])>);
+   '		return new __$<sid>(<intercalate(", ", ["__$$entry"] + ["<id>.get()" | <id, _> <- fieldsList])>);
    '	}
    '
    '	@Override
    '    protected Token[] parsedTokens() {
-   '        return new Token[]{ entry };
+   '        return new Token[]{ __$$entry };
    '    }
    '
    '    @Override
    '    protected Token[] allTokens() {
-   '        return new Token[]{ entry };
+   '        return new Token[]{ __$$entry };
    '    }
    '}"           	
 	when lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
@@ -165,23 +178,23 @@ str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? a
 		 ;
 
 str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, rel[loc,loc] useDefs, map[loc, AType] types) =
-   "public static final class <sid><javaTypeFormals> extends UserDefinedToken {
+   "public static final class __$<sid><javaTypeFormals> extends UserDefinedToken {
    '	<for ((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>` <- decls, ty is anonymousType){><generateAnonymousType(ty, useDefs, types)>
    '	<}>
    '	<for (<id, typ> <- allFieldsList){>
    '		public final <generateNestType(typ, types)> <id>;
    '	<}>
-   '	private <sid>(<intercalate(", ", ["<generateNestType(typ, types)> <id>" | <id, typ> <- allFieldsList])>){
+   '	private __$<sid>(<intercalate(", ", ["<generateNestType(typ, types)> <id>" | <id, typ> <- allFieldsList])>){
    '	<for  (<id, _> <- allFieldsList){>	this.<id> = <id>;
    '	<}>	
    '	}
    '
-   '	public static <javaTypeFormals> <sid><javaTypeFormalsNames> parse(ByteStream source, Context ctx<intercalate(", ", [""] +["<generateNestType(typ, types)> <id>" | <id, typ> <- formalsList] + ["BiFunction\<ByteStream, Context, <tf>\> parserFor<tf>" |Id tf <- typeFormalsList])>) throws ParseError {
+   '	public static <javaTypeFormals> __$<sid><javaTypeFormalsNames> parse(ByteStream __$src, Context __$ctx<intercalate(", ", [""] +["<generateNestType(typ, types)> <id>" | <id, typ> <- formalsList] + ["BiFunction\<ByteStream, Context, <tf>\> parserFor<tf>" |Id tf <- typeFormalsList])>) throws ParseError {
    '		<for (aannos <- annos, (Anno) `<Id prop> = <Expr e>` <- aannos.annos){><compileAnno("<prop>", e, useDefs, types)>
    '		<}>
    '	<for (DeclInStruct d <- decls){>
    '		<compileDeclInStruct(d, "<sid>", [id | <id ,_>  <- formalsList], useDefs, types)><}>
-   '		return new <sid>(<intercalate(", ", [id | <id, _> <- allFieldsList])>);
+   '		return new __$<sid>(<intercalate(", ", [id | <id, _> <- allFieldsList])>);
    '	}
    '
    '	@Override
@@ -212,7 +225,7 @@ str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, lre
     '	<}>	
     '	}
     '
-    '	public static <sid> parse(ByteStream source, Context ctx<for (<id, ty> <- formals){>, <generateNestType(ty, types)> <id><}>) throws ParseError {
+    '	public static <sid> parse(ByteStream __$src, Context __$ctx<for (<id, ty> <- formals){>, <generateNestType(ty, types)> <id><}>) throws ParseError {
     '	<for (DeclInStruct d <- decls){>
     '		<compileDeclInStruct(d, "<sid>", [], useDefs, types)><}>
     '		return new <sid>(<intercalate(", ", [id | <id, _> <- fieldsList])>);
@@ -229,55 +242,55 @@ str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, lre
 		 ;
 
 		 
-str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
+str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
 	= "<src>.readUnsigned(<compile(expr, DUMMY_DID, useDefs, types)>, <ctx>)"
 	when listType(byteType(), n = just(expr)) :=  types[current@\loc];
 	
-str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
+str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
 	= "TokenList.untilParseFailure(<src>, <ctx>, (<src1>, <ctx1>) -\> <src1>.readUnsigned(1, <ctx1>))"
 	when listType(byteType(), n = nothing()) :=  types[current@\loc],
-		 src1 := makeUnique(current, "src"),
-		 ctx1 := makeUnique(current, "ctx");
+		 src1 := makeUnique(current, "__$src"),
+		 ctx1 := makeUnique(current, "__$ctx");
 	
-str generateParsingInstruction(current: (Type) `<Type t> []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
-	= "TokenList.times(source, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], useDefs, types, src = "<src1>", ctx = "<ctx1>")>, <compile(expr, DUMMY_DID, useDefs, types)>.intValueExact())"
+str generateParsingInstruction(current: (Type) `<Type t> []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
+	= "TokenList.times(<src>, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], useDefs, types, src = "<src1>", ctx = "<ctx1>")>, <compile(expr, DUMMY_DID, useDefs, types)>.intValueExact())"
 	when (Type) `byte` !:= t,
 	     listType(_, n = just(expr)) :=  types[current@\loc],
-		 src1 := makeUnique(t, "src"),
-		 ctx1 := makeUnique(t, "ctx");
+		 src1 := makeUnique(t, "__$src"),
+		 ctx1 := makeUnique(t, "__$ctx");
 		 
-str generateParsingInstruction(current: (Type) `<Type t> []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
-	= "TokenList.untilParseFailure(source, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], useDefs, types, src = "<src1>", ctx = "<ctx1>")>)"
+str generateParsingInstruction(current: (Type) `<Type t> []`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
+	= "TokenList.untilParseFailure(<src>, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], useDefs, types, src = "<src1>", ctx = "<ctx1>")>)"
 	when (Type) `byte` !:= t,
 		 listType(_, n = nothing()) :=  types[current@\loc],
-		 src1 := makeUnique(t, "src"),
-		 ctx1 := makeUnique(t, "ctx");		 
+		 src1 := makeUnique(t, "__$src"),
+		 ctx1 := makeUnique(t, "__$ctx");		 
 	
 // TODO This should be forbidden by the type checker	
-str generateParsingInstruction((Type) `byte`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx") {
+str generateParsingInstruction((Type) `byte`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx") {
 	throw "Single byte cannot be used as a type";
 }
 
-str generateParsingInstruction(current: (Type) `<UInt v>`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
+str generateParsingInstruction(current: (Type) `<UInt v>`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
 	= "<src>.readUnsigned(<n>, <ctx>)"
 	when listType(byteType(), n = just(n)) :=  types[current@\loc];
 
-str generateParsingInstruction(current: (Type) `<Id id> <TypeActuals? typeActuals>`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
- 	= "<id>.parse(<src>, <ctx><for (e <-args){>, <compile(e, DUMMY_DID, useDefs, types)><}><for (atypeActuals <- typeActuals, Type ta <- atypeActuals.typeActuals){>, (<src1>, <ctx1>) -\> <generateParsingInstruction(ta, [], [], useDefs, types, src = src1, ctx = ctx1)><}>)"
+str generateParsingInstruction(current: (Type) `<ModuleId id> <TypeActuals? typeActuals>`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
+ 	= "<toJavaFQName(id)>.parse(<src>, <ctx><for (e <-args){>, <compile(e, DUMMY_DID, useDefs, types)><}><for (atypeActuals <- typeActuals, Type ta <- atypeActuals.typeActuals){>, (<src1>, <ctx1>) -\> <generateParsingInstruction(ta, [], [], useDefs, types, src = src1, ctx = ctx1)><}>)"
  	
  	when variableType(_) !:= types[current@\loc],
- 		 src1 := makeUnique(id, "src"),
- 		 ctx1 := makeUnique(id, "ctx");
+ 		 src1 := makeUnique(id, "__$src"),
+ 		 ctx1 := makeUnique(id, "__$ctx");
  	
-str generateParsingInstruction((Type) `<Id id>`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
+str generateParsingInstruction((Type) `<Id id>`, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
  	= "parserFor<id>.apply(<src>, <ctx>)"
  	when variableType(_) := types[id@\loc];
  	
  	
-str generateParsingInstruction(current: (Type) `struct { <DeclInStruct* decls>}`, list[Expr] args, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx")
+str generateParsingInstruction(current: (Type) `struct { <DeclInStruct* decls>}`, list[Expr] args, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
 	="<generateNestType(current, types)>.parse(<src>, <ctx><for (id <- formalIds){>, <id><}>)";
 			 
-default str generateParsingInstruction(Type t, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "source", str ctx = "ctx") {
+default str generateParsingInstruction(Type t, list[Expr] args, list[str] _, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx") {
 	throw "Not yet generateParsingInstruction for type <t>";
 }
 
@@ -305,7 +318,7 @@ str generateSideCondition((SideCondition) `? (<Expr e>)`, str parentId, DId this
 // TODO Check if `while` does make sense for something that is not u8[].
 // 		If not, enforce constraint in type checker (together with type of it)
 str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"<generateNestType(ty, types)> <makeId(id)> = TokenList.parseWhile(source, ctx,
+	"<generateNestType(ty, types)> <makeId(id)> = TokenList.parseWhile(__$src, __$ctx,
     '	(s, c) -\> <generateParsingInstruction(ty, [e | aargs <- args, e <- aargs.args], [], useDefs, types, src = "s", ctx = "c")>,
     '	it -\> (<compile(e, id, useDefs, types)>)
     ');";
@@ -432,6 +445,9 @@ str compile(current: (Expr) `- <Expr e>`, DId this, rel[loc,loc] useDefs, map[lo
 str compileBinary(str op, Expr e1, Expr e2, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"(<compile(e1, this, useDefs, types)>).asValue().<op>(<compile(e2, this, useDefs, types)>)";
 		 
+str compileBinaryArithmetic(str op, Expr e1, Expr e2, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
+	"(<compile(e1, this, useDefs, types)>).<op>(<compile(e2, this, useDefs, types)>)";
+		 
 str compileBinaryInfix(str op, Expr e1, Expr e2, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"(<compile(e1, this, useDefs, types)> <op> <compile(e2, this, useDefs, types)>)";
 	
@@ -455,13 +471,13 @@ str compile(current: (Expr) `<Expr e1> | <Expr e2>`, DId this, rel[loc,loc] useD
 	compileBinary("or", e1, e2, this, useDefs, types);	
 	
 str compile(current: (Expr) `<Expr e1> - <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
-	compileBinary("subtract", e1, e2, this, useDefs, types);
+	compileBinaryArithmetic("subtract", e1, e2, this, useDefs, types);
 	
 str compile(current: (Expr) `<Expr e1> + <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
-	compileBinary("add", e1, e2, this, useDefs, types);
+	compileBinaryArithmetic("add", e1, e2, this, useDefs, types);
 	
 str compile(current: (Expr) `<Expr e1> * <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
-	compileBinary("multiply", e1, e2, this, useDefs, types);
+	compileBinaryArithmetic("multiply", e1, e2, this, useDefs, types);
 	
 	
 str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
