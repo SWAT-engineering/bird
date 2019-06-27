@@ -30,8 +30,8 @@ alias FieldsAndBody = tuple[list[str] fields, str body];
 // TODO this is a simplifivation. It is necessary to consider the packages for multiple modules.
 str(str) createBody(rootType(tn: typeName(packages, clazz)),  str rootPackageName, str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole){
 	return
-		"if (root instanceof <className>$.<clazz>) {
-		'	List\<<toJavaType(rootPackageName, tn)>\> nodes<depth> = Arrays.asList((<className>$.<clazz>) root);
+		"if (root instanceof <toJavaType(rootPackageName, tn)>) {
+		'	List\<<toJavaType(rootPackageName, tn)>\> nodes<depth> = Arrays.asList((<toJavaType(rootPackageName, tn)>) root);
 		'	for (<toJavaType(rootPackageName, tn)> node<depth>:nodes<depth>) {
 		'		<hole>
 		'	}
@@ -58,7 +58,7 @@ str toJavaType(str rootPackageName, typeName([], "byte")) =
 	"UnsignedBytes";		
 
 str toJavaType(str rootPackageName, typeName(list[str] package, str clazz)) = 
-	"<intercalate(".", (rootPackageName == "" ? package : [rootPackageName] + package))>$.<clazz>"
+	"<intercalate(".", (rootPackageName == "" ? package : [rootPackageName] + package))>$.__$<clazz>"
 	when clazz !:= "byte";		
 
 		
@@ -274,7 +274,7 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'	
 	'		Path input = Paths.get(context.getResource(inputFile).toURI());
 	'		Path output = Paths.get(new URL(context.getResource(\".\").toURI().toURL(), outputFile).toURI());
-	'		Anonymizer anonimizer = new TCP_IP_non_modularAnonymizer();
+	'		Anonymizer anonimizer = new <className>Anonymizer();
 	'		anonimizer.anonymize(input, output);
 	'	}
 	'
@@ -362,46 +362,6 @@ map[tuple[TypeName tn, str fieldName], AType] atypesForFields(Program p, TModel 
 		res += (<typeName(findModuleId(structLoc, model), structNames[structLoc]), fieldName> : model.facts[ty@\loc]);
 	};
 	return res;
-}
-
-void compilePath3To(loc file) {
-	start[Program] uvw = sampleBird("uvw");
-	TModel model = birdTModelFromTree(uvw);
-	StructuredGraph graph = birdGraphCalculator(uvw);
-	map[loc, AType] types = getFacts(model);
-	map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(uvw.top, model, types);
-	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, model):types[locType] | locType <- types);
-	atypes += (typeName([], "byte"):byteType());
-	//NamedPattern p1 = pattern("findX", field(deepMatchType(rootType(typeName([], "U")), typeName([], "X")), "x1"));
-	NamedPattern p1 = pattern("findX", field(field(rootType(typeName(["uvw"], "U")), "x"), "x1"));
-	NamedPattern p2 = pattern("findXType", field(fieldType(rootType(typeName(["uvw"], "U")), typeName(["x"], "X")), "x1"));
-	NamedPattern p3 = pattern("findZ", field(field(field(rootType(typeName(["uvw"], "U")), "p"), "v"), "z1"));
-	NamedPattern p4 = pattern("findXDeep", field(deepMatchType(rootType(typeName(["uvw"], "U")), typeName(["x"], "X")), "x1"));
-	str src = compile(uvw.top, "engineering.swat.nest.examples.formats.bird_generated", [p1, p2, p3, p4], graph, atypes, fields);
-	writeFile(file, src);
-}
-	
-void test1() {
-	start[Program] uvw = sampleBird("uvw");
-	TModel model = birdTModelFromTree(uvw);
-	for (<scope, id, fieldId(), defined, defType(ty)> <- model.defines) {
-		println("{<<scope, id, defined>>}");
-		println(model.facts[ty@\loc]);
-	}
-}
-
-void compilePath4To(loc file) {
-	start[Program] uvw = sampleBird("network/TCP_IP_non_modular");
-	TModel model = birdTModelFromTree(uvw);
-	StructuredGraph graph = birdGraphCalculator(uvw);
-	map[loc, AType] types = getFacts(model);
-	map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(uvw.top, model, types);
-	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, model):types[locType] | locType <- types);
-	atypes += (typeName([], "byte"):byteType());
-	NamedPattern p1 = pattern("findDNSNId", field(field(deepMatchType(rootType(typeName(["network", "TCP_IP_non_modular"], "PCAP")), typeName(["network", "TCP_IP_non_modular"], "DNS")), "header"), "identifier"));
-	NamedPattern p2 = pattern("findQuestionName", field(deepMatchType(rootType(typeName(["network", "TCP_IP_non_modular"], "PCAP")), typeName(["network", "TCP_IP_non_modular"], "Question")), "questionName"));
-	str src = compile(uvw.top, "engineering.swat.nest.examples.formats.bird_generated", [p1, p2], graph, atypes, fields);
-	writeFile(file, src);
 }
 
 void compilePath(loc modelFile, loc nescioFile, loc outputFile) {
