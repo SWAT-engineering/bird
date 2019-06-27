@@ -596,31 +596,38 @@ void collect(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] size = nothi
 	});
 }  
 
-void collect(current: (Type) `<Id name> <TypeActuals? actuals>`, Collector c, Maybe[Expr] sz = nothing()){
+void collect(current: (Type) `<ModuleId name> <TypeActuals? actuals>`, Collector c, Maybe[Expr] sz = nothing()){
 	println("checking <current>");
-    c.use(name, {structId(), typeVariableId()});
-        
+	
+	list[Id] idsInModule = [id | id <- name.moduleName];
+	
+	if (size(idsInModule) == 1)
+		c.use(name,  {structId(), typeVariableId()});
+	else
+		c.useQualified([intercalate("::", ["<id>" | id <- idsInModule[0..-1]]), "<idsInModule[-1]>"], name, {structId()}, {moduleId()});
+	
     for (TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals)
     	collect(t, c);
-    list[Type] tpActuals = [t | TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals];
+   	list[Type] tpActuals = [t | TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals];
     if (_ <- tpActuals){
     	c.calculate("actual type", current, [name] + tpActuals,
-           AType(Solver s) {
-           	if (structDef(_, fs) := s.getType(name))  
-            	s.requireTrue(size(fs) == size(tpActuals), error(current, "Incorrect number of provided type arguments"));
-            else if (sructType(_,_) := s.getType(name))
-            	s.report(error(current, "User-defined type %v does not require parameters", name));
-            else
-            	s.report(error(current, "Type %v does not receive parameters", name));
-            return structType("<name>", [s.getType(tp) | tp <- tpActuals]);});
+    		AType(Solver s) {
+           		if (structDef(_, fs) := s.getType(name))  
+            		s.requireTrue(size(fs) == size(tpActuals), error(current, "Incorrect number of provided type arguments"));
+            	else if (sructType(_,_) := s.getType(name))
+            		s.report(error(current, "User-defined type %v does not require parameters", name));
+            	else
+            		s.report(error(current, "Type %v does not receive parameters", name));
+            	return structType("<name>", [s.getType(tp) | tp <- tpActuals]);});
     }
     else {
     	c.fact(current, name);
+    	println("giving it to <current>|");
     	/*c.calculate("struct type no type arguments", current, [name],
-    		AType(Solver s) {
-    			println("So far so good: <s.getType(name)>");
-    			return s.getType(name);
-    		});
+			AType(Solver s) {
+    		println("So far so good: <s.getType(name)>");
+    		return s.getType(name);
+    	});
     	*/	
     }
 }
