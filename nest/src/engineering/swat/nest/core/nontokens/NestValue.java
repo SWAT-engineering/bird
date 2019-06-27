@@ -251,4 +251,8 @@ public class NestValue {
     public Tracked<String> asString() {
         return new Tracked<>(origin, new String(getBytes(), context.getEncoding()));
     }
+    
+    public NestValue asValue() {
+    	return this;
+    }
 }
