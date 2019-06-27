@@ -20,9 +20,6 @@ bool biprintln(value v){
 	return true;
 }
 
-bool isTokenType(listType(byteType(_))) = true;
-default bool isTokenType(listType(byteType(_))) = false;
-
 tuple[str package, str class] toJavaName(ModuleId moduleName) =
 	<packageName, "<className>$"> 
 	when [dirs*, className] := [x | x <- moduleName.moduleName],
