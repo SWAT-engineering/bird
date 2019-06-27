@@ -1,5 +1,13 @@
 package engineering.swat.nest.core.tokens.primitive;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
 import engineering.swat.nest.core.ParseError;
 import engineering.swat.nest.core.bytes.ByteStream;
 import engineering.swat.nest.core.bytes.Context;
@@ -9,12 +17,6 @@ import engineering.swat.nest.core.tokens.NestParseFunction;
 import engineering.swat.nest.core.tokens.PrimitiveToken;
 import engineering.swat.nest.core.tokens.Token;
 import engineering.swat.nest.core.tokens.TokenVisitor;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.Predicate;
 
 /**
  * A list of zero or more tokens
@@ -136,6 +138,10 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	@Override
 	public Iterator<T> iterator() {
 		return contents.iterator();
+	}
+	
+	public Stream<T> stream() {
+		return contents.stream();
 	}
 
 	@Override
