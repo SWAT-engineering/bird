@@ -67,7 +67,7 @@ Contribution compiler = builder(set[Message] (Tree tree) {
       return {error("Not a <LANG_NAME> program", tree@\loc)};
    });
  
-
+/*
 void main() {
 	registerLanguage(LANG_NAME, "bird", start[Program](str src, loc org) {
 		return parse(#start[Program], src, org);
@@ -75,8 +75,8 @@ void main() {
 	
 	registerContributions(LANG_NAME, {
         commonSyntaxProperties,
-        compiler,
+        //compiler,
         treeProperties(hasQuickFixes = false), // performance
         annotator(checkBird)
     });
-}
+}*/
