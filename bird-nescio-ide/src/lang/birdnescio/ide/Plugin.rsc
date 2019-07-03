@@ -7,6 +7,7 @@ import lang::bird::Syntax;
 import lang::bird::Checker;
 import lang::bird::Generator2Nest;
 import lang::bird::nescio::NescioPlugin;
+import lang::bird::nescio::PathCompiler;
 
 import ParseTree;
 import IO;
@@ -114,7 +115,6 @@ set[Message] buildBird(start[Program] input) {
 
 Tree checkNescio(Tree input) = {
 	pcfg = config(input@\loc);
-	println(pcfg);
 	LanguageConf birdConf = languageConf(birdGraphCalculator(pcfg), buildBirdModulesComputer(pcfg.srcs), buildBirdModuleMapper);
     model = nescioTModelFromTree(input, pathConf = pcfg, langsConfig = (BIRD_LANG_NAME:birdConf)); // your function that collects & solves
     types = getFacts(model);
@@ -124,6 +124,22 @@ Tree checkNescio(Tree input) = {
               [@docs=(l:"<prettyPrintAType(types[l])>" | l <- types)]
          ; 
 }; 
+
+set[Message] buildNescio(Tree input) {
+  pcfg = config(input@\loc);
+  LanguageConf birdConf = languageConf(birdGraphCalculator(pcfg), buildBirdModulesComputer(pcfg.srcs), buildBirdModuleMapper);
+  model = nescioTModelFromTree(input, pathConf = pcfg, langsConfig = (BIRD_LANG_NAME:birdConf));
+  if (getMessages(model) == []) {
+  	try
+  		compileNescioForBird(input, pcfg);
+  	catch x: {
+  		//println("Exception thrown: <x>");
+  		throw x;
+  	}
+  }
+  return {*getMessages(model)};
+}
+
 
 void main() {
 	println("Registering plugin...");
@@ -135,7 +151,8 @@ void main() {
 	registerContributions(NESCIO_LANG_NAME, {
         commonSyntaxProperties,
         treeProperties(hasQuickFixes = false), // performance
-        annotator(checkNescio)
+        annotator(checkNescio),
+        builder(buildNescio)
     });
 
 	registerLanguage(BIRD_LANG_NAME, "bird", Tree(str src, loc org) {
