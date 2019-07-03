@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/bird_nescio_1.1.0.qualifier.jar" id="bird_nescio_feature" version="1.1.0.qualifier">
+      <category name="Bird-Nescio_DSLs"/>
+   </feature>
+   <category-def name="Bird-Nescio_DSLs" label="Bird/Nescio DSLs">
+      <description>
+         Bird and Nescio DSLs developed in the context of the SIDN project
+      </description>
+   </category-def>
+</site>
