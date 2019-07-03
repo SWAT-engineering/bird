@@ -1,0 +1,17 @@
+module TCP_IP
+	forLanguage bird
+	rootNode PCAP
+
+import network2::TCP_IP
+import network2::PCAP
+
+str ENCRYPTION_CONSTANT = "30313233343536373839414243444546"
+
+rule anonymizeDNSNId:
+	/**/DNS/header/identifier => toZeros
+
+rule anonymizeQuestionName:
+	/**/network2::TCP_IP::Question/questionName => toZeros
+
+@(engineering.swat.nescio.algorithms.ToZeros.apply)	
+algorithm toZeros()
