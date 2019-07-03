@@ -196,7 +196,7 @@ PathConfig pathConfig(loc file) {
 
    p = project(file);      
  
-   return pathConfig(srcs = [ p + "bird-src"],  libs =[ p + "bird-lib"]);
+   return pathConfig(srcs = [ p + "bird-src"]);
 }
 
 private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
@@ -205,9 +205,9 @@ private str __ANONYMOUS_FIELDS = "__anonymousFields";
 
 str getFileName((ModuleId) `<{Id "::"}+ moduleName>`) = replaceAll("<moduleName>.bird", "::", "/");
 
-tuple[bool, loc] lookupModule(str name, PathConfig pcfg) {
-    for (s <- pcfg.srcs + pcfg.libs) {
-        result = (s + replaceAll(name, "::", "/"))[extension = "bird"];
+tuple[bool, loc] lookupModule(ModuleId name, PathConfig pcfg) {
+    for (s <- pcfg.srcs) {
+        result = (s + replaceAll("<name>", "::", "/"))[extension = "bird"];
         println(result);
         if (exists(result)) {
         	return <true, result>;
@@ -218,19 +218,19 @@ tuple[bool, loc] lookupModule(str name, PathConfig pcfg) {
 
 void collect(current:(Import) `import <ModuleId moduleName>`, Collector c) {
     c.addPathToDef(moduleName, {moduleId()}, importPath());
-    c.push(__BIRD_IMPORT_QUEUE, "<moduleName>");
+    c.push(__BIRD_IMPORT_QUEUE, moduleName);
 }
 
 void handleImports(Collector c, Tree root, PathConfig pcfg) {
-    set[str] imported = {};
-    while (list[str] modulesToImport := c.getStack(__BIRD_IMPORT_QUEUE) && modulesToImport != []) {
+    set[ModuleId] imported = {};
+    while (list[ModuleId] modulesToImport := c.getStack(__BIRD_IMPORT_QUEUE) && modulesToImport != []) {
     	c.clearStack(__BIRD_IMPORT_QUEUE);
         for (m <- modulesToImport, m notin imported) {
-            if (<true, l> := lookupModule(m, pcfg)) {
-                collect(parse(#start[Program], l).top, c);
+        	if (<true, l> := lookupModule(m, pcfg)) {
+                collect(parse(#start[Program], l).top, pcfg, c);
             }
             else {
-                c.report(error(root, "Cannot find module %v in %v or %v", m, pcfg.srcs, pcfg.libs));
+            	c.report(error(m, "Cannot find module %v in %v", "<m>", pcfg.srcs));
             }
             imported += m; 
         }
@@ -240,8 +240,18 @@ void handleImports(Collector c, Tree root, PathConfig pcfg) {
 // ----  Collect definitions, uses and requirements -----------------------
 
 
-void collect(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, Collector c){
+void collect(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, PathConfig pcfg, Collector c){
  	c.define("<moduleName>", moduleId(), current, defType(moduleType()));
+ 	bool found = false;
+ 	for (s <- pcfg.srcs) {
+        result = (s + replaceAll("<moduleName>", "::", "/"))[extension = "bird"];
+        if (exists(result)) {
+        	found = true;
+        }
+    }
+    if (!found)
+    	c.report(error(moduleName, "Module file is not defined in the declared package"));
+    
  	c.enterScope(current); {
  		collect(imports, c);
     	collect(decls, c);
@@ -257,7 +267,7 @@ Tree newConstructorId(Id id, loc root) {
 }
 
 Tree newFieldNameId(DId id, loc root) {
-    return visit(parse(#ConsId, "$<id>")) {
+	return visit(parse(#ConsId, "$$<id>")) {
         case Tree t => t[@\loc = relocsingleLine(t@\loc, root)] 
             when t has \loc
     };
@@ -317,7 +327,7 @@ void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <
 
 void collect(current:(TopLevelDecl) `@( <JavaId jid> ) <Type t> <Id id> <Formals? formals>`,  Collector c) {
      actualFormals = [af | fformals <- formals, af <- fformals.formals];
-     collect(t, c);
+     collectType(t, c);
      c.enterScope(current);
      	collect(actualFormals, c);
      c.leaveScope(current);
@@ -329,12 +339,12 @@ void collect(current:(TopLevelDecl) `@( <JavaId jid> ) <Type t> <Id id> <Formals
 
 void collect(current:(Formal) `<Type ty> <Id id>`, Collector c){
 	c.define("<id>", paramId(), current, defType(ty));
-	collect(ty, c);
+	collectType(ty, c);
 }
 
 void collect(current:(DeclInStruct) `<Type ty> <Id id> = <Expr expr>`,  Collector c) {
 	c.define("<id>", fieldId(), id, defType(ty));
-	collect(ty, c);
+	collectType(ty, c);
 	collect(expr, c);
 	c.require("good assignment", current, [expr] + [ty],
         void (Solver s) { 
@@ -343,7 +353,7 @@ void collect(current:(DeclInStruct) `<Type ty> <Id id> = <Expr expr>`,  Collecto
         		error(current, "Expression should be <prettyPrintAType(s.getType(ty))>, found <prettyPrintAType(s.getType(expr))>")); });
 }    
 
-void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? cond>`,  Collector c) {
+void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? sz> <SideCondition? cond>`,  Collector c) {
 	c.require("declared type", ty, [ty], void(Solver s){
 		s.requireTrue(isTokenType(s.getType(ty)), error(ty, "Non-initialized fields must be of a token type, but it was %t (AType: %t)", ty, s.getType(ty)));
 	});
@@ -352,17 +362,17 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
 	}
 	
 	Maybe[Expr] siz = nothing();
-	if (s <- size)
-		siz = just(s. expr);
+	if (s <- sz)
+		siz = just(s.expr);
 	
-	collect(ty, c, size = siz);
+	collectType(ty, c, theSize = siz);
 	
 	if (aargs <- args)
 		collectArgs(ty, aargs, c);
 	
 	
-	for (sz <-size){
-		collectSize(ty, sz, c);
+	for (sz0 <-sz){
+		collectSize(ty, sz0, c);
 	}
 	for (sc <- cond){
 		collectSideCondition(ty, id, sc, c);
@@ -529,14 +539,14 @@ void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? a
 
 void collect(current:(DeclInChoice) `abstract <Type ty> <Id id>`,  Collector c) {
 	c.define("<id>", fieldId(), id, defType(ty));
-	collect(ty, c);
+	collectType(ty, c);
 }
 
 void collect(current:(DeclInChoice) `<Type ty> <Arguments? args> <Size? size>`,  Collector c) {
 	c.require("declared type", ty, [ty], void(Solver s){
 		s.requireTrue(isTokenType(s.getType(ty)), error(ty, "Non-initialized fields must be of a token type but it was %t", ty));
 	});
-	collect(ty, c);
+	collectType(ty, c);
 	
 	if (aargs <- args)
 		collectArgs(ty, aargs, c);
@@ -551,7 +561,7 @@ void collect(current:(UnaryExpr) `<EqualityOperator uo> <Expr e>`, Collector c){
 }
 
 
-void collect(current:(Type)`<UInt v>`, Collector c, Maybe[Expr] size = nothing()) {
+void collectType(current:(Type)`<UInt v>`, Collector c, Maybe[Expr] theSize = nothing()) {
 	c.calculate("actual type", current, [],
     	AType(Solver s) {
     		s.requireTrue(toInt("<v>"[1..]) % 8 == 0, error(current, "The number of bits in a u? type must be a multiple of 8")); 
@@ -560,22 +570,25 @@ void collect(current:(Type)`<UInt v>`, Collector c, Maybe[Expr] size = nothing()
 }
 
 
-void collect(current:(Type)`byte`, Collector c, Maybe[Expr] size = nothing()) {
+void collectType(current:(Type)`byte`, Collector c, Maybe[Expr] theSize = nothing()) {
 	c.fact(current, byteType());
 }  
 
-void collect(current:(Type)`str`, Collector c, Maybe[Expr] size = nothing()) {
+void collectType(current:(Type)`str`, Collector c, Maybe[Expr] theSize = nothing()) {
 	c.fact(current, strType());
 }
 
-void collect(current:(Type)`bool`, Collector c,  Maybe[Expr] size = nothing()) {
+void collectType(current:(Type)`bool`, Collector c,  Maybe[Expr] theSize = nothing()) {
 	c.fact(current, boolType());
 }  
 
-void collect(current:(Type)`int`, Collector c, Maybe[Expr] size = nothing()) {
+void collectType(current:(Type)`int`, Collector c, Maybe[Expr] theSize = nothing()) {
 	c.fact(current, intType());
 }  
 
+default void collectType(current: Type t, Collector c, Maybe[Expr] theSize = nothing()) {
+	throw "Collection not implemented for type <t>";
+}
 
 /*void collect(current:(Type)`<Id i>`, Collector c) {
 	c.use(i, {structId(), typeVariableId()}); 
@@ -588,15 +601,15 @@ void collect(current:(Type)`int`, Collector c, Maybe[Expr] size = nothing()) {
   
 }*/
 
-void collect(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] size = nothing()) {
-	collect(t, c, size = size);
+void collectType(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] theSize = nothing()) {
+	collectType(t, c, theSize = theSize);
 	c.calculate("list type", current, [t], AType(Solver s) {
 		//println("<t> &&& <s.getType(t)>");
-		return listType(s.getType(t), n = size);
+		return listType(s.getType(t), n = theSize);
 	});
 }  
 
-void collect(current: (Type) `<ModuleId name> <TypeActuals? actuals>`, Collector c, Maybe[Expr] sz = nothing()){
+void collectType(current: (Type) `<ModuleId name> <TypeActuals? actuals>`, Collector c, Maybe[Expr] sz = nothing()){
 	println("checking <current>");
 	
 	list[Id] idsInModule = [id | id <- name.moduleName];
@@ -607,7 +620,7 @@ void collect(current: (Type) `<ModuleId name> <TypeActuals? actuals>`, Collector
 		c.useQualified([intercalate("::", ["<id>" | id <- idsInModule[0..-1]]), "<idsInModule[-1]>"], name, {structId()}, {moduleId()});
 	
     for (TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals)
-    	collect(t, c);
+    	collectType(t, c);
    	list[Type] tpActuals = [t | TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals];
     if (_ <- tpActuals){
     	c.calculate("actual type", current, [name] + tpActuals,
@@ -632,7 +645,7 @@ void collect(current: (Type) `<ModuleId name> <TypeActuals? actuals>`, Collector
     }
 }
 
-void collect(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c, Maybe[Expr] size = nothing()) {
+void collectType(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c, Maybe[Expr] theSize = nothing()) {
 	c.enterScope(current);
 		collect(decls, c);
 	c.leaveScope(current);
@@ -659,7 +672,7 @@ void collect(current: (Expr) `[<{Expr ","}*  exprs>]`, Collector c){
 
 void collect(current: (Expr) `<Expr e>.as[<Type t>]`, Collector c){
     collect(e, c);
-    collect(t, c);
+    collectType(t, c);
    	c.calculate("casting", current, [t], AType (Solver s){
 		return s.getType(t);
 	});
@@ -722,7 +735,7 @@ void collect(current: (Expr) `<Expr e>.length`, Collector c){
 }
 
 void collect(current: (Expr) `typeOf[<Type t>]`, Collector c){
-	collect(t, c);
+	collectType(t, c);
 	c.calculate("reified type", current, [t], AType (Solver s){
 		return typeType(s.getType(t));
 	});
@@ -971,11 +984,12 @@ void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, T
 }	
 
 // ----  Examples & Tests --------------------------------
-TModel birdTModelFromTree(Tree pt, bool debug = false){
+TModel birdTModelFromTree(Tree pt, bool debug = false, PathConfig pathConf = pathConfig(pt@\loc)){
     if (pt has top) pt = pt.top;
     c = newCollector("collectAndSolve", pt, config=getBirdConfig(debug = debug));    // TODO get more meaningfull name
-    collect(pt, c);
-    handleImports(c, pt, pathConfig(pt@\loc));
+    println("Bird: Version 1.0");
+    collect(pt, pathConf, c);
+    handleImports(c, pt, pathConf);
     AnonymousFields anonymousFields = ();
     if (lrel[loc, set[Type]] anonFields := c.getStack(__ANONYMOUS_FIELDS)) {
     	anonymousFields = (() | it + (structLoc : types) | <structLoc, types> <- anonFields);
