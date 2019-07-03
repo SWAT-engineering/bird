@@ -1,13 +1,13 @@
 module network::IPv6
 
 struct IPv6Header {
-    u32 versionClassFlow ?((this >>> (32 - 4)) == 6) 
+    u32 versionClassFlow ?((this >> (32 - 4)) == 6B) 
     u16 payloadLength
     u8 nextHeader
     u8 hopLimit
     u128 srcAddress
     u128 dstAddress
-    IPV6ExtensionHeader extension(payloadLength, nextHeader)
+    IPV6ExtensionHeader extension(payloadLength.as[int], nextHeader)
 
     int dataSize = extension.remainingDataSize
     u8 protocol = extension.protocol
@@ -28,29 +28,29 @@ choice IPV6ExtensionHeaderChain(int remainingSize, u8 nextHeader) {
 }
 
 struct HopByHopOptions(int remainingSize, u8 previousNextHeader) {
-    u8 nextHeader ?(previousNextHeader == 0)
+    u8 nextHeader ?(previousNextHeader == 0B)
     u8 optionsLength
-    u8[] options[6 + optionsLength]
+    u8[] options[6 + optionsLength.as[int]]
     
-    IPV6ExtensionHeaderChain next(remainingSize - (8 + optionsLength), nextHeader)
+    IPV6ExtensionHeaderChain next(remainingSize - (8 + optionsLength.as[int]), nextHeader)
 }
 
 
 struct Routing(int remainingSize, u8 previousNextHeader) {
-    u8 nextHeader ?(previousNextHeader == 43)
+    u8 nextHeader ?(previousNextHeader == 43B)
     u8 dataLength
     u8 routingType
     u8 segementsLeft
-    u8[] typeSpecificData[4 + dataLength]
+    u8[] typeSpecificData[4 + dataLength.as[int]]
 
-    IPV6ExtensionHeaderChain next(remainingSize - (8 + dataLength), nextHeader)
+    IPV6ExtensionHeaderChain next(remainingSize - (8 + dataLength.as[int]), nextHeader)
 }
 
 struct Fragment(int remainingSize, u8 previousNextHeader) {
-    u8 nextHeader ?(previousNextHeader == 44)
+    u8 nextHeader ?(previousNextHeader == 44B)
     u8 _
     u16 fragmentOffset
-    int actualFragmentOffset = fragmentOffset >>> 3
+    int actualFragmentOffset = (fragmentOffset >> 3).as[int]
     bool lastFragment = actualFragmentOffset & 0b1 == 0b0
 
     u32 identification

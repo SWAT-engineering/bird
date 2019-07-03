@@ -1,0 +1,16 @@
+module TCP_IP_non_modular_nescio
+	forLanguage bird
+	rootNode PCAP
+
+import network::TCP_IP_non_modular
+
+str ENCRYPTION_CONSTANT = "30313233343536373839414243444546" 
+
+rule anonymizeDNSNId:
+	/**/DNS/header/identifier => toZeros
+
+rule anonymizeQuestionName:
+	/**/network::TCP_IP_non_modular::Question/questionName => toZeros
+
+@(engineering.swat.nescio.algorithms.ToZeros.apply)	
+algorithm toZeros()
