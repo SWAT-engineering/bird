@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: bird_nescio_ide
-Bundle-SymbolicName: bird_nescio_ide
+Bundle-SymbolicName: bird_nescio_ide;singleton:=true
 Bundle-Version: 1.1.0.qualifier
 Require-Bundle: rascal_eclipse,
  typepal,
@@ -13,6 +13,8 @@ Require-Bundle: rascal_eclipse,
  impulse,
  org.eclipse.jdt.core,
  org.eclipse.jdt.launching,
- org.eclipse.ui
+ org.eclipse.ui,
+ bird-core,
+ nescio-core
 Import-Package: org.eclipse.jface.operation
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
