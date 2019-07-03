@@ -13,6 +13,8 @@ import String;
 
 extend analysis::typepal::TypePal;
 
+data PathConfig(loc target = |cwd:///|);	
+
 DId DUMMY_DID = [DId] "dummy";
 
 bool biprintln(value v){
@@ -40,7 +42,7 @@ str toJavaFQName(ModuleId moduleName) =
 		 dirs != [];
 
 tuple[str, str] compile(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
-	= <packageName,
+	= <fqn,
 	"package engineering.swat.nest.examples.formats.bird_generated<packageName>;
     '
     'import engineering.swat.nest.core.ParseError;
@@ -69,7 +71,8 @@ tuple[str, str] compile(current: (Program) `module <ModuleId moduleName> <Import
 	'   <compile(d, useDefs, types)>
 	'	<}>
 	'}">
-	when <packageName, className> := toJavaName(moduleName);
+	when <packageName, className> := toJavaName(moduleName),
+		 fqn := (packageName == "" ? className : "<packageName>.<className>");
 		 
 str generateNestType(current: (Type) `struct { <DeclInStruct* decls>}`, map[loc, AType] types)
 	= "$anon_type_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>"
@@ -102,8 +105,14 @@ str generateNestType((Type) `<UInt v>`, map[loc, AType] types)
 
 str generateNestType(current: (Type) `<ModuleId id> <TypeActuals? typeActuals>`, map[loc, AType] types)
 	="<toJavaFQName(id)><nestTypeActuals>"
-	when list[Type] typeActualsList := [ta | atypeActuals <- typeActuals, Type ta <- atypeActuals.typeActuals],
+	when variableType(_) !:= types[current@\loc],
+		 list[Type] typeActualsList := [ta | atypeActuals <- typeActuals, Type ta <- atypeActuals.typeActuals],
 		 str nestTypeActuals := ((size(typeActualsList) > 0)?"\<<intercalate(",", [generateNestType(ta, types) | Type ta <- typeActualsList])>\>":"");
+
+str generateNestType(current: (Type) `<ModuleId id> <TypeActuals? typeActuals>`, map[loc, AType] types)
+	= "<id>"
+	when variableType(_) := types[current@\loc];
+
 
 str makeUnique(Tree t, str prefix) = "$<prefix>_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>"
 	when lo := t@\loc;
@@ -314,8 +323,8 @@ str generateSideCondition((SideCondition) `? (<Expr e>)`, str parentId, DId this
 
 // TODO Check if `while` does make sense for something that is not u8[].
 // 		If not, enforce constraint in type checker (together with type of it)
-str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"<generateNestType(ty, types)> <makeId(id)> = TokenList.parseWhile(__$src, __$ctx,
+str compileDeclInStruct(current:(DeclInStruct) `<Type ty>[]  <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, str parentId, list[str] formalIds, rel[loc,loc] useDefs, map[loc, AType] types) =		 
+	"<generateNestType(current.ty, types)> <makeId(id)> = TokenList.parseWhile(__$src, __$ctx,
     '	(s, c) -\> <generateParsingInstruction(ty, [e | aargs <- args, e <- aargs.args], [], useDefs, types, src = "s", ctx = "c")>,
     '	it -\> (<compile(e, id, useDefs, types)>)
     ');";
@@ -359,7 +368,7 @@ str compile(current: (Expr) `<BytesBitLiteral bits>`, DId this, rel[loc,loc] use
 	//when noUnderscoreNat := replaceAll("<bits>","_","");
 	
 str compile(current: (Expr) `<BytesStringLiteral string>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"NestValue.of(<string>, ctx)";
+	"NestValue.of(<string>, __$ctx)";
 		
 str compile(current: (Expr) `\< <{SingleHexIntegerLiteral ","}+ bytes> \>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"NestValue.of(new byte[]{<intercalate(", ", ["(byte) <b>" | b <- bytes])>})";
@@ -391,7 +400,7 @@ str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, rel[loc,loc] u
 	when !(types[id@\loc] is funType);
 	
 str compile(current:(Expr) `<Expr e>[<Expr init> : <Expr end>]`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
-	"TokenList.of(ctx, IntStream.rangeClosed(<compile(end, this, useDefs, types)>.intValueExact(), <compile(e, this, useDefs, types)>.length()+(<compile(init, this, useDefs, types)>.intValueExact()))
+	"TokenList.of(__$ctx, IntStream.rangeClosed(<compile(end, this, useDefs, types)>.intValueExact(), <compile(e, this, useDefs, types)>.length()+(<compile(init, this, useDefs, types)>.intValueExact()))
 	'	.boxed().sorted(Collections.reverseOrder()).map(i -\> <compile(e, this, useDefs, types)>.get(i)).toArray(i -\> new UnsignedBytes[i]))";
 	
 str compile(current: (Expr) `( <Type accuType> <Id accuId> = <Expr init> | <Expr update> | <Id loopVar> \<- <Expr source>)`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
@@ -478,7 +487,7 @@ str compile(current: (Expr) `<Expr e1> * <Expr e2>`, DId this, rel[loc,loc] useD
 	
 	
 str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, DId this, rel[loc,loc] useDefs, map[loc, AType] types) =
-    "TokenList.of(ctx, <compile(e1, this, useDefs, types)>, <compile(e2, this, useDefs, types)>)";
+    "TokenList.of(__$ctx, <compile(e1, this, useDefs, types)>, <compile(e2, this, useDefs, types)>)";
     
 str compile(current: (Expr) e, DId this, rel[loc,loc] useDefs, map[loc, AType] types){
     throw "Expression not yet implemented: <e>";
@@ -502,4 +511,14 @@ void compileBirdTo(str name, loc file) {
     <_,text> = compileBird(name);
     //println(text);
     writeFile(file, text);
+}
+
+void compileBirdModule(start[Program] pt, TModel model, PathConfig pcfg) {
+    str moduleName = "<pt.top.moduleName>";
+    println("Compiling: <moduleName>");
+    tuple[str fqn, str text] compiled = compile(pt.top, getUseDef(model), getFacts(model));
+    println("Compiled");
+    path = replaceAll(compiled.fqn, ".", "/") + ".java";
+    println("Writing to: <pcfg.target + path>");
+    writeFile(pcfg.target + path, compiled.text);
 }
