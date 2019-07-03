@@ -17,7 +17,7 @@ public class Startup implements IStartup {
 
 	public static final Path BIRD_HOME_FOLDER = new File(System.getProperty("user.home")).toPath().resolve(".bird");
 	public static final Path NESCIO_HOME_FOLDER = new File(System.getProperty("user.home")).toPath().resolve(".nescio");
-	public static final Path NESCIO_FRAMEWORK = BIRD_HOME_FOLDER.resolve("nescio.jar");
+	public static final Path NESCIO_FRAMEWORK = BIRD_HOME_FOLDER.resolve("nescio-framework.jar");
 	public static final Path NEST_FRAMEWORK = BIRD_HOME_FOLDER.resolve("nest.jar");
 
 
@@ -27,7 +27,7 @@ public class Startup implements IStartup {
 		if (cl instanceof BundleReference) {
 			Bundle myBundle = ((BundleReference) cl).getBundle();
             BIRD_HOME_FOLDER.toFile().mkdirs();
-			copyFile(myBundle.getResource("lib/nescio.jar"), NESCIO_FRAMEWORK);
+			copyFile(myBundle.getResource("lib/nescio-framework.jar"), NESCIO_FRAMEWORK);
 			copyFile(myBundle.getResource("lib/nest.jar"), NEST_FRAMEWORK);
 		}
 	}
