@@ -44,8 +44,7 @@ StructuredGraph birdGraphCalculatorAux(start[Program] pt) {
  
 public StructuredGraph(list[loc]) birdGraphCalculator(PathConfig pathConf) = StructuredGraph(list[loc] birdFiles) {
 	set[TModel] models = {};
-	for (loc birdFile <- birdFiles) {
-		println(birdFile);
+	for (loc birdFile <- birdFiles, birdFile.extension == "bird") {
 		start[Program] pt = parseBird(birdFile);
  		TModel model = birdTModelFromTree(pt, pathConf = pathConf);
  		models = models + { model };
