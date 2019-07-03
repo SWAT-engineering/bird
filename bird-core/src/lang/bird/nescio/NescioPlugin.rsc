@@ -34,7 +34,7 @@ list[loc](TypeName) buildBirdModulesComputer(list[loc] baseLocs) = list[loc](Typ
 	return [];
 };
  
-StructuredGraph birdGraphCalculatorAux(list[TModel] models) = calculateFields(models);
+StructuredGraph birdGraphCalculatorAux(set[TModel] models) = calculateFields(models);
 
 StructuredGraph birdGraphCalculatorAux(start[Program] pt) {
  	TModel model = birdTModelFromTree(pt);
@@ -43,12 +43,12 @@ StructuredGraph birdGraphCalculatorAux(start[Program] pt) {
  }
  
 public StructuredGraph(list[loc]) birdGraphCalculator(PathConfig pathConf) = StructuredGraph(list[loc] birdFiles) {
-	list[TModel] models = [];
+	set[TModel] models = {};
 	for (loc birdFile <- birdFiles) {
 		println(birdFile);
 		start[Program] pt = parseBird(birdFile);
  		TModel model = birdTModelFromTree(pt, pathConf = pathConf);
- 		models = models + [model];
+ 		models = models + { model };
     }
     StructuredGraph graph = birdGraphCalculatorAux(models);
     return graph;
@@ -112,8 +112,8 @@ StructuredGraph calculateFields(current:(TopLevelDecl) `choice <Id sid> <Formals
 	{ <typeName([findModuleId(current@\loc, model)], "<sid>"), "entry", typeName([findModuleId(getTypeIdLoc(tp), model)], toStr(types[tp@\loc]))> | d:(DeclInChoice) `<Type tp> <Arguments? _> <Size? _>` <- decls, !(d.tp is anonymousType)}
 	;
 	
-list[str] findModuleId(loc typeLoc , list[TModel] models) {
-	println("trying to find module id: <typeLoc> by checking <size({m | m <- models})> models");
+list[str] findModuleId(loc typeLoc , set[TModel] models) {
+	//println("trying to find module id: <typeLoc> by checking <size({m | m <- models})> models");
 	for (TModel model <- models) {
 		loc l = typeLoc in domain(model.useDef) ? getOneFrom(model.useDef[typeLoc]) : typeLoc;
 		if (l in model.facts) {
@@ -131,13 +131,11 @@ list[str] findModuleId(loc typeLoc , list[TModel] models) {
 	return [];
 }
 
-AType findAType(loc ty, list[TModel] models) {
+AType findAType(loc ty, set[TModel] models) {
 	loc toFind = ty;
-	println("original to find <toFind>");
 	for (TModel model <- models) {
 		if (ty in model.useDef) {
 			toFind = model.useDef[ty];
-			println("to find is now <toFind>");
 		}
 	}
 	
@@ -149,7 +147,7 @@ AType findAType(loc ty, list[TModel] models) {
 	throw "Type not found after checking <size({m | m <- models})> models: <ty>";
 }
 
-StructuredGraph calculateFields(list[TModel] models) {
+StructuredGraph calculateFields(set[TModel] models) {
 	g = {};
 	int i = 1;
 	for (TModel model <- models) {
@@ -176,4 +174,4 @@ StructuredGraph calculateFields(list[TModel] models) {
 		}
 	}
 	return g;
-}	
+}
