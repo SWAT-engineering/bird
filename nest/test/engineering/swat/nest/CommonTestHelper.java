@@ -90,7 +90,8 @@ public class CommonTestHelper {
 
 		@Override
 		public void fail(String msg, @Nullable Object p0) {
-		    System.err.println(replaceFirstPlaceHolder(msg, p0));
+		    //System.err.println(replaceFirstPlaceHolder(msg, p0));
+			System.err.println(msg);
 
 		}
 
