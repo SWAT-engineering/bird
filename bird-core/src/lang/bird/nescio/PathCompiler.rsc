@@ -276,30 +276,6 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'		anonimizer.anonymize(input, output);
 	'	}
 	'
-	'	public static void mainOld(String[] args)
-	'			throws IOException, URISyntaxException, ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-	'		ClassLoader context = Objects.requireNonNull(CommonTestHelper.class.getClassLoader(),
-	'				\"Unexpected missing classloader\");
-	'		String parserClass = args[0];
-	'		String file = args[1];
-	'		if (parserClass == null)
-	'			throw new RuntimeException(\"Parser node must be specified\");
-	'		if (file == null)
-	'			throw new RuntimeException(\"File to parse must be specified\");
-	'		Path path = Paths.get(context.getResource(file).toURI());
-	'	
-	'		ByteStream stream = new ByteStream(ByteSliceBuilder.convert(Files.newInputStream(path), path.toUri()));
-	'		Class clazz = Class.forName(\"<containerClassName>$\" + parserClass);
-	'		Method method = clazz.getMethod(\"parse\", ByteStream.class, Context.class);
-	'		method.setAccessible(true);
-	'		Object r = method.invoke(null, stream, Context.DEFAULT);
-	'		<for (pattern(str name, _) <- patterns) {>
-	'		System.out.println(\"<name>\");
-	'		for (Range l : __<name>(r)) {
-	'			System.out.println(l);
-	'		}
-	'		<}>
-	'	}
 	'}
 	'"
 	when [dirs*, className] := [x | x <- moduleName.moduleName],
