@@ -25,7 +25,7 @@ bool biprintln(value v){
 tuple[str package, str class] toJavaName(ModuleId moduleName) =
 	<packageName, "<className>$"> 
 	when [dirs*, className] := [x | x <- moduleName.moduleName],
-		 str packageName := ((size(dirs) == 0)? "": ("."+ intercalate(".", dirs)));
+		 str packageName := ((size(dirs) == 0)? "": (intercalate(".", dirs)));
 		 
 
 str toJavaFQName(ModuleId moduleName) = 
@@ -33,17 +33,17 @@ str toJavaFQName(ModuleId moduleName) =
 	when [tokenName] := [x | x <- moduleName.moduleName];			 
 		 
 str toJavaFQName(ModuleId moduleName) = 
-	dirs == "engineering.swat.nest.examples.formats.bird_generated.<className>$.__$<tokenName>"
+	dirs == "<className>$.__$<tokenName>"
 	when [className, tokenName] := [x | x <- moduleName.moduleName];		 
 		 
 str toJavaFQName(ModuleId moduleName) = 
-	dirs == []? "__$<className>": "engineering.swat.nest.examples.formats.bird_generated.<intercalate(".", ["<x>" | x <- dirs]  + ["<className>$"] + ["__$<tokenName>"])>"
+	dirs == []? "__$<className>": "<intercalate(".", ["<x>" | x <- dirs]  + ["<className>$"] + ["__$<tokenName>"])>"
 	when [dirs*, className, tokenName] := [x | x <- moduleName.moduleName],
 		 dirs != [];
 
 tuple[str, str] compile(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, rel[loc,loc] useDefs, map[loc, AType] types)
 	= <fqn,
-	"package engineering.swat.nest.examples.formats.bird_generated<packageName>;
+	"package <packageName>;
     '
     'import engineering.swat.nest.core.ParseError;
 	'import engineering.swat.nest.core.bytes.ByteStream;
@@ -63,7 +63,7 @@ tuple[str, str] compile(current: (Program) `module <ModuleId moduleName> <Import
 	'import java.util.concurrent.atomic.AtomicReference;
 	'import java.util.stream.IntStream;
 	'<for ((Import) `import <ModuleId i>` <- imports) { <pn, cn> = toJavaName(i); >
-	'import engineering.swat.nest.examples.formats.bird_generated<pn>.<cn>.*;
+	'import <pn>.<cn>.*;
 	'<}>
 	'public class <className> {
 	'	private <className>(){}
