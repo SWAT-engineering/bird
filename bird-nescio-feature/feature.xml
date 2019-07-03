@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="bird_nescio_feature"
+      label="Bird/Nescio IDE"
+      version="1.1.0.qualifier">
+
+   <description url="http://www.example.com/description">
+      This is the first version of the Bird/Nescio IDE developed for SIDN.
+   </description>
+
+   <copyright>
+      Copyright SWAT.engineering BV, 2019
+   </copyright>
+
+   <plugin id="impulse" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+
+   <plugin id="rascal_eclipse" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+
+   <plugin id="bird-core" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+
+   <plugin id="bird_nescio_ide" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+   
+   <plugin id="nescio-core" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+
+   <plugin id="typepal" version="0.0.0" download-size="0" install-size="0" unpack="false"/>
+
+</feature>
