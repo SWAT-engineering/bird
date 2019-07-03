@@ -6,7 +6,7 @@ extend lang::std::Layout;
 keyword Reserved = "abstract" | "struct" | "choice" | "byte" | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it" | "parse" | "with" | "typeOf" | "as";
 
 start syntax Program =
-	"module" ModuleId
+	"module" ModuleId moduleName
 	Import* imports
 	TopLevelDecl* declarations;
 	
