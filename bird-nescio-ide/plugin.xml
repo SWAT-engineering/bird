@@ -11,7 +11,7 @@
          point="org.eclipse.core.resources.natures">
       <runtime>
          <run
-               class="lang.bird_nescio.ide.Nature">
+               class="lang.birdnescio.ide.Nature">
          </run>
          </runtime>
          </extension>
@@ -20,25 +20,25 @@
          point="org.eclipse.ui.newWizards">
       <wizard
             category="bird_nescio_nature"
-            class="lang.bird_nescio.ide.BirdNescioProjectWizard"
+            class="lang.birdnescio.ide.BirdNescioProjectWizard"
             id="bird_nescio_nature.projectwizard"
-            name="Bird Project"
+            name="Bird/Nescio Project"
             project="true">
       </wizard>
       <category
             id="bird_nescio_nature"
-            name="Bird and Nescio">
+            name="Bird/Nescio">
       </category>
       <wizard
             category="bird_nescio_nature"
-            class="lang.bird_nescio.ide.NewBirdFile"
+            class="lang.birdnescio.ide.NewBirdFile"
             id="bird_nescio_nature.wizards.NewBirdFile"
             name="Bird Module"
             >
       </wizard>
       <wizard
             category="bird_nescio_nature"
-            class="lang.bird_nescio.ide.NewNescioFile"
+            class="lang.birdnescio.ide.NewNescioFile"
             id="bird_nescio_nature.wizards.NewNescioFile"
             name="Nescio Module"
             >
@@ -47,7 +47,7 @@
      <extension
            point="org.eclipse.ui.startup">
         <startup
-              class="lang.bird_nescio.ide.Startup">
+              class="lang.birdnescio.ide.Startup">
         </startup>
      </extension>
    
