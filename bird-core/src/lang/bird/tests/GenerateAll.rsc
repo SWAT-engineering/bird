@@ -9,6 +9,8 @@ list[str] BIRD_FILE_NAMES = [
 	"while1",
 	"varint",
 	"JPEG",
+	"uvw",
+	"x",
 	"tie1",
 	"PNG",
 	"crc",
@@ -17,7 +19,9 @@ list[str] BIRD_FILE_NAMES = [
 	"A",
 	"B",
 	"AorB",
-	"rep1"
+	"rep1",
+	"network2/PCAP",
+	"network2/TCP_IP"
 ];
 
 void main() {
