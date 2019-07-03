@@ -13,28 +13,28 @@ import String;
 
 import IO;
 
-loc(TypeName) buildBirdModuleMapper(loc baseLoc) = loc(TypeName tn){
+loc buildBirdModuleMapper(loc baseLoc, TypeName tn){
 	if (typeName(path, name) := tn) {
 		return baseLoc + "<intercalate("/", path)>/<name>.bird";
 	}
-};
+}
 
 TypeName birdModuleIdToTypeName((ModuleId) `<{Id "::"}+ moduleName>`) = typeName(lst[0..-1], lst[-1])
 	when lst := ["<id>" | Id id <- moduleName];
 
-list[loc](TypeName) buildBirdModulesComputer(loc baseLoc) = list[loc](TypeName m) {
-	loc file = (buildBirdModuleMapper(baseLoc))(m);
-	if (exists(file)) {
-		start[Program] p = parseBird(file);
-		set[TypeName] types = { birdModuleIdToTypeName(mid) | (Program) `module <ModuleId mid> <Import* imports> <TopLevelDecl* decls>` := p.top } + { birdModuleIdToTypeName(mid) | (Import) `import <ModuleId mid>` <- p.top.imports };
-		return [(buildBirdModuleMapper(baseLoc))(tn)  |TypeName tn <- types];
+list[loc](TypeName) buildBirdModulesComputer(list[loc] baseLocs) = list[loc](TypeName m) {
+	for (baseLoc <- baseLocs) {
+		loc file = buildBirdModuleMapper(baseLoc, m);
+		if (exists(file)) {
+			start[Program] p = parseBird(file);
+			set[TypeName] types = { birdModuleIdToTypeName(mid) | (Program) `module <ModuleId mid> <Import* imports> <TopLevelDecl* decls>` := p.top } + { birdModuleIdToTypeName(mid) | (Import) `import <ModuleId mid>` <- p.top.imports };
+			return ([] | it + file | TypeName tn <- types);
+		}
 	}
-	else
-		return [];
-
+	return [];
 };
  
-StructuredGraph birdGraphCalculatorAux(TModel model) = calculateFields(model);
+StructuredGraph birdGraphCalculatorAux(list[TModel] models) = calculateFields(models);
 
 StructuredGraph birdGraphCalculatorAux(start[Program] pt) {
  	TModel model = birdTModelFromTree(pt);
@@ -42,17 +42,17 @@ StructuredGraph birdGraphCalculatorAux(start[Program] pt) {
     return birdGraphCalculator(model);
  }
  
-StructuredGraph birdGraphCalculator(list[loc] birdFiles) {
-	set[StructuredGraph] graphs = {};
+public StructuredGraph(list[loc]) birdGraphCalculator(PathConfig pathConf) = StructuredGraph(list[loc] birdFiles) {
+	list[TModel] models = [];
 	for (loc birdFile <- birdFiles) {
+		println(birdFile);
 		start[Program] pt = parseBird(birdFile);
- 		TModel model = birdTModelFromTree(pt);
- 		map[loc, AType] types = getFacts(model);
- 		StructuredGraph current = birdGraphCalculatorAux(model);
-    	graphs = graphs + { current };
+ 		TModel model = birdTModelFromTree(pt, pathConf = pathConf);
+ 		models = models + [model];
     }
-    return union(graphs);
- } 
+    StructuredGraph graph = birdGraphCalculatorAux(models);
+    return graph;
+ };
   
 public start[Program] parseBird(loc file) = parse(#start[Program], file);
 
@@ -112,41 +112,68 @@ StructuredGraph calculateFields(current:(TopLevelDecl) `choice <Id sid> <Formals
 	{ <typeName([findModuleId(current@\loc, model)], "<sid>"), "entry", typeName([findModuleId(getTypeIdLoc(tp), model)], toStr(types[tp@\loc]))> | d:(DeclInChoice) `<Type tp> <Arguments? _> <Size? _>` <- decls, !(d.tp is anonymousType)}
 	;
 	
-list[str] findModuleId(loc typeLoc , TModel model) {
-	loc l = typeLoc in domain(model.useDef) ? getOneFrom(model.useDef[typeLoc]) : typeLoc;
-	if (model.facts[l] is anonType)
-		return [];
-	if (l in model.scopes) {
-		scLoc = model.scopes[l];
-		if (<_, id, moduleId(), scLoc, _> <- model.defines)
-			return split("::", id);
-		else
-			throw "Struct or choice need to be defined inside a module";
-	}
-	else
-		return [];
-}
-
-StructuredGraph calculateFields(TModel model) {
-	g = {};
-	for (<structScope, id, fieldId(), defined, defType(ty)> <- model.defines) {
-		println("{<<structScope, id, defined>>}");
-		if (<_, sid, structId(), structScope, _> <- model.defines) {
-			g+= <typeName(findModuleId(structScope, model), sid), id, typeName(findModuleId(getTypeIdLoc(ty), model), toStr(model.facts[ty@\loc]))>;
-		}
-	}
-		
-	for (loc structScope <- model.anonymousFields) {
-		set[Type] types = model.anonymousFields[structScope];
-		if (<_, sid, structId(), structScope, _> <- model.defines) {
-			TypeName src = typeName(findModuleId(structScope, model), sid);
-			int i = 0;
-			for (ty <- types) {
-				g+= <src, "__anonymous<i>", typeName(findModuleId(getTypeIdLoc(ty), model), toStr(model.facts[ty@\loc]))>;
-				i = i + 1;
+list[str] findModuleId(loc typeLoc , list[TModel] models) {
+	println("trying to find module id: <typeLoc> by checking <size({m | m <- models})> models");
+	for (TModel model <- models) {
+		loc l = typeLoc in domain(model.useDef) ? getOneFrom(model.useDef[typeLoc]) : typeLoc;
+		if (l in model.facts) {
+			if (model.facts[l] is anonType)
+				return [];
+			if (l in model.scopes) {
+				scLoc = model.scopes[l];
+				if (<_, id, moduleId(), scLoc, _> <- model.defines)
+					return split("::", id);
+				else
+					throw "Struct or choice need to be defined inside a module";
 			}
 		}
 	}
+	return [];
+}
+
+AType findAType(loc ty, list[TModel] models) {
+	loc toFind = ty;
+	println("original to find <toFind>");
+	for (TModel model <- models) {
+		if (ty in model.useDef) {
+			toFind = model.useDef[ty];
+			println("to find is now <toFind>");
+		}
+	}
 	
+	for (TModel model <- models) {
+		if (toFind in model.facts)
+			return model.facts[toFind];
+	}
+	
+	throw "Type not found after checking <size({m | m <- models})> models: <ty>";
+}
+
+StructuredGraph calculateFields(list[TModel] models) {
+	g = {};
+	int i = 1;
+	for (TModel model <- models) {
+		println("Model <i>: <size(model.useDef)> useDefs, <size(model.facts)> facts, <size(model.defines)> definitions");
+		i = i + 1;
+	}
+	for (TModel model <- models) {
+		for (<structScope, id, fieldId(), defined, defType(ty)> <- model.defines) {
+			if (<_, sid, structId(), structScope, _> <- model.defines) {
+				g+= <typeName(findModuleId(structScope, models), sid), id, typeName(findModuleId(getTypeIdLoc(ty), models), toStr(findAType(ty@\loc, models)))>;
+			}
+		}
+		
+		for (loc structScope <- model.anonymousFields) {
+			set[Type] types = model.anonymousFields[structScope];
+			if (<_, sid, structId(), structScope, _> <- model.defines) {
+				TypeName src = typeName(findModuleId(structScope, models), sid);
+				int i = 0;
+				for (ty <- types) {
+					g+= <src, "__anonymous<i>", typeName(findModuleId(getTypeIdLoc(ty), models), toStr(findAType(ty@\loc, models)))>;
+					i = i + 1;
+				}
+			}
+		}
+	}
 	return g;
 }	
