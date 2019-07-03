@@ -69,8 +69,8 @@ public class BirdNescioProjectWizard extends BasicNewProjectResourceWizard {
 						IBundleProjectDescription plugin = service.getDescription(project);
 						plugin.setBundleName(project.getName().replaceAll("[^a-zA-Z0-9_]", "_"));
 						project.setDefaultCharset("UTF-8", monitor); 
-						project.getFolder("mtl").create(true, false, monitor);
-						project.getFolder("mvk").create(true, false, monitor);
+						project.getFolder("bird").create(true, false, monitor);
+						project.getFolder("nescio").create(true, false, monitor);
 						project.getFolder("generated").create(true, false, monitor);
 						project.getFolder("lib").create(true, false, monitor);
 
@@ -93,7 +93,7 @@ public class BirdNescioProjectWizard extends BasicNewProjectResourceWizard {
 						context.ungetService(ref);
 					}
 				} catch (CoreException e) {
-					Activator.getInstance().logException("could not initialize MTL project", e);
+					Activator.getInstance().logException("could not initialize Bird/Nescio project", e);
 					throw new InterruptedException();
 				}
 			}
@@ -103,10 +103,9 @@ public class BirdNescioProjectWizard extends BasicNewProjectResourceWizard {
 				man.getMainAttributes().remove("Courses");
 				man.getMainAttributes().remove("Main-Function");
 				man.getMainAttributes().remove("Main-Module");
-				man.getMainAttributes().put(new Attributes.Name("Source"), "mtl");
-				man.getMainAttributes().put(new Attributes.Name("Libraries"), "mvk");
+				man.getMainAttributes().put(new Attributes.Name("BirdSource"), "bird");
+				man.getMainAttributes().put(new Attributes.Name("NescioSource"), "nescio");
 				man.getMainAttributes().put(new Attributes.Name("Target"), "generated");
-				man.getMainAttributes().put(new Attributes.Name("DockerImage"), "xlinqreg.azurecr.io/openitems-maverick-develop:latest");
 				
 				IFolder folder = project.getFolder("META-INF");
 				if (!folder.exists()) {
@@ -138,21 +137,29 @@ public class BirdNescioProjectWizard extends BasicNewProjectResourceWizard {
 							ClassLoader cl = getClass().getClassLoader();
 							if (cl instanceof BundleReference) {
 								Bundle myBundle = ((BundleReference) cl).getBundle();
-								URL jarSource = myBundle.getResource("lib/mtl-framework.jar");
-								IFile target = project.getFile("lib/mtl-framework.jar");//.create(jarSource.openStream(), true, monitor);
-								target.create(new ByteArrayInputStream(new byte[0]), true, null); // force file creation
-								Files.copy(jarSource.openStream(), target.getRawLocation().toFile().toPath(), StandardCopyOption.REPLACE_EXISTING);
+								
+								URL nescioJarSource = myBundle.getResource("lib/nescio-framework.jar");
+								IFile nescioTarget = project.getFile("lib/nescio-framework.jar");//.create(jarSource.openStream(), true, monitor);
+								nescioTarget.create(new ByteArrayInputStream(new byte[0]), true, null); // force file creation
+								Files.copy(nescioJarSource.openStream(), nescioTarget.getRawLocation().toFile().toPath(), StandardCopyOption.REPLACE_EXISTING);
+								
+								URL nestJarSource = myBundle.getResource("lib/nest.jar");
+								IFile nestTarget = project.getFile("lib/nest.jar");//.create(jarSource.openStream(), true, monitor);
+								nestTarget.create(new ByteArrayInputStream(new byte[0]), true, null); // force file creation
+								Files.copy(nestJarSource.openStream(), nestTarget.getRawLocation().toFile().toPath(), StandardCopyOption.REPLACE_EXISTING);
+								
 								project.getFolder("lib").setHidden(true);
 							}
 
 							IJavaProject jProject = JavaCore.create(project);
 							IClasspathEntry[] oldClasspath = jProject.getRawClasspath();
-							IClasspathEntry[] newClasspath = new IClasspathEntry[oldClasspath.length + 3];
-							System.arraycopy(oldClasspath, 0, newClasspath, 3, oldClasspath.length);
+							IClasspathEntry[] newClasspath = new IClasspathEntry[oldClasspath.length + 4];
+							System.arraycopy(oldClasspath, 0, newClasspath, 4, oldClasspath.length);
 							newClasspath[0] = JavaRuntime.getDefaultJREContainerEntry();
 							newClasspath[1] = JavaCore.newContainerEntry(new Path("org.eclipse.pde.core.requiredPlugins"));
-							newClasspath[2] = JavaCore.newLibraryEntry(project.getFile("lib/mtl-framework.jar").getFullPath(), null, null);
-							newClasspath[3] = JavaCore.newSourceEntry(project.getFolder("generated").getFullPath(), null);
+							newClasspath[2] = JavaCore.newLibraryEntry(project.getFile("lib/nescio-framework.jar").getFullPath(), null, null);
+							newClasspath[3] = JavaCore.newLibraryEntry(project.getFile("lib/nest.jar").getFullPath(), null, null);
+							newClasspath[4] = JavaCore.newSourceEntry(project.getFolder("generated").getFullPath(), null);
 							jProject.setRawClasspath(newClasspath, monitor);
 
 							IFile cpFile = project.getFile(".classpath");
@@ -169,7 +176,7 @@ public class BirdNescioProjectWizard extends BasicNewProjectResourceWizard {
 							jProject.getProject().refreshLocal(IResource.DEPTH_INFINITE, monitor);
 							return Status.OK_STATUS;
 						} catch (CoreException | IOException e) {
-							Activator.getInstance().logException("failed to initialize MTL project with Java nature: " + project.getName(), e);
+							Activator.getInstance().logException("failed to initialize Bird/Nescio project with Java nature: " + project.getName(), e);
 							return Status.OK_STATUS;
 						}
 					}
@@ -181,7 +188,7 @@ public class BirdNescioProjectWizard extends BasicNewProjectResourceWizard {
 			try {
 				getContainer().run(true, true, job);
 			} catch (InvocationTargetException e) {
-				Activator.getInstance().logException("could not initialize new MTL project", e);
+				Activator.getInstance().logException("could not initialize new Bird/Nescio project", e);
 				return false;
 			} catch (InterruptedException e) {
 				return false;
