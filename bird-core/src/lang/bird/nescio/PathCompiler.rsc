@@ -16,6 +16,8 @@ import Map;
 import lang::bird::Syntax;
 import lang::bird::Checker;
 
+data PathConfig(loc target = |cwd:///|);	
+
 /*
 data Path
     = field(Path src, str fieldName)
@@ -179,8 +181,7 @@ str toJavaValue(javaStringType(), str val) = "\"<val>\"";
 default str toJavaValue(JavaType _, str val) = val;
 
 str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, str rootPackageName, TypeName initialNonTerminal, Rules rules, StructuredGraph graph, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType] fields) =
-	"package <absolutePackageName>;
-	'
+	"import java.io.File;
 	'import java.io.IOException;
 	'import java.lang.reflect.InvocationTargetException;
 	'import java.lang.reflect.Method;
@@ -199,7 +200,6 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'import engineering.swat.nescio.Range;
 	'import engineering.swat.nescio.MatchingException;
 	'import engineering.swat.nescio.TransformationDescription;
-	'import engineering.swat.nest.CommonTestHelper;
 	'import engineering.swat.nest.core.bytes.ByteStream;
 	'import engineering.swat.nest.core.bytes.Context;
 	'import engineering.swat.nest.core.bytes.TrackedByteSlice;
@@ -212,8 +212,8 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'import engineering.swat.nest.nescio.util.DeepMatchVisitor;
 	'import <containerClassName>;
 	'<for ((Import) `import <ModuleId mid>` <- imports) {>
-	'import <rootPackageName>.<intercalate(".", ["<id>" | Id id <- mid.moduleName])>$;
-	'import <rootPackageName>.<intercalate(".", ["<id>" | Id id <- mid.moduleName])>$.*;
+	'import <rootPrefix><intercalate(".", ["<id>" | Id id <- mid.moduleName])>$;
+	'import <rootPrefix><intercalate(".", ["<id>" | Id id <- mid.moduleName])>$.*;
 	'<}>
 	'public class <className>Anonymizer extends Anonymizer {
 	'	<for (pattern(name, path) <- patterns){ str s = createBody(path, rootPackageName, "<className>", graph, 0, atypes, fields)("locs.add(getRange(node0));"); >
@@ -263,18 +263,16 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'	}
 	'
 	'	public static void main(String[] args) throws URISyntaxException, IOException, MatchingException {
-	'		ClassLoader context = Objects.requireNonNull(CommonTestHelper.class.getClassLoader(),
-	'				\"Unexpected missing classloader\");
+	'		if (args == null)
+	'			throw new RuntimeException(\"Please provide input and output files as arguments.\");
+	'		if (args.length == 1)
+	'			throw new RuntimeException(\"Please provide both input and output files as arguments.\");
 	'		String inputFile = args[0];
 	'		String outputFile = args[1];
-	'		if (inputFile == null)
-	'			throw new RuntimeException(\"File to parse must be specified\");
-	'		if (outputFile == null)
-	'			throw new RuntimeException(\"Output file must be specified\");
-	'	
-	'		Path input = Paths.get(context.getResource(inputFile).toURI());
-	'		Path output = Paths.get(new URL(context.getResource(\".\").toURI().toURL(), outputFile).toURI());
-	'		Anonymizer anonimizer = new <className>Anonymizer();
+	'
+	'		Path input = Paths.get(new File(inputFile).toURI());
+	'		Path output = Paths.get(new File(outputFile).toURI());
+	'		Anonymizer anonimizer = new <className>Anonimyzer();
 	'		anonimizer.anonymize(input, output);
 	'	}
 	'
@@ -305,8 +303,9 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'}
 	'"
 	when [dirs*, className] := [x | x <- moduleName.moduleName],
-		 str packageName := ((size(dirs) == 0)? "": ("."+ intercalate(".", dirs))),
-		 str absolutePackageName := "<((rootPackageName != "")?"<rootPackageName>":"")><packageName>",
+		 str packageName := ((size(dirs) == 0)? "": (intercalate(".", dirs))),
+		 str rootPrefix := (rootPackageName == "" ? "" : "<rootPackageName>."),
+		 str absolutePackageName := "<rootPrefix><packageName>",
 		 str containerClassName := "<absolutePackageName>.<className>$",
 		 list[NamedPattern] patterns := [pattern(ruleName, path) | str ruleName <- rules, <Path path, _> := rules[ruleName]];
 	
@@ -347,23 +346,42 @@ void compilePath2To(loc file) {
 	writeFile(file, src);
 }
 
-TypeName getTypeName(structType(str name, list[AType] typeActuals), loc locType, TModel model) = typeName(findModuleId(locType, model), name);
-TypeName getTypeName(listType(AType t), loc locType, TModel model) = getTypeName(t, locType, model);
-TypeName getTypeName(AType t, loc locType, TModel model) = typeName([], toStr(t));
+TypeName getTypeName(structType(str name, list[AType] typeActuals), loc locType, set[TModel] models) = typeName(findModuleId(locType, models), name);
+TypeName getTypeName(listType(AType t), loc locType, set[TModel] models) = getTypeName(t, locType, models);
+TypeName getTypeName(AType t, loc locType, set[TModel] models) = typeName([], toStr(t));
 
-map[tuple[TypeName tn, str fieldName], AType] atypesForFields(Program p, TModel model, map[loc, AType] types) {
+map[tuple[TypeName tn, str fieldName], AType] atypesForFields(Program p, set[TModel] models, map[loc, AType] types) {
+	println("beginning atypesforfields with number of models = <size(models)>");
+	int i = 0;
+	for (TModel model <- models) {
+		println("Model <i>: <size(model.useDef)> useDefs, <size(model.facts)> facts, <size(model.defines)> definitions");
+		i = i + 1;
+	}
 	map[tuple[TypeName tn, str fieldName], AType] res = ();
 	map[loc structLoc, str structName] structNames = ();
-	for (<_, structName, structId(), definedStructLoc, _> <- model.defines) {
+	
+	Defines allDefines = ({} | it + model.defines | model <- models) ;
+	
+	println("(1)");
+	for (<_, structName, structId(), definedStructLoc, _> <- allDefines) {
 		structNames += (definedStructLoc : structName);
-	};
-	for (<structLoc, fieldName, fieldId(), definedFieldLoc, defType(ty)> <- model.defines, !(
-	types[structLoc] is funType || types[structLoc] is anonType)) {
-		res += (<typeName(findModuleId(structLoc, model), structNames[structLoc]), fieldName> : model.facts[ty@\loc]);
-	};
+	}
+	
+	println("(2)");
+	 map[loc,AType] allFacts = (() | it + model.facts | model <- models);
+	
+	println("(3)");
+	for (<structLoc, fieldName, fieldId(), definedFieldLoc, defType(ty)> <- allDefines, !(types[structLoc] is funType || types[structLoc] is anonType)) {
+		res += (<typeName(findModuleId(structLoc, models), structNames[structLoc]), fieldName> : allFacts[ty@\loc]);
+	}
+	
+	
+	println("end atypesforfields");
+	
 	return res;
 }
 
+/*
 void compilePath(loc modelFile, loc nescioFile, loc outputFile) {
 	start[Program] birdProgram = parse(#start[Program], modelFile);
 	TModel birdModel = birdTModelFromTree(birdProgram);
@@ -380,10 +398,84 @@ void compilePath(loc modelFile, loc nescioFile, loc outputFile) {
 	
 	Rules rules = evalNescio(nescioFile, graph);
 	
-	TypeName root = getRoot(nescioFile, graph);
+	TypeName root = getRoot(nescioFile);
 	
 	// create list of named patterns from rules 
 	
 	str src = compile(birdProgram.top, "engineering.swat.nest.examples.formats.bird_generated", root, rules, graph, atypes, fields);
 	writeFile(outputFile, src);
 }
+*/
+
+loc constructBirdLocation(loc birdDir, typeName(list[str] path, str _)) 
+	= birdDir + intercalate("/", locComponents)
+	when list[str] locComponents := path[0..-1] + ["<path[-1]>.bird"];
+	
+loc constructBirdLocationForImport(loc birdDir, typeName(list[str] path, str name)) 
+	= birdDir + intercalate("/", locComponents)
+	when list[str] locComponents := path + ["<name>.bird"];
+	
+set[TModel] getImportedModelsForNescioFile(loc birdSrcDir, Tree nescioSpec, StructuredGraph graph, PathConfig pathConf) {
+	set[TModel] result = {};
+	list[TypeName] importedTypes = getImported(nescioSpec, graph);
+	for (TypeName imported <- importedTypes) {
+		loc birdLoc = constructBirdLocationForImport(birdSrcDir, imported);
+		println("constructed <birdLoc> for <imported>");
+		if (exists(birdLoc)) {
+			start[Program] birdProgram = parse(#start[Program], birdLoc);
+			TModel birdModel = birdTModelFromTree(birdProgram, pathConf = pathConf);
+			result += birdModel;
+		}
+	}
+	return result;
+}	
+
+void compileNescioForBird(Tree nescioSpec, PathConfig pcfg) {
+	
+	println("Compiling nescio spec: <nescioSpec.top.moduleId>");
+	
+	loc birdLoc = |cwd:///|;
+	loc birdSrcDir = |cwd:///|;
+	bool found = false;
+	
+	StructuredGraph graph = computeAggregatedStructuredGraph(nescioSpec, buildBirdModulesComputer(pcfg.srcs), birdGraphCalculator(pcfg));
+	
+	println("second stage");
+	TypeName rootType = getRoot(nescioSpec, graph);
+	 
+	for (loc birdDir <- pcfg.srcs, !found) {
+		birdLoc = constructBirdLocation(birdDir, rootType);
+		birdSrcDir = birdDir;
+		if (exists(birdLoc)) {
+			found = true;
+		}
+	}
+	println(birdLoc);
+	if (found) {
+		start[Program] birdProgram = parse(#start[Program], birdLoc);
+		
+		set[TModel] models = getImportedModelsForNescioFile(birdSrcDir, nescioSpec, graph, pcfg) + {birdTModelFromTree(birdProgram, pathConf = pcfg)};
+		
+		map[loc, AType] types = ();
+		
+		for (TModel birdModel <- models) {
+			 types += getFacts(birdModel);
+		}
+		
+		map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(birdProgram.top, models, types);
+		map[TypeName, AType] atypes = (getTypeName(types[locType], locType, models):types[locType] | locType <- types);
+		
+		atypes += (typeName([], "byte"):byteType());
+		
+		Rules rules = evalNescio(nescioSpec, graph);
+	
+		str text = compile(birdProgram.top, "", rootType, rules, graph, atypes, fields);
+	
+		list[str] fileParts = ["<x>" | x <- birdProgram.top.moduleName.moduleName];
+		path = fileParts[-1] + "Anonymizer.java";
+	
+    	println("Writing to: <pcfg.target + path>");
+    	writeFile(pcfg.target + path, text);
+    }
+}
+
