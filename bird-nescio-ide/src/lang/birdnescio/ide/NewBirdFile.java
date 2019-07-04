@@ -141,27 +141,14 @@ public class NewBirdFile extends Wizard implements INewWizard {
 		
 		try (OutputStream out = URIResolverRegistry.getInstance().getOutputStream(loc, false)) {
 			try (PrintWriter w = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
-				w.println("module " + moduleName.replace('/', '.') +";");
+				w.println("module " + moduleName.replaceAll("/", "::") +";");
 				w.println();
-				w.println("// import maverick machines");
+				w.println("// import other Bird description(s)");
 				w.println();
-				w.println("// extend Bird module(s)");
-				w.println();
-				w.println("// setting up global variables (fields)");
-				w.println("val x : Boolean == True;");
-				w.println();
-				w.println("setup {");
-				w.println("    // common setup of machines");
-				w.println("    val x : Boolean == True;  // shadows outer 'x'");
-				w.println();
-				w.println("    // send events to machines to create initial state of the world");
-				w.println("}");
-				w.println();
-				w.println("test testName {");
-				w.println("    // send specific events to machines");
-				w.println("}");
-				w.println("assert {");
-				w.println("    1 == 1 [[ \"Checks on the state of the machines, and a message in case of failure\" ]];");
+				w.println("// simple token description");
+				w.println("struct foo {");
+				w.println("    byte[] xs[4] // array of bytes of size 4");
+				w.println("    u8 x         // u8 is sugar for an array of bytes of size 1");
 				w.println("}");
 			}
 			

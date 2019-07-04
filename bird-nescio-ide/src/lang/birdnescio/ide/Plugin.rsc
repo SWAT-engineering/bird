@@ -23,8 +23,6 @@ private str NESCIO_LANG_NAME = "nescio";
 data BirdNescioManifest
  = birdNescioManifest(
       list[str] Source = ["src"],
-      list[str] BirdSource = ["bird-src"],
-      list[str] NescioSource = ["nescio-src"],
       str Target = "generated"
 	);        
 	
@@ -48,7 +46,7 @@ PathConfig config(loc file) {
    
    cfg = getDefaultPathConfig();
    
-   cfg.srcs += [ p + s | s <- mf.BirdSource] + [ p + s | s <- mf.NescioSource];
+   cfg.srcs += [ p + s | s <- mf.Source];
    
    cfg.srcs = [s | s <- toSet(cfg.srcs)];
    

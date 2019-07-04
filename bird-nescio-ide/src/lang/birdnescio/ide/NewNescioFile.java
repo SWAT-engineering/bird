@@ -141,28 +141,19 @@ public class NewNescioFile extends Wizard implements INewWizard {
 		
 		try (OutputStream out = URIResolverRegistry.getInstance().getOutputStream(loc, false)) {
 			try (PrintWriter w = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
-				w.println("module " + moduleName.replace('/', '.') +";");
+				w.println("module " + moduleName.replace('/', '.') );
+				w.println("	for Language bird   // one can specify another language if there is a nescio plugin for it");
+				w.println(" rootNode Foo");
 				w.println();
-				w.println("// import maverick machines");
+				w.println("// import external format module(s)");
 				w.println();
-				w.println("// extend Nescio module(s)");
+				w.println("rule foo:");
+				w.println("    /**/[Foo] => toZeros // matches all the nodes whose type is Foo and apply transformation");
 				w.println();
-				w.println("// setting up global variables (fields)");
-				w.println("val x : Boolean == True;");
-				w.println();
-				w.println("setup {");
-				w.println("    // common setup of machines");
-				w.println("    val x : Boolean == True;  // shadows outer 'x'");
-				w.println();
-				w.println("    // send events to machines to create initial state of the world");
-				w.println("}");
-				w.println();
-				w.println("test testName {");
-				w.println("    // send specific events to machines");
-				w.println("}");
-				w.println("assert {");
-				w.println("    1 == 1 [[ \"Checks on the state of the machines, and a message in case of failure\" ]];");
-				w.println("}");
+				w.println("// Description of the transformation");
+				w.println("@(engineering.swat.nescio.algorithms.ToZeros.apply)"); 
+			    w.println("algorithm toZeros()");
+			    w.println();
 			}
 			
 			monitor.worked(1);

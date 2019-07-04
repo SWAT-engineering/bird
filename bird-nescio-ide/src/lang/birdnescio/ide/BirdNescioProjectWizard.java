@@ -69,8 +69,7 @@ public class BirdNescioProjectWizard extends BasicNewProjectResourceWizard {
 						IBundleProjectDescription plugin = service.getDescription(project);
 						plugin.setBundleName(project.getName().replaceAll("[^a-zA-Z0-9_]", "_"));
 						project.setDefaultCharset("UTF-8", monitor); 
-						project.getFolder("bird").create(true, false, monitor);
-						project.getFolder("nescio").create(true, false, monitor);
+						project.getFolder("src").create(true, false, monitor);
 						project.getFolder("generated").create(true, false, monitor);
 						project.getFolder("lib").create(true, false, monitor);
 
@@ -103,8 +102,7 @@ public class BirdNescioProjectWizard extends BasicNewProjectResourceWizard {
 				man.getMainAttributes().remove("Courses");
 				man.getMainAttributes().remove("Main-Function");
 				man.getMainAttributes().remove("Main-Module");
-				man.getMainAttributes().put(new Attributes.Name("BirdSource"), "bird");
-				man.getMainAttributes().put(new Attributes.Name("NescioSource"), "nescio");
+				man.getMainAttributes().put(new Attributes.Name("Source"), "src");
 				man.getMainAttributes().put(new Attributes.Name("Target"), "generated");
 				
 				IFolder folder = project.getFolder("META-INF");

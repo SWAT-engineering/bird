@@ -3,6 +3,3 @@ Main-Function: main
 Courses: courses
 Main-Module: Plugin
 Source: src
-BirdSource: bird-src
-NescioSource: nescio-src
-
