@@ -141,7 +141,7 @@ public class NewBirdFile extends Wizard implements INewWizard {
 		
 		try (OutputStream out = URIResolverRegistry.getInstance().getOutputStream(loc, false)) {
 			try (PrintWriter w = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
-				w.println("module " + moduleName.replaceAll("/", "::") +";");
+				w.println("module " + moduleName.replaceAll("/", "::"));
 				w.println();
 				w.println("// import other Bird description(s)");
 				w.println();

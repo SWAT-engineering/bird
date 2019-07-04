@@ -142,13 +142,13 @@ public class NewNescioFile extends Wizard implements INewWizard {
 		try (OutputStream out = URIResolverRegistry.getInstance().getOutputStream(loc, false)) {
 			try (PrintWriter w = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
 				w.println("module " + moduleName.replace('/', '.') );
-				w.println("	for Language bird   // one can specify another language if there is a nescio plugin for it");
+				w.println("	forLanguage bird   // one can specify another language if there is a nescio plugin for it");
 				w.println(" rootNode Foo");
 				w.println();
 				w.println("// import external format module(s)");
 				w.println();
 				w.println("rule foo:");
-				w.println("    /**/[Foo] => toZeros // matches all the nodes whose type is Foo and apply transformation");
+				w.println("    /**/Foo => toZeros // matches all the nodes whose type is Foo and apply transformation");
 				w.println();
 				w.println("// Description of the transformation");
 				w.println("@(engineering.swat.nescio.algorithms.ToZeros.apply)"); 
