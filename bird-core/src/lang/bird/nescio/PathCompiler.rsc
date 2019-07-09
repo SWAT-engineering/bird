@@ -327,7 +327,6 @@ TypeName getTypeName(listType(AType t), loc locType, set[TModel] models) = getTy
 TypeName getTypeName(AType t, loc locType, set[TModel] models) = typeName([], toStr(t));
 
 map[tuple[TypeName tn, str fieldName], AType] atypesForFields(Program p, set[TModel] models, map[loc, AType] types) {
-	println("beginning atypesforfields with number of models = <size(models)>");
 	int i = 0;
 	for (TModel model <- models) {
 		println("Model <i>: <size(model.useDef)> useDefs, <size(model.facts)> facts, <size(model.defines)> definitions");
@@ -338,22 +337,16 @@ map[tuple[TypeName tn, str fieldName], AType] atypesForFields(Program p, set[TMo
 	
 	Defines allDefines = ({} | it + model.defines | model <- models) ;
 	
-	println("(1)");
 	for (<_, structName, structId(), definedStructLoc, _> <- allDefines) {
 		structNames += (definedStructLoc : structName);
 	}
 	
-	println("(2)");
-	 map[loc,AType] allFacts = (() | it + model.facts | model <- models);
+	map[loc,AType] allFacts = (() | it + model.facts | model <- models);
 	
-	println("(3)");
 	for (<structLoc, fieldName, fieldId(), definedFieldLoc, defType(ty)> <- allDefines, !(types[structLoc] is funType || types[structLoc] is anonType)) {
 		res += (<typeName(findModuleId(structLoc, models), structNames[structLoc]), fieldName> : allFacts[ty@\loc]);
 	}
-	
-	
-	println("end atypesforfields");
-	
+
 	return res;
 }
 
@@ -406,7 +399,7 @@ set[TModel] getImportedModelsForNescioFile(loc birdSrcDir, Tree nescioSpec, Stru
 	return result;
 }	
 
-void compileNescioForBird(Tree nescioSpec, PathConfig pcfg) {
+void compileNescioForBird(Tree nescioSpec, str basePkg, PathConfig pcfg) {
 	
 	println("Compiling nescio spec: <nescioSpec.top.moduleId>");
 	
@@ -416,7 +409,6 @@ void compileNescioForBird(Tree nescioSpec, PathConfig pcfg) {
 	
 	StructuredGraph graph = computeAggregatedStructuredGraph(nescioSpec, buildBirdModulesComputer(pcfg.srcs), birdGraphCalculator(pcfg));
 	
-	println("second stage");
 	TypeName rootType = getRoot(nescioSpec, graph);
 	 
 	for (loc birdDir <- pcfg.srcs, !found) {
@@ -445,7 +437,7 @@ void compileNescioForBird(Tree nescioSpec, PathConfig pcfg) {
 		
 		Rules rules = evalNescio(nescioSpec, graph);
 	
-		str text = compile(birdProgram.top, "", rootType, rules, graph, atypes, fields);
+		str text = compile(birdProgram.top, basePkg, rootType, rules, graph, atypes, fields);
 	
 		list[str] fileParts = ["<x>" | x <- birdProgram.top.moduleName.moduleName];
 		path = fileParts[-1] + "Anonymizer.java";

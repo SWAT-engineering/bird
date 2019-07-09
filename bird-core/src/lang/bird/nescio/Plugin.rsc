@@ -24,6 +24,8 @@ data BirdNescioManifest
       list[str] Source = ["src"],
       str Target = "generated"
 	);
+	
+data PathConfig(str basePkg = "engineering.swat.bird.generated");
  
 private loc configFile(loc file) =  project(file) + "META-INF" + "RASCAL.MF"; 
 
@@ -80,7 +82,7 @@ set[Message] buildBird(start[Program] input) {
   model = birdTModelFromTree(input, pathConf = pcfg);
   if (getMessages(model) == []) {
   	try
-  		compileBirdModule(input, model, pcfg);
+  		compileBirdModule(input, model, pcfg.basePkg, pcfg);
   	catch x: {
   		println("Exception thrown: <x>");
   	}

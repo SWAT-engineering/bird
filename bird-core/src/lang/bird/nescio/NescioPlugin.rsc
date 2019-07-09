@@ -55,10 +55,6 @@ public StructuredGraph(list[loc]) birdGraphCalculator(PathConfig pathConf) = Str
   
 public start[Program] parseBird(loc file) = parse(#start[Program], file);
 
-public start[Program] sampleBird(str name, PathConfig pcfg) = parse(#start[Program], |project://bird-core/bird-src/<newName>.bird|)
-	when newName := replaceAll(name, "::", "/"),
-		bprintln(|project://bird-core/bird-src/<newName>.bird|);
-
 str toStr(voidType()) = "void";
 str toStr(byteType()) = "byte";
 str toStr(intType()) = "int";

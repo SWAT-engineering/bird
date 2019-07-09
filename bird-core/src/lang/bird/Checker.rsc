@@ -196,7 +196,7 @@ PathConfig pathConfig(loc file) {
 
    p = project(file);      
  
-   return pathConfig(srcs = [ p + "bird-src"]);
+   return pathConfig(srcs = [ p + "src"]);
 }
 
 private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
@@ -943,7 +943,8 @@ void collect(current: (Expr) `( <Type accuType> <Id accuId> = <Expr init> | <Exp
     collect(source, c);  // source should be outside the scope of the reducer
     c.fact(current, accuId);
     c.enterScope(current); {
-        collect(accuType, init, update, c);
+    	collectType(accuType, c);
+        collect(init, update, c);
         collectGenerator(loopVar, source, c);
 
         c.define("<accuId>", variableId(), accuId, defType(accuType));
@@ -1025,8 +1026,6 @@ private TypePalConfig getBirdConfig(bool debug = false) = tconfig(
     lookup = lookupWide
 );
 
-
-public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);
 
 list[Message] runBird(str name, bool debug = false) {
     Tree pt = sampleBird(name);

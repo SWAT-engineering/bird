@@ -521,9 +521,6 @@ str type2Java(strType()) = "String";
 str type2Java(boolType()) = "boolean";
 str type2Java(listType(t)) = "List\<<type2Java(t)>\>"
 	when !isTokenType(t);	  
-            	
-
-public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);
 
 tuple[str,str] compileBird(str name) {
 	start[Program] pt = sampleBird(name);
