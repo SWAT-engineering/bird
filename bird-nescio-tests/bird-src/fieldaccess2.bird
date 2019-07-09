@@ -1,0 +1,12 @@
+module fieldaccess2
+
+struct A{
+	u8 x ?(this=="0"|| this=="1") 
+}
+
+struct S{
+	A a
+	A b
+	str x = a.x
+	str y = b.x
+}

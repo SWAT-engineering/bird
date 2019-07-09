@@ -1,0 +1,6 @@
+module while1
+
+struct WhileUnevenParse{
+	u8[] contents while ((it & 0x1)  == 1B) // Notice that the type as to be an array of single bytes
+	u8 terminatedAt
+}

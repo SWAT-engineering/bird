@@ -1,0 +1,48 @@
+module JPEG
+
+struct Header{
+	u8 marker ?(==0xff)
+	u8 identifier ?(==0xd8)
+}
+
+struct Footer{
+	u8 marker ?(==0xff)
+	u8 identifier ?(==0xd9)
+}
+
+struct SizedSegment{
+	u8 marker ?(==0xff)
+	u8 identifier ?(this.as[int] < 0xd8I || this.as[int] > 0xdaI)
+	u16 length
+	byte[] payload[length.as[int] - 2]
+}
+
+choice ScanEscape{
+	struct{
+		u8 scanData ?(!= 0xff)
+	}
+	struct{
+		u16 escape ?(this == 0xff00 || (this.as[int] > 0xffcfI && this.as[int] < 0xffd8I))
+	}
+	
+}
+
+struct ScanSegment{
+	u8 marker ?(==0xff)
+	u8 identifier ?(== 0xda)
+	u16 length
+	byte[] payload[length.as[int] - 2]
+	ScanEscape[] choices
+}
+
+
+choice SizedScan{
+	SizedSegment
+	ScanSegment
+}
+	
+struct Format @(endianness = BIG){
+	Header _
+	SizedScan[] _
+	Footer _
+}

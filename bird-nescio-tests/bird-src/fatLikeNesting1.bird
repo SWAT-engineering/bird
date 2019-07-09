@@ -1,0 +1,20 @@
+module fatLikeNesting1
+
+import JPEG
+import PNG
+
+choice PNGorJPEG {
+	PNG
+	Format
+}
+
+struct NestedFiles<T>@(endianness = LITTLE){
+	byte[] header[3] ?(this.as[str] == "HDR"S)
+	NestedFile<T>[] files
+}
+
+struct NestedFile<U> {
+	byte[] size[4] 
+	byte[] raw[size.as[int]]
+	U parsedFile byparsing(raw)
+}

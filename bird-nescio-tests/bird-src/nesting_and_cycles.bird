@@ -1,0 +1,41 @@
+module nesting_and_cycles
+
+struct Node {
+    u8 a
+    u8 b
+}
+
+choice Loop(Node n) {
+    struct {
+        u8 _ ?(=="0")
+    }
+    struct {
+        u8 aRef ?(==n.a)
+        Node n1 ?(n1.a == n.b) // the .b of this one is free
+        Node n2 ?(n2.a == n1.b) // the .b of this one is free
+        Loop l(n1)
+    }
+}
+
+
+struct Start @(encoding = US_ASCII) {
+    u8 header ?(=="H")
+    Node initial
+    Loop loop(initial)
+}
+
+
+// example input:
+// Hcdcdeefdeggh0 (nesting_and_cycles_test2.txt)
+// Start(initial = Node(c,d),
+//       loop = Loop(
+//              aRef = c, 
+//              n1 = Node(d, e), 
+//              n2 = Node(e, f), 
+//              l = Loop(
+//                   aRef = d, 
+//                   n1 = Node(e, g),
+//                   n2 = Node(g, h),
+//                   l = Loop(_ = 0)
+//              )                
+//      )) 

@@ -1,0 +1,12 @@
+module e1
+
+struct Person{
+	u16 age
+	u8 _ ?(==";")
+	str name = "Ignacio"
+	int siblingsNumber = 3
+	Person mother
+	Person father
+	int motherAge = mother.age
+//	Person[] siblings[siblingsNumber] 
+}

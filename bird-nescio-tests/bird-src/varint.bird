@@ -1,0 +1,30 @@
+module varint 
+
+struct LEB128 {
+    u8[] raw while((it & 0b1000_0000)!= 0B) 
+    u8 lastOne
+    // TODO: the type of this ac value is strange, we want to do byte stuff, and the type won't be a u8, but just a set of bytes
+    int value = ( u8 ac = lastOne | ((ac << 7) | (r & 0b0111_1111)) | r <- raw[-1:0]).as[int]  // iterate over it in reverse as to keep the bit shift simpeler
+}
+
+@(engineering.swat.nest.examples.formats.png.TrailingZeroes)
+int trailingZeroes(u128 number)
+
+choice PrefixVarint {
+    abstract int value
+    struct {
+        u8 prefixHeader ?( (this & 0b1) == 0b1) // a single byte
+        int value = (prefixHeader >> 1).as[int]
+    }
+    struct {
+        u8 prefixHeader ?(!= 0x00) 
+        int prefixLength = trailingZeroes(prefixHeader)
+        byte[] rest [prefixLength]
+        int value = ((prefixHeader >> (prefixLength + 1)) | ( rest << (8 - prefixLength))).as[int]
+    }
+    struct {
+        u8 prefixHeader ?(== 0x00) 
+        u64 fullValue
+        int value = fullValue.as[int]
+    }
+}

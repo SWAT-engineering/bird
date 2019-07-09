@@ -1,0 +1,11 @@
+module fieldaccess9
+
+struct A {
+     u8[] data
+}
+
+struct S {
+    A a
+    u8[] data = a.data
+    A a_ byparsing (data) 
+}

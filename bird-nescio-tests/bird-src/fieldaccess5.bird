@@ -1,0 +1,43 @@
+module fieldaccess5
+
+struct A{
+	u8[] data
+}
+
+struct B{
+	u8 data1
+	u8 data2
+	u8 data3
+	u8 data4
+	u8 data5
+}
+
+struct C{
+	u40 data
+}
+
+struct D{
+	u8[] array[5]
+}
+
+struct E{
+	u8 len
+	u8[] array[len]
+}
+
+struct S0{
+	A a
+	u8[] data = a.data
+	B b byparsing (data)	
+	//B x = b
+	//str y = x.data1 (+) "1"
+}
+
+struct S{
+	C c
+	u16 data = c.data
+	D d byparsing (data)
+	D x = d
+	//B x = b
+	//str y = x.array.array
+}

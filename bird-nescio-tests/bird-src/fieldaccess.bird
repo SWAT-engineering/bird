@@ -1,0 +1,10 @@
+module fieldaccess
+
+struct A{
+	u8 x ?(=="0") 
+}
+
+struct S{
+	A a
+	str x = a.x
+}

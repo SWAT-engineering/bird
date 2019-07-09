@@ -1,0 +1,20 @@
+module structure 
+
+struct A{
+	u8 x ?(== "1")
+}
+
+struct B{
+	u8 x ?(== "0")
+}
+
+struct C {
+	A a
+	B b
+}
+
+struct D {
+	C c1
+	C c2
+	int derived = c2.b.x + c1.a.x
+}

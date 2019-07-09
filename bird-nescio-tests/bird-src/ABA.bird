@@ -1,0 +1,10 @@
+module ABA
+
+import A
+import B
+
+struct AorB {
+	A a
+	B b
+	A a2
+}

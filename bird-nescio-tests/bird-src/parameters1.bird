@@ -1,0 +1,10 @@
+module parameters1
+
+struct A(str x){
+	u8 y ?(==x)
+}
+
+struct S{
+	A a1("1")
+	A a2("0")
+}

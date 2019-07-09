@@ -1,0 +1,33 @@
+module uvw
+
+import x
+
+struct U {
+	V v
+	W w
+	X x
+	P[] p
+	Y y
+}
+
+choice Z {
+	X
+	Y
+}
+
+struct W {
+	Z z
+}
+
+struct Y {
+	u8 y1?(=="y")
+
+}	
+
+struct V {
+	u8 z1?(=="z")
+}	
+
+struct P {
+	V v
+}

@@ -1,0 +1,22 @@
+module linkedList1
+
+choice LinkedListEntry(int offset) {
+	abstract int value
+	Node(offset)
+	Leaf(offset)
+}
+
+struct Node(int offset)@(offset = offset){
+	u16 next ?(!= 0x0000)
+	u32 rawValue
+	LinkedListEntry nextEntry(next.as[int])
+	int value = nextEntry.value + rawValue.as[int]
+	
+}
+
+
+struct Leaf(int offset)@(offset = offset) {
+	u16 next ?(== 0x0000)
+	u32 rawValue	
+	int value = rawValue.as[int]
+}

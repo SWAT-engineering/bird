@@ -1,0 +1,15 @@
+module generics
+
+struct Bar{
+	u8 zero ? (== "0")
+}
+
+struct T{
+	Foo<Bar> foo  
+	Bar x = foo.arbitraryToken
+}
+
+struct Foo<T>{
+	u8[] data[5]
+	T arbitraryToken byparsing (data) 
+}

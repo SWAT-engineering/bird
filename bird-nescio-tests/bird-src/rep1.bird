@@ -1,0 +1,11 @@
+module rep1
+
+import A
+
+struct Rep1 {
+	A[] aes
+}
+
+struct Rep2 {
+	A[] aes[3]
+}

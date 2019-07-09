@@ -1,0 +1,17 @@
+module tie1
+
+struct Tie1 {
+	byte[] data[4]
+	OtherStruct other byparsing(data)
+}
+
+struct Tie2 {
+	byte[] data1[2]
+	byte[] data2[2]
+	OtherStruct other byparsing(data2 ++ data1)
+}
+
+struct OtherStruct {
+	u16 data1
+	u16 data2
+}

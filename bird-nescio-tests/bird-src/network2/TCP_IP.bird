@@ -1,0 +1,116 @@
+module network2::TCP_IP
+
+// start of UDP
+
+struct UDPSegment {
+	UDPHeader header
+	byte[] data[header.len.as[int] - 8]
+	ApplicationData appData byparsing (data)
+}
+
+struct UDPHeader {
+	u16 sourcePort
+	u16 destinationPort
+	u16 len
+	u16 checksum
+}
+
+
+// start of IPV4
+
+struct IPv4Header {
+    u8 versionAndLength //?((this & 0b1111_0000) >> 4 == 4B)
+    int headerLength = (versionAndLength & 0b1111).as[int] * 4
+    u8 _
+    u16 totalPacketLength 
+    int dataSize = totalPacketLength.as[int] - headerLength
+    u16 identification
+    u16 fragmentFlagsAndOffset //?(this >> 15 == 0B)
+    u8 ttl
+    u8 protocol
+    u16 checksum
+    u32 srcAddress
+    u32 dstAddress
+    byte[] options [headerLength - (5 * 4)]
+}
+choice RawProtocolData(int protocol) {
+    abstract byte[] data
+    //struct {
+    //    TCPSegment _ ?(protocol == 6)
+    //}
+    struct {
+        UDPSegment segment ?(protocol == 17)
+        byte[] data = segment.data 
+    }
+
+    //UnparsedProtocol
+}
+
+choice ApplicationData {
+    DNS
+    //HTTP
+    //SMT
+}
+
+// start of DNS
+
+struct DNS {
+    DNSHeader header
+    Question[] questions[header.questions.as[int]]
+    Record[] answers[header.answerRecords.as[int]]
+    Record[] authorities[header.authorityRecords.as[int]]
+    Record[] additionals[header.additionalRecords.as[int]]
+}
+
+struct Question {
+    DNSName questionName
+    u16 type //?(invalidDNSTypes(this))
+    u16 clazz
+}
+
+choice EndDNSName {
+	struct {
+        u8 size ?(== 0B)
+        str name = ""S
+    }
+	
+	struct {
+        u16 pointer?((this & 0b1100_0000) == 0b1100_0000)
+    }
+
+}
+
+choice DNSName {
+    //abstract str name
+    
+    struct {
+        u8 size ?(this.as[int] > 0)
+        byte[] chars[size.as[int]]
+        DNSName next
+        //str name = chars.as[str] (+) "."S (+) next.name
+    }
+    EndDNSName
+}
+
+
+struct DNSHeader {
+    u16 identifier
+    u16 flags 
+        //?( (this & 0b111_0000).as[int] == 0 // it was b111_0000
+        //&& ((this >> 11) & 0b1111).as[int] != 3 
+        //&& (this & 0b1111).as[int] <= 10) // reserved bits and codes
+    u16 questions
+    u16 answerRecords
+    u16 authorityRecords
+    u16 additionalRecords
+}
+
+
+struct Record {
+	DNSName name
+	u16 type  //?(invalidDNSTypes(this))
+	u16 clazz
+	u32 ttl 
+	u16 rdLength
+	byte[] rdata[rdLength.as[int]]
+} 

@@ -1,0 +1,18 @@
+module fieldaccess6b
+
+struct A {
+     u8 a ?(== "1")
+}
+
+struct B {
+    u8 b ?(=="0")
+}
+
+choice AorB {
+    A
+    B
+}
+
+struct S{
+	AorB abs
+}
