@@ -1,0 +1,42 @@
+module network3::PCAP
+
+import network3::TCP_IP
+
+struct PCAP {
+	GlobalHeader header
+	Packet[] packets
+	//RawProtocolData ipPacket(17) byparsing (packets[0].data)
+	RawProtocolData[] ipPackets = [parse (p.data) with RawProtocolData(p.ipHeader.protocol.as[int]) | p <- packets]
+	ApplicationData[] applicationPackets = [parse (p.data) with ApplicationData | p <- ipPackets]
+}
+
+struct GlobalHeader {
+	u32 magicNumber
+	u16 versionMajor
+	u16 versionMinor
+	u32	thisZone 
+	u32 sigfigs
+	u32 snaplen
+	u32 network
+}
+
+
+struct PacketHeader {
+	u32 seconds
+	u32 microseconds
+	u32 inclLen
+	u32 origLen 
+} 
+
+struct Packet {
+	PacketHeader header
+	EthernetHeader ethHeader
+	network3::TCP_IP::IPv4Header ipHeader 
+	byte[] data[ipHeader.dataSize]
+}
+
+struct EthernetHeader {
+	u48 destMAC
+	u48 srcMAC
+	u16 type
+}
