@@ -303,7 +303,7 @@ void collectAnnos(Annos? annos, Collector c) {
 }
 
 void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
-     println("defining struct <id>");
+     //println("defining struct <id>");
      list[Id] tformals = [tf |atypeFormals <- typeFormals, tf <- atypeFormals.typeFormals];
      if (_ <- tformals) {
      	c.define("<id>", structId(), current, defType(structDef("<id>", ["<tf>" | tf <- tformals])));
@@ -610,8 +610,7 @@ void collectType(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] theSize 
 }  
 
 void collectType(current: (Type) `<ModuleId name>`, Collector c, Maybe[Expr] sz = nothing()){
-	println("checking <current>");
-	
+	//println("checking <current>");
 	list[Id] idsInModule = [id | id <- name.moduleName];
 	
 	if (size(idsInModule) == 1)
@@ -624,7 +623,7 @@ void collectType(current: (Type) `<ModuleId name>`, Collector c, Maybe[Expr] sz 
 
 
 void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collector c, Maybe[Expr] sz = nothing()){
-	println("checking <current>");
+	//println("checking <current>");
 	
 	list[Id] idsInModule = [id | id <- name.moduleName];
 	
