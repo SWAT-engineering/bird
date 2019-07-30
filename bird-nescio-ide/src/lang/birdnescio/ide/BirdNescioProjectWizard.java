@@ -104,6 +104,7 @@ public class BirdNescioProjectWizard extends BasicNewProjectResourceWizard {
 				man.getMainAttributes().remove("Main-Module");
 				man.getMainAttributes().put(new Attributes.Name("Source"), "src");
 				man.getMainAttributes().put(new Attributes.Name("Target"), "generated");
+				man.getMainAttributes().put(new Attributes.Name("BasePackage"), "engineering.swat.bird.generated");
 				
 				IFolder folder = project.getFolder("META-INF");
 				if (!folder.exists()) {
