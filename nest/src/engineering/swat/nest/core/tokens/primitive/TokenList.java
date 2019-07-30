@@ -5,7 +5,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import engineering.swat.nest.core.ParseError;
@@ -121,6 +123,11 @@ public class TokenList<T extends Token> extends PrimitiveToken implements Iterab
 	public NestBigInteger size() {
 		return contents.stream().map(Token::size).reduce(NestBigInteger.ZERO, NestBigInteger::add);
 	}
+	
+	public <U extends Token> TokenList<U> map(Function<T,U> f) {
+		return new TokenList<U>(contents.stream().map(t -> f.apply(t)).collect(Collectors.toList()), this.ctx);
+	}
+
 
 	/**
 	 * Amount of tokens in the list
