@@ -663,6 +663,26 @@ void collectType(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c, M
 	});
 }
 
+void collect(current: (Expr) `parse <Expr parsed> with <Type ty> <Arguments? args> <Size? sz>`, Collector c){
+    collect(parsed, c);
+    c.fact(current, ty);
+    
+    Maybe[Expr] siz = nothing();
+	if (s <- sz)
+		siz = just(s.expr);
+	
+	collectType(ty, c, theSize = siz);
+	
+	c.fact(current, ty);
+	
+    if (aargs <- args)
+		collectArgs(ty, aargs, c);
+	
+	for (sz0 <-sz){
+		collectSize(ty, sz0, c);
+	}
+}
+
 void collect(current: (Expr) `[<{Expr ","}*  exprs>]`, Collector c){
     collect([e | e <-exprs], c);
     c.calculate("list type", current, [e | e <-exprs], AType(Solver s) { 

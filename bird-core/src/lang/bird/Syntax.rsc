@@ -92,9 +92,11 @@ syntax Expr
 	| IntHexLiteral
 	| IntBitLiteral
 	| StringLiteral
+	| BoolLiteral
 	| TypeLiteral
 	| Id
 	| "[" {Expr ","}* "]"
+	| "parse " Expr token "with" Type ty Arguments? Size? 
 	| bracket "(" Expr ")"
 	| Id Arguments
 	| "(" Type typ Id id "=" Expr initital "|" Expr update "|" Id loopVar "\<-" Expr source ")"
@@ -188,6 +190,8 @@ lexical BytesStringLiteral = Characters;
 lexical IntDecLiteral = NatLiteral;
 lexical IntHexLiteral = HexIntegerLiteral number "I";
 lexical IntBitLiteral = BitLiteral "I";
+
+lexical BoolLiteral = "false" | "true";
 
 lexical StringLiteral = Characters chars "S";
 	
