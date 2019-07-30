@@ -66,25 +66,23 @@ str toJavaType(str rootPackageName, typeName(list[str] package, str clazz)) =
 		
 str toJavaExpression(str className, parent: typeName(_, pclazz), tn:typeName(_, clazz), str fieldName, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) =
 	"Arrays.asList(node<depth+1>.<fieldName>)"
-	when bprintln(fields[<parent, fieldName>]),
+	when //bprintln(fields[<parent, fieldName>]),
 		 listType(byteType()) := fields[<parent, fieldName>];			 	
 		 
 str toJavaExpression(str className, parent: typeName(_, pclazz), tn:typeName(_, clazz), str fieldName, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) =
 	"Arrays.asList(node<depth+1>.<fieldName>)"
-	when bprintln(fields[<parent, fieldName>]),
+	when //bprintln(fields[<parent, fieldName>]),
 		 listType(_) !:= fields[<parent, fieldName>];
 	
 str toJavaExpression(str className, parent: typeName(_, pclazz), tn:typeName(_, clazz), str fieldName, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) =
 	"node<depth+1>.<fieldName>.stream().collect(Collectors.toList())"
-	when bprintln(fields[<parent, fieldName>]),
+	when //bprintln(fields[<parent, fieldName>]),
 		 listType(t) := fields[<parent, fieldName>],
 		 byteType() !:= t;
 
 str(str) createBody(path:field(Path src, str fieldName),  str rootPackageName, str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
 	println(src);
-	println(graph);
 	set[TypeName] parentTns = getTypes(src, graph);
-	println(src);
 	TypeName parentTn = getOneFrom(parentTns);
 	
 	set[TypeName] tns = getTypes(path, graph);
@@ -151,8 +149,6 @@ str(str) createBody(path: deepMatchType(Path src, TypeName tn0), str className, 
 	
 str(str) createBody(path: deepMatchType(Path src, TypeName tn0), str rootPackageName, str className, StructuredGraph graph, int depth, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType]  fields) = str(str hole) {
 	set[TypeName] tns = getTypes(src, graph);
-	for (line <- graph)
-		println(line);
 	println(path);
 	println(tns);
 	TypeName tn = getOneFrom(tns);
@@ -177,8 +173,7 @@ FieldsAndBody createBody(path: fieldType(Path src, TypeName tn), str rootPackage
 	when <fields, body> := createBody(src, rootPackageName, className, graph, atypes),
 		 set[TypeName] pathTypes := getTypes(path, graph);
 		 
-str toJavaValue(javaStringType(), str val) = "\"<val>\"";
-default str toJavaValue(JavaType _, str val) = val;
+default str toJavaValue(JavaType ty, str val) = val;
 
 str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, str rootPackageName, TypeName initialNonTerminal, Rules rules, StructuredGraph graph, map[TypeName, AType] atypes, map[tuple[TypeName tn, str fieldName], AType] fields) =
 	"import java.io.File;
