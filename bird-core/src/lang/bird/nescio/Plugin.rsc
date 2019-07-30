@@ -108,7 +108,7 @@ set[Message] buildNescio(Tree input) {
   model = nescioTModelFromTree(input, pathConf = pcfg, langsConfig = (BIRD_LANG_NAME:birdConf));
   if (getMessages(model) == []) {
   	try
-  		compileNescioForBird(input, pcfg);
+  		compileNescioForBird(input, pcfg.basePkg, pcfg);
   	catch x: {
   		throw x;
   	}
