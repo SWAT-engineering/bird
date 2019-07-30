@@ -3,4 +3,5 @@ Main-Function: main
 Courses: courses
 Main-Module: lang::birdnescio::ide::Plugin
 Source: src
-
+BasePackage: engineering.swat.bird.generated
+Target: generated
