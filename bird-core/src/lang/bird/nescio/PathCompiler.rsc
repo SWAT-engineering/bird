@@ -284,15 +284,6 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 		 str absolutePackageName := "<rootPrefix><packageName>",
 		 str containerClassName := "<absolutePackageName>.<className>$",
 		 list[NamedPattern] patterns := [pattern(ruleName, path) | str ruleName <- rules, <Path path, _> := rules[ruleName]];
-	
-	
-public start[Program] sampleBird(str name) = parse(#start[Program], |project://bird-core/bird-src/<name>.bird|);	
-	
-void main() {
-	start[Program] png = sampleBird("PNG");
-	NamedPattern p1 = pattern("crc", field(field(rootType(typeName([], "PNG")), "end"), "crc"));
-	println(compile(png.top, "engineering.swat.nest.examples.formats.bird_generated", [p1]));	
-}
 
 void compilePathTo(loc file) {
 	start[Program] png = sampleBird("PNG");
