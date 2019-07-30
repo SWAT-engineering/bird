@@ -214,12 +214,13 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
    '
    '    @Override
    '    protected Token[] allTokens() {
-   '        return new Token[]{<intercalate(", ", ["<id>" | <id, _, isToken, _> <- fieldsList, isToken])>};
+   '        return new Token[]{<intercalate(", ", toList({"<id>" | <id, _, isToken, _> <- fieldsList, isToken} + {"<id>" | <id, _> <- computedFieldsList}))>};
    '    }
    '}"           	
 	when lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
 		 lrel[str, Type, bool, bool] fieldsList := 
 		 	[<makeId(d.id), d.ty, d is token, (DeclInStruct) `<Type _> <DId _> <Arguments? _> <Size? _> byparsing (<Expr _>)`:= d>| DeclInStruct d <- decls],
+		 lrel[str, Type] computedFieldsList := [<makeId(d.id), d.ty>| DeclInStruct d <- decls, d is computed, isTokenType(types[d.ty@\loc])],
 		 lrel[str, Type] allFieldsList := formalsList + [<id, ty> | <id, ty, _, _> <- fieldsList],
 		 list[Id] typeFormalsList := [t | atypeFormals <- typeFormals, t <- atypeFormals.typeFormals],
 		 str javaTypeFormals := ((size(typeFormalsList) > 0)?"\<<intercalate(",", ["<tf> extends Token" | tf <- typeFormalsList])>\>":""),
@@ -257,10 +258,8 @@ str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[
 	when listType(byteType(), n = just(expr)) :=  types[current@\loc];
 	
 str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
-	= "TokenList.untilParseFailure(<src>, <ctx>, (<src1>, <ctx1>) -\> <src1>.readUnsigned(1, <ctx1>))"
-	when listType(byteType(), n = nothing()) :=  types[current@\loc],
-		 src1 := makeUnique(current, "__$src"),
-		 ctx1 := makeUnique(current, "__$ctx");
+	= "<src>.readUnsignedUntilEnd(<ctx>)"
+	when listType(byteType(), n = nothing()) :=  types[current@\loc];
 	
 str generateParsingInstruction(current: (Type) `<Type t> []`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
 	= "TokenList.times(<src>, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], basePkg, useDefs, types, src = "<src1>", ctx = "<ctx1>")>, <compile(expr, DUMMY_DID, basePkg, useDefs, types)>.intValueExact())"
@@ -403,6 +402,11 @@ str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, str basePkg, r
 	}
 	when !(types[id@\loc] is funType);
 	
+	
+str compile(current: (Expr) `parse <Expr parsed> with <Type ty> <Arguments? args> <Size? sz>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
+	generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], [], basePkg, useDefs, types,
+		src = "new ByteStream(<compile(parsed, this, basePkg, useDefs, types)>)");
+	
 str compile(current:(Expr) `<Expr e>[<Expr init> : <Expr end>]`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"TokenList.of(__$ctx, IntStream.rangeClosed(<compile(end, this, basePkg, useDefs, types)>.intValueExact(), <compile(e, this, basePkg, useDefs, types)>.length()+(<compile(init, this, basePkg, useDefs, types)>.intValueExact()))
 	'	.boxed().sorted(Collections.reverseOrder()).map(i -\> <compile(e, this, basePkg, useDefs, types)>.get(i)).toArray(i -\> new UnsignedBytes[i]))";
@@ -412,6 +416,10 @@ str compile(current: (Expr) `( <Type accuType> <Id accuId> = <Expr init> | <Expr
     '    		.stream().reduce(<compile(init, this, basePkg, useDefs, types)>.asValue(), (<accuId>, <loopVar>) -\>
     '    				(<compile(update, this, basePkg, useDefs, types)>),
     '    			(x,y) -\> x)";
+    
+str compile(current: (Expr) `[ <Expr e> | <Id loopVar> \<- <Expr source>]`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) {
+	return "<source>.map(<loopVar> -\> <compile(e, this, basePkg, useDefs, types)>)";
+}
 
 str compile(current: (Expr) `<Expr e>.as[int]`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<compile(e, this, basePkg, useDefs, types)>.asValue().asInteger()";
