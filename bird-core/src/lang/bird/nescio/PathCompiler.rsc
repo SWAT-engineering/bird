@@ -285,34 +285,6 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 		 str containerClassName := "<absolutePackageName>.<className>$",
 		 list[NamedPattern] patterns := [pattern(ruleName, path) | str ruleName <- rules, <Path path, _> := rules[ruleName]];
 
-void compilePathTo(loc file) {
-	start[Program] png = sampleBird("PNG");
-	TModel model = birdTModelFromTree(png);
-	StructuredGraph graph = birdGraphCalculator(png);
-	map[loc, AType] types = getFacts(model);
-	map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(png.top, model, types);
-	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, model):types[locType] | locType <- types);
-	atypes += (typeName([], "byte"):byteType());
-	NamedPattern p1 = pattern("crc",       field(field(rootType(typeName(["PNG"], "PNG")), "end"), "crc"));
-	NamedPattern p2 = pattern("crcByType", field(fieldType(rootType(typeName(["PNG"], "PNG")), typeName(["PNG"], "IEND")), "crc"));
-	NamedPattern p3 = pattern("crcByTypeDeepMatch", field(deepMatchType(rootType(typeName(["PNG"], "PNG")), typeName(["PNG"], "IEND")), "crc"));
-	str src = compile(png.top, "engineering.swat.nest.examples.formats.bird_generated", [p1, p2, p3], graph, atypes, fields);
-	writeFile(file, src);
-}
-	
-void compilePath2To(loc file) {
-	start[Program] jpeg = sampleBird("JPEG");
-	TModel model = birdTModelFromTree(jpeg);
-	StructuredGraph graph = birdGraphCalculator(jpeg);
-	map[loc, AType] types = getFacts(model);
-	map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(jpeg.top, model, types);
-	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, model):types[locType] | locType <- types, !(types[locType] is funType));
-	atypes += (typeName([], "byte"):byteType());
-	NamedPattern p1 = pattern("lengthByTypeDeepMatch", field(deepMatchType(rootType(typeName(["JPEG"], "Format")), typeName(["JPEG"], "ScanSegment")), "length"));
-	str src = compile(jpeg.top, "engineering.swat.nest.examples.formats.bird_generated", [p1], graph, atypes, fields);
-	writeFile(file, src);
-}
-
 TypeName getTypeName(structType(str name, list[AType] typeActuals), loc locType, set[TModel] models) = typeName(findModuleId(locType, models), name);
 TypeName getTypeName(listType(AType t), loc locType, set[TModel] models) = getTypeName(t, locType, models);
 TypeName getTypeName(AType t, loc locType, set[TModel] models) = typeName([], toStr(t));
@@ -340,32 +312,6 @@ map[tuple[TypeName tn, str fieldName], AType] atypesForFields(Program p, set[TMo
 
 	return res;
 }
-
-/*
-void compilePath(loc modelFile, loc nescioFile, loc outputFile) {
-	start[Program] birdProgram = parse(#start[Program], modelFile);
-	TModel birdModel = birdTModelFromTree(birdProgram);
-	map[loc, AType] types = getFacts(birdModel);
-	map[tuple[TypeName tn, str fieldName], AType]  fields = atypesForFields(birdProgram.top, birdModel, types);
-	map[TypeName, AType] atypes = (getTypeName(types[locType], locType, birdModel):types[locType] | locType <- types);
-	atypes += (typeName([], "byte"):byteType());
-	
-	loc initialBirdDir = |project://bird-core/bird-src/|;
-	
-	StructuredGraph graph = computeAggregatedStructuredGraph(nescioFile, buildBirdModulesComputer(initialBirdDir), birdGraphCalculator);
-	
-	println("the graph: <graph>");
-	
-	Rules rules = evalNescio(nescioFile, graph);
-	
-	TypeName root = getRoot(nescioFile);
-	
-	// create list of named patterns from rules 
-	
-	str src = compile(birdProgram.top, "engineering.swat.nest.examples.formats.bird_generated", root, rules, graph, atypes, fields);
-	writeFile(outputFile, src);
-}
-*/
 
 loc constructBirdLocation(loc birdDir, typeName(list[str] path, str _)) 
 	= birdDir + intercalate("/", locComponents)
