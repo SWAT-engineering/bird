@@ -3,6 +3,7 @@ bin/
 .metadata/
 bird-core/bird-output/**/*.java
 bird-nescio-ide/generated/**/*.java
+bird-nescio-tests/test/**/*.java
 
 ## OS stuff
 .DS_Store
@@ -12,5 +13,6 @@ Thumbs.db
 
 ## maven stuff
 target/
+
 
 
