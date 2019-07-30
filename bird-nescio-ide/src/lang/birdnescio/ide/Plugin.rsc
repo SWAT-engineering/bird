@@ -19,16 +19,16 @@ import List;
 private str BIRD_LANG_NAME = "bird";
 private str NESCIO_LANG_NAME = "nescio";
 
-
 data BirdNescioManifest
  = birdNescioManifest(
       list[str] Source = ["src"],
-      str Target = "generated"
+      str Target = "generated",
+      str BasePackage = "engineering.swat.bird.generated"
 	);        
 	
-data PathConfig(loc target = |cwd:///|);	
+data PathConfig(loc target = |cwd:///|, str basePkg = "engineering.swat.bird.generated");	
  
-private loc configFile(loc file) =  project(file) + "META-INF" + "RASCAL.MF"; 
+loc configFile(loc file) =  project(file) + "META-INF" + "RASCAL.MF"; 
 
 private loc project(loc file) {
    assert file.scheme == "project";
@@ -49,6 +49,8 @@ PathConfig config(loc file) {
    cfg.srcs += [ p + s | s <- mf.Source];
    
    cfg.srcs = [s | s <- toSet(cfg.srcs)];
+   
+   cfg.basePkg = mf.BasePackage;
    
    if (/^\|/ := mf.Target) {
       cfg.target = readTextValueString(#loc, mf.Target);
@@ -103,7 +105,7 @@ set[Message] buildBird(start[Program] input) {
   model = birdTModelFromTree(input, pathConf = pcfg);
   if (getMessages(model) == []) {
   	try
-  		compileBirdModule(input, model, pcfg);
+  		compileBirdModule(input, model, pcfg.basePkg, pcfg);
   	catch x: {
   		println("Exception thrown: <x>");
   	}
@@ -129,7 +131,7 @@ set[Message] buildNescio(Tree input) {
   model = nescioTModelFromTree(input, pathConf = pcfg, langsConfig = (BIRD_LANG_NAME:birdConf));
   if (getMessages(model) == []) {
   	try
-  		compileNescioForBird(input, pcfg);
+  		compileNescioForBird(input, pcfg.basePkg, pcfg);
   	catch x: {
   		//println("Exception thrown: <x>");
   		throw x;
