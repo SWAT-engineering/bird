@@ -170,7 +170,8 @@ syntax Type
 	| "bool"
 	| UInt
 	| anonymousType: AnonStruct
-	| ModuleId id TypeActuals? typeActuals
+	| ModuleId id
+	| ModuleId id TypeActuals typeActuals
 	| Type "[" "]"
 	;
 	

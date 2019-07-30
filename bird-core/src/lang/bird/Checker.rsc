@@ -609,7 +609,7 @@ void collectType(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] theSize 
 	});
 }  
 
-void collectType(current: (Type) `<ModuleId name> <TypeActuals? actuals>`, Collector c, Maybe[Expr] sz = nothing()){
+void collectType(current: (Type) `<ModuleId name>`, Collector c, Maybe[Expr] sz = nothing()){
 	println("checking <current>");
 	
 	list[Id] idsInModule = [id | id <- name.moduleName];
@@ -619,9 +619,23 @@ void collectType(current: (Type) `<ModuleId name> <TypeActuals? actuals>`, Colle
 	else
 		c.useQualified([intercalate("::", ["<id>" | id <- idsInModule[0..-1]]), "<idsInModule[-1]>"], name, {structId()}, {moduleId()});
 	
-    for (TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals)
+    c.fact(current, name);
+}
+
+
+void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collector c, Maybe[Expr] sz = nothing()){
+	println("checking <current>");
+	
+	list[Id] idsInModule = [id | id <- name.moduleName];
+	
+	if (size(idsInModule) == 1)
+		c.use(name,  {structId()});
+	else
+		c.useQualified([intercalate("::", ["<id>" | id <- idsInModule[0..-1]]), "<idsInModule[-1]>"], name, {structId()}, {moduleId()});
+	
+    for (Type t <- actuals.typeActuals)
     	collectType(t, c);
-   	list[Type] tpActuals = [t | TypeActuals aactuals <- actuals, Type t <- aactuals.typeActuals];
+   	list[Type] tpActuals = [t | Type t <- actuals.typeActuals];
     if (_ <- tpActuals){
     	c.calculate("actual type", current, [name] + tpActuals,
     		AType(Solver s) {

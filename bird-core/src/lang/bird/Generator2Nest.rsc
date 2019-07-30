@@ -107,13 +107,16 @@ str generateNestType((Type) `byte`, str basePkg, map[loc, AType] types) {
 str generateNestType((Type) `<UInt v>`, str basePkg, map[loc, AType] types)
 	= "UnsignedBytes";
 
-str generateNestType(current: (Type) `<ModuleId id> <TypeActuals? typeActuals>`, str basePkg, map[loc, AType] types)
+str generateNestType(current: (Type) `<ModuleId id>`, str basePkg, map[loc, AType] types)
+	="<toJavaFQName(basePkg, id)>"
+	when variableType(_) !:= types[current@\loc];	
+
+str generateNestType(current: (Type) `<ModuleId id> <TypeActuals typeActuals>`, str basePkg, map[loc, AType] types)
 	="<toJavaFQName(basePkg, id)><nestTypeActuals>"
-	when variableType(_) !:= types[current@\loc],
-		 list[Type] typeActualsList := [ta | atypeActuals <- typeActuals, Type ta <- atypeActuals.typeActuals],
+	when list[Type] typeActualsList := [ta | Type ta <- typeActuals.typeActuals],
 		 str nestTypeActuals := ((size(typeActualsList) > 0)?"\<<intercalate(",", [generateNestType(ta, basePkg, types) | Type ta <- typeActualsList])>\>":"");
 
-str generateNestType(current: (Type) `<ModuleId id> <TypeActuals? typeActuals>`, str basePkg, map[loc, AType] types)
+str generateNestType(current: (Type) `<ModuleId id>`, str basePkg, map[loc, AType] types)
 	= "<id>"
 	when variableType(_) := types[current@\loc];
 

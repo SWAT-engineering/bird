@@ -84,7 +84,8 @@ default bool isAnonymousField(DeclInStruct d)
 	= false;
 	
 	
-loc getTypeIdLoc((Type) `<Id id> <TypeActuals? _>`) = id@\loc;
+loc getTypeIdLoc((Type) `<Id id> <TypeActuals _>`) = id@\loc;
+loc getTypeIdLoc((Type) `<Id id>`) = id@\loc;
 
 loc getTypeIdLoc((Type) `<Type t> []`) = getTypeIdLoc(t);
 
@@ -108,7 +109,6 @@ StructuredGraph calculateFields(current:(TopLevelDecl) `choice <Id sid> <Formals
 	;
 	
 list[str] findModuleId(loc typeLoc , set[TModel] models) {
-	//println("trying to find module id: <typeLoc> by checking <size({m | m <- models})> models");
 	for (TModel model <- models) {
 		loc l = typeLoc in domain(model.useDef) ? getOneFrom(model.useDef[typeLoc]) : typeLoc;
 		if (l in model.facts) {
@@ -118,8 +118,6 @@ list[str] findModuleId(loc typeLoc , set[TModel] models) {
 				scLoc = model.scopes[l];
 				if (<_, id, moduleId(), scLoc, _> <- model.defines)
 					return split("::", id);
-				else
-					throw "Struct or choice need to be defined inside a module";
 			}
 		}
 	}
