@@ -1,6 +1,0 @@
-module encoding
-
-struct Endianness{
-	int LITTLE = 0
-	int BIG = 1
-}

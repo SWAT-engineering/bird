@@ -1,4 +1,0 @@
-struct Person{
-	int age = 20
-	str name = 20
-}

@@ -1,6 +1,0 @@
-module fieldaccess5b
-
-struct E{
-	u8 len
-	u8[] array[len-0x30]
-}

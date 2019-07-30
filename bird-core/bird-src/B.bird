@@ -1,6 +1,0 @@
-module B
-
-struct B {
-	u8 x ?(== 2B)
-	int virtualField = x.as[int] * 2
-}

@@ -1,5 +1,0 @@
-module structureA
-
-struct A{
-	u8[] x[2]	
-}

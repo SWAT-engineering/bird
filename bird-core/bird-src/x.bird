@@ -1,5 +1,0 @@
-module x
-
-struct X {
-	u8 x1?(== "x")
-}	
