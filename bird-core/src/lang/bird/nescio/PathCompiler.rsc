@@ -267,8 +267,8 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'
 	'		Path input = Paths.get(new File(inputFile).toURI());
 	'		Path output = Paths.get(new File(outputFile).toURI());
-	'		Anonymizer anonimizer = new <className>Anonymizer();
-	'		anonimizer.anonymize(input, output);
+	'		Anonymizer anonymizer = new <className>Anonymizer();
+	'		anonymizer.anonymize(input, output);
 	'	}
 	'
 	'}
