@@ -287,14 +287,20 @@ str generateParsingInstruction(current: (Type) `<UInt v>`, list[Expr] args, list
 	= "<src>.readUnsigned(<n>, <ctx>)"
 	when listType(byteType(), n = just(n)) :=  types[current@\loc];
 
-str generateParsingInstruction(current: (Type) `<ModuleId id> <TypeActuals? typeActuals>`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
- 	= "<toJavaFQName(basePkg, id)>.parse(<src>, <ctx><for (e <-args){>, <compile(e, DUMMY_DID, basePkg, useDefs, types)><}><for (atypeActuals <- typeActuals, Type ta <- atypeActuals.typeActuals){>, (<src1>, <ctx1>) -\> <generateParsingInstruction(ta, [], [], basePkg, useDefs, types, src = src1, ctx = ctx1)><}>)"
+str generateParsingInstruction(current: (Type) `<ModuleId id> <TypeActuals typeActuals>`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
+ 	= "<toJavaFQName(basePkg, id)>.parse(<src>, <ctx><for (e <-args){>, <compile(e, DUMMY_DID, basePkg, useDefs, types)><}><for (Type ta <- typeActuals.typeActuals){>, (<src1>, <ctx1>) -\> <generateParsingInstruction(ta, [], [], basePkg, useDefs, types, src = src1, ctx = ctx1)><}>)"
  	
+ 	when src1 := makeUnique(id, "__$src"),
+ 		 ctx1 := makeUnique(id, "__$ctx");
+ 		 
+str generateParsingInstruction(current: (Type) `<ModuleId id>`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
+ 	= "<toJavaFQName(basePkg, id)>.parse(<src>, <ctx><for (e <-args){>, <compile(e, DUMMY_DID, basePkg, useDefs, types)><}>)"
  	when variableType(_) !:= types[current@\loc],
  		 src1 := makeUnique(id, "__$src"),
  		 ctx1 := makeUnique(id, "__$ctx");
+ 		 
  	
-str generateParsingInstruction((Type) `<Id id>`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
+str generateParsingInstruction((Type) `<ModuleId id>`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
  	= "parserFor<id>.apply(<src>, <ctx>)"
  	when variableType(_) := types[id@\loc];
  	
@@ -511,8 +517,7 @@ str compile(current: (Expr) e, DId this, str basePkg, rel[loc,loc] useDefs, map[
 void compileBirdModule(start[Program] pt, TModel model, str basePkg, PathConfig pcfg) {
     str moduleName = "<pt.top.moduleName>";
     println("Compiling: <moduleName>");
-    tuple[str fqn, str text] compiled = compile(pt.top, basePkg, getUseDef(model), getFacts(model));
-    println("Compiled");
+   	tuple[str fqn, str text] compiled = compile(pt.top, basePkg, getUseDef(model), getFacts(model));
     path = replaceAll(compiled.fqn, ".", "/") + ".java";
     println("Writing to: <pcfg.target + path>");
     writeFile(pcfg.target + path, compiled.text);
