@@ -258,10 +258,10 @@ str compile((Program) `module <ModuleId moduleName> <Import* imports> <TopLevelD
 	'	}
 	'
 	'	public static void main(String[] args) throws URISyntaxException, IOException, MatchingException {
-	'		if (args == null)
-	'			throw new RuntimeException(\"Please provide input and output files as arguments.\");
-	'		if (args.length == 1)
-	'			throw new RuntimeException(\"Please provide both input and output files as arguments.\");
+	'		if (args.length != 2) {
+	'			System.out.println(\"Please provide both input and output files as arguments.\");
+	'			return;
+	'		}
 	'		String inputFile = args[0];
 	'		String outputFile = args[1];
 	'
