@@ -4,11 +4,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -37,6 +36,7 @@ import org.rascalmpl.eclipse.IRascalResources;
 import org.rascalmpl.eclipse.util.RascalEclipseManifest;
 import org.rascalmpl.uri.ProjectURIResolver;
 import org.rascalmpl.uri.URIResolverRegistry;
+
 import io.usethesource.vallang.ISourceLocation;
 
 public class NewNescioFile extends Wizard implements INewWizard {
@@ -141,9 +141,9 @@ public class NewNescioFile extends Wizard implements INewWizard {
 		
 		try (OutputStream out = URIResolverRegistry.getInstance().getOutputStream(loc, false)) {
 			try (PrintWriter w = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
-				w.println("module " + moduleName.replace('/', '.') );
+				w.println("module " + moduleName.replace("/", "::") );
 				w.println("	forLanguage bird   // one can specify another language if there is a nescio plugin for it");
-				w.println(" rootNode Foo");
+				w.println("	rootNode Foo");
 				w.println();
 				w.println("// import external format module(s)");
 				w.println();
