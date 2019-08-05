@@ -1,7 +1,0 @@
-{
-  "name": "nescio-web",
-  "version": "1.0.0",
-  "dependencies": {
-    "monaco-editor": "^0.13.1"
-  }
-}
