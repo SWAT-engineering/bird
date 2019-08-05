@@ -9,10 +9,11 @@
 
     <packaging>pom</packaging>
     <modules>
+        <module>nest</module>
         <!--<module>typepal</module>-->
         <module>bird-core</module>
-        <module>nest</module>
         <module>bird-nescio-ide</module>
+        <module>bird-nescio-feature</module>
         <module>bird-nescio-update-site</module>
     </modules>
 
