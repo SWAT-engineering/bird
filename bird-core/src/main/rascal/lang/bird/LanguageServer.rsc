@@ -67,7 +67,7 @@ void main() {
     unregisterLanguage("Bird", "bird");
     registerLanguage(
         language(
-            pathConfig(srcs=[|project://bird-core/src/main/rascal|, |lib://typepal/src|]),
+            pathConfig(srcs=[|project://bird-core/src/main/rascal|, |jar+file:///C:/Users/Rodin/.m2/repository/org/rascalmpl/typepal/0.8.9/typepal-0.8.9.jar!/src|]),
             "Bird",
             "bird",
             "lang::bird::LanguageServer",

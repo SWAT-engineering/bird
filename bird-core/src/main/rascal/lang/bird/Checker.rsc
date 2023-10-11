@@ -66,6 +66,8 @@ bool isSubtype(voidType(), AType t) = true;
 bool isSubtype(listType(AType t1), listType(AType t2)) = isSubtype(t1, t2);
 bool isSubtype(AType t1, AType t2) = true
 	when t1 == t2;
+bool isSubtype(listType(byteType()), intType()) = true;
+bool isSubtype(listType(byteType()), strType()) = true;
 default bool isSubtype(AType _, AType _) = false;
 
 
@@ -74,6 +76,9 @@ bool isConvertible(voidType(), AType t) = true;
 bool isConvertible(atypeList(vs), atypeList(ws))
 	= (true | isConvertible(v, w) && it | <v,w> <- zip2(vs, ws))
 	when (size(vs) == size(ws));
+
+bool isConvertible(listType(t1:byteType()), t2) = isConvertible(t1, t2)
+	when listType(_) !:= t2;
 
 // TODO do we want covariant lists?
 bool isConvertible(listType(t1), listType(t2)) = isConvertible(t1, t2);
@@ -91,6 +96,7 @@ str prettyPrintAType(boolType()) = "bool";
 str prettyPrintAType(listType(t)) = "<prettyPrintAType(t)>[]";
 str prettyPrintAType(structType(name, args)) = "structType(<name>, [<intercalate(",", [prettyPrintAType(a) | a <- args])>])";
 str prettyPrintAType(anonType(_)) = "anonymous";
+// str prettyPrintAType(byteType()) = "u<n>";
 str prettyPrintAType(consType(formals)) = "constructor(<("" | it + "<prettyPrintAType(ty)>," | atypeList(fs) := formals, ty <- fs)>)";
 str prettyPrintAType(funType(name,_,_,_)) = "fun <name>";
 str prettyPrintAType(moduleType()) = "module";
@@ -111,6 +117,11 @@ AType lub(AType t1, voidType()) = t1;
 AType lub(voidType(), AType t1) = t1;
 AType lub(AType t1, AType t2) = t1
 	when t1 == t2;
+// AType lub(t1:byteType(n), t2:byteType(m)) = n>m?t1:t2;
+AType lub(byteType(), intType()) = intType();
+AType lub(intType(), byteType()) = intType();
+AType lub(byteType(), strType()) = strType();
+AType lub(strType(), byteType()) = strType();
 AType lub(t1:listType(ta),t2:listType(tb)) = listType(lub(ta,tb));
 default AType lub(AType t1, AType t2){ throw "Cannot find a lub for types <prettyPrintAType(t1)> and <prettyPrintAType(t2)>"; }
 
@@ -131,6 +142,7 @@ AType infixLogical(t1, t2) = boolType()
 default AType infixLogical(AType t1, AType t2){ throw "Wrong operands for a logical operation"; }
 
 AType infixBitwise(t1:listType(byteType()), t2:listType(byteType())) = listType(byteType());
+AType infixBitwise(intType(), listType(byteType())) = listType(byteType());
 
 default AType infixBitwise(AType t1, AType t2){ throw "Wrong operands for a bitwise operation: "+ prettyPrintAType(t1) +", " + prettyPrintAType(t2); }
 
@@ -178,11 +190,12 @@ private loc project(loc file) {
 data PathConfig = pathConfig(list[loc] srcs = [], list[loc] libs = []);
 
 PathConfig pathConfig(loc file) {
-   assert file.scheme == "project";
+	return pathConfig(srcs = [file.top.parent, file.top.parent.parent]);
+//    assert file.scheme == "project";
 
-   p = project(file);      
+//    p = project(file);      
  
-   return pathConfig(srcs = [ p + "src"]);
+//    return pathConfig(srcs = [ p + "src"]);
 }
 
 private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
