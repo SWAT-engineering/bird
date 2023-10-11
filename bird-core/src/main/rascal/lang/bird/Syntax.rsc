@@ -2,6 +2,8 @@ module lang::bird::Syntax
 
 extend lang::std::Layout;
 
+import ParseTree;
+
 // TODO can we specify a pattern for u? types
 keyword Reserved = "abstract" | "struct" | "choice" | "byte" | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it" | "parse" | "with" | "typeOf" | "as";
 
@@ -226,4 +228,8 @@ lexical UnicodeEscape
 	| ascii: "\\" [a] [0-7] [0-9A-Fa-f]
 	;
 
+private start[Program] (value, loc) birdParser = parser(#start[Program]);
+
+// either invoke with (str content, loc origin) or (loc content, loc origin)
+start[Program] (value, loc) getBirdParser() = birdParser;
 

@@ -6,10 +6,11 @@ import lang::bird::Syntax;
 import lang::bird::Checker;
 import analysis::graphs::Graph;
 
-
 import List;
 import Set;
 import String;
+
+import util::Maybe;
 
 extend analysis::typepal::TypePal;
 

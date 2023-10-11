@@ -9,74 +9,158 @@
 
     <packaging>pom</packaging>
     <modules>
-        <module>nest</module>
+        <!--<module>nest</module>-->
         <!--<module>typepal</module>-->
         <module>bird-core</module>
-        <module>bird-nescio-ide</module>
+        <!--<module>bird-nescio-ide</module>
         <module>bird-nescio-feature</module>
-        <module>bird-nescio-update-site</module>
+        <module>bird-nescio-update-site</module>-->
     </modules>
 
     <properties>
-        <tycho-version>1.3.0</tycho-version>
+        <!--<tycho-version>1.3.0</tycho-version>-->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>8</java.version>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.rascalmpl</groupId>
+            <artifactId>rascal</artifactId>
+            <version>0.33.7</version>
+          </dependency>
+          <dependency>
+            <groupId>org.rascalmpl</groupId>
+            <artifactId>rascal-lsp</artifactId>
+            <version>2.18.0</version>
+            <exclusions> <!-- we exclude dependencies we don't really need, or maybe want to have our own -->
+              <exclusion>
+                <groupId>org.rascalmpl</groupId>
+                <artifactId>typepal</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>org.rascalmpl</groupId>
+                <artifactId>rascal-core</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+          <dependency>
+            <groupId>org.rascalmpl</groupId>
+            <artifactId>typepal</artifactId>
+            <version>0.8.9</version>
+          </dependency>
+          <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.1</version>
+            <scope>test</scope>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+
     <build>
         <plugins>
             <plugin>
-                <groupId>org.eclipse.tycho</groupId>
-                <artifactId>tycho-maven-plugin</artifactId>
-                <version>${tycho-version}</version>
-                <extensions>true</extensions>
-            </plugin>
-            <plugin>
-                <groupId>org.eclipse.tycho</groupId>
-                <artifactId>target-platform-configuration</artifactId>
-                <version>${tycho-version}</version>
-
-                <configuration>
-                    <resolver>p2</resolver>
-                    <pomDependencies>consider</pomDependencies>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                      <id>enforce-maven</id>
+                      <goals>
+                        <goal>enforce</goal>
+                      </goals>
+                      <configuration>
+                        <rules>
+                          <requireMavenVersion>
+                            <version>3.8</version>
+                          </requireMavenVersion>
+                        </rules>    
+                      </configuration>
+                    </execution>
+                  </executions>
             </plugin>
         </plugins>
+        <pluginManagement>
+            <!-- define plugins for the nested projects -->
+            <plugins>
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.0</version>
+              </plugin>
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+              </plugin>
+              <plugin>
+                <groupId>org.rascalmpl</groupId>
+                <artifactId>rascal-maven-plugin</artifactId>
+                <version>0.21.0</version>
+                <configuration>
+                  <bin>${project.build.outputDirectory}</bin>
+                  <srcs>
+                    <src>${project.basedir}/src/main/rascal</src>
+                  </srcs>
+                  <enableStandardLibrary>false</enableStandardLibrary>
+                </configuration>
+                <executions>
+                  <execution>
+                    <id>it-compile</id>
+                    <phase>compile</phase>
+                    <goals>
+                      <goal>compile</goal>
+                    </goals>
+                  </execution>
+                  <execution>
+                    <id>it-package</id>
+                    <phase>prepare-package</phase>
+                    <goals>
+                      <goal>package</goal>
+                    </goals>
+                  </execution>
+                </executions>
+              </plugin>
+             <plugin>
+                  <artifactId>maven-compiler-plugin</artifactId>
+                  <version>3.11.0</version>
+                  <configuration>
+                      <release>11</release>
+                  </configuration>
+              </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <version>3.0.0-M3</version>
+              <configuration>
+                  <argLine>
+                      -ea
+                      -Xmx2G
+                      -Xss128m
+                      -Dfile.encoding=UTF-8
+                  </argLine>
+                  <includes>
+                      <include>**/*Tests.java</include>
+                  </includes>
+              </configuration>
+            </plugin>
+            </plugins>
+          </pluginManagement>
     </build>
-
     <repositories>
         <repository>
-            <id>usethesource-cache</id>
-            <url>http://nexus.usethesource.io/content/repositories/public/</url>
+          <id>usethesource-releases</id>
+          <url>https://releases.usethesource.io/maven/</url>
         </repository>
-        <repository>
-            <id>usethesource-snapshots</id>
-            <url>http://nexus.usethesource.io/content/repositories/snapshots/</url>
-        </repository>
-
-        <repository>
-            <id>usethesource-rascalmpl-unstable</id>
-            <layout>p2</layout>
-            <url>https://update.rascal-mpl.org/unstable/</url>
-        </repository>
-
-        <repository>
-            <id>rascalmpl-libs</id>
-            <layout>p2</layout>
-            <url>https://update.rascal-mpl.org/libs/</url>
-        </repository>
-
-        <repository>
-            <id>neon</id>
-            <layout>p2</layout>
-            <url>http://nexus.usethesource.io/content/repositories/eclipse-oxygen/</url>
-        </repository>
-        <repository>
-            <id>tm</id>
-            <layout>p2</layout>
-            <url>http://nexus.usethesource.io/content/repositories/tm-terminal-marketplace/</url>
-        </repository>
-    </repositories>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>usethesource-releases</id>
+          <url>https://releases.usethesource.io/maven/</url>
+        </pluginRepository>
+      </pluginRepositories>
 </project>

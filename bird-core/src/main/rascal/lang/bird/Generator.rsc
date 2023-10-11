@@ -1,11 +1,11 @@
 module lang::bird::Generator
 
+
 import IO;
 
 import lang::bird::Syntax;
 import lang::bird::Checker;
 import analysis::graphs::Graph;
-
 
 import List;
 import Set;
@@ -17,23 +17,12 @@ syntax Aux = "{" SideCondition? sc "}";
 
 int BYTE_SIZE = 8;
 
-bool isSimpleByteType(uType(_)) = true;
-bool isSimpleByteType(sType(_)) = true;
 bool isSimpleByteType(AType _) = false;
 
-int sizeSimpleByteType(uType(n)) = n;
-int sizeSimpleByteType(sType(n)) = n;  
 int sizeSimpleByteType(AType ty){ throw "Incorrect operation on type <prettyPrintAType(ty)>"; }
 
 str calculateEq({intType()}) = "eqNum";
 str calculateEq({strType()}) = "eqStr";
-str calculateEq({strType(), uType(_)}) =  "eq";
-str calculateEq({strType(), sType(_)}) = "eq";
-str calculateEq({intType(), uType(_)}) = "eq";
-str calculateEq({intType(), sType(_)}) = "eq";	
-str calculateEq({sType(_)}) = "eq";
-str calculateEq({uType(_)}) = "eq";
-str calculateEq({uType(_), listType(intType())}) = "eq";
 
 str calculateOp("==", set[AType] ts, list[str] es) = "<calculateEq(ts)>(<intercalate(",", es)>)";
 str calculateOp("!=", set[AType] ts, list[str] es) = "not(<calculateEq(ts)>(<intercalate(",", es)>))";
@@ -327,8 +316,9 @@ str compile(current:(Type)`<Id id>`, Id parentId, map[str, str] tokenExps, rel[l
 str compile(current:(Type)`<Id id> \< <{Type ","}* targs> \>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
 	"<id><args>"
 	when //structType(_,ts) := types[current@\loc],
-		 size(ts) == size(targs),
-		 args := ((t <- targs)?"(<intercalate(", ", [t | t <- targs])>":"");
+	     targsList := [t | t <- targs],
+		 size(ts) == size(targsList),
+		 args := ((t <- targs)?"(<intercalate(", ", targsList)>":"");
 		 
 str compile(current:(Type)`<Id id>`, Id parentId, map[str, str] tokenExps, rel[loc,loc] useDefs, map[loc, AType] types, Tree(loc) index, map[loc,str] scopes, map[loc, Define] defines) =
 	"<id>"

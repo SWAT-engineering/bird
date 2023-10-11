@@ -12,6 +12,7 @@ import util::Maybe;
 extend analysis::typepal::TypePal;
 extend analysis::typepal::TestFramework;
 
+
 lexical ConsId =  "$$" ([a-z A-Z 0-9 _] !<< [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z A-Z 0-9 _])\Reserved;
 
 alias AnonymousFields = map[loc structIdentifier, set[Type] types];
@@ -59,7 +60,7 @@ data PathRole
 //default bool birdIsSubType(AType _, AType _) = false;
 
 bool isSubtype(atypeList(vs), atypeList(ws))
-	= (true | isSubtype(v, w) && it | <v,w> <- zip(vs, ws))
+	= (true | isSubtype(v, w) && it | <v,w> <- zip2(vs, ws))
 	when (size(vs) == size(ws));
 bool isSubtype(voidType(), AType t) = true;
 bool isSubtype(listType(AType t1), listType(AType t2)) = isSubtype(t1, t2);
@@ -71,17 +72,8 @@ default bool isSubtype(AType _, AType _) = false;
 bool isConvertible(voidType(), AType t) = true;
 
 bool isConvertible(atypeList(vs), atypeList(ws))
-	= (true | isConvertible(v, w) && it | <v,w> <- zip(vs, ws))
+	= (true | isConvertible(v, w) && it | <v,w> <- zip2(vs, ws))
 	when (size(vs) == size(ws));
-
-bool isConvertible(uType(_), intType()) = true;
-	
-bool isConvertible(uType(_), strType()) = true;
-	
-bool isConvertible(uType(n), uType(m)) = true;
-
-bool isConvertible(listType(t1:uType(_)), t2) = isConvertible(t1, t2)
-	when listType(_) !:= t2;
 
 // TODO do we want covariant lists?
 bool isConvertible(listType(t1), listType(t2)) = isConvertible(t1, t2);
@@ -99,7 +91,6 @@ str prettyPrintAType(boolType()) = "bool";
 str prettyPrintAType(listType(t)) = "<prettyPrintAType(t)>[]";
 str prettyPrintAType(structType(name, args)) = "structType(<name>, [<intercalate(",", [prettyPrintAType(a) | a <- args])>])";
 str prettyPrintAType(anonType(_)) = "anonymous";
-str prettyPrintAType(uType(n)) = "u<n>";
 str prettyPrintAType(consType(formals)) = "constructor(<("" | it + "<prettyPrintAType(ty)>," | atypeList(fs) := formals, ty <- fs)>)";
 str prettyPrintAType(funType(name,_,_,_)) = "fun <name>";
 str prettyPrintAType(moduleType()) = "module";
@@ -120,11 +111,6 @@ AType lub(AType t1, voidType()) = t1;
 AType lub(voidType(), AType t1) = t1;
 AType lub(AType t1, AType t2) = t1
 	when t1 == t2;
-AType lub(t1:uType(n), t2:uType(m)) = n>m?t1:t2;
-AType lub(t1:uType(_), intType()) = intType();
-AType lub(intType(), t1:uType(_)) = intType();
-AType lub(t1:uType(_), strType()) = strType();
-AType lub(strType(), t1:uType(_)) = strType();
 AType lub(t1:listType(ta),t2:listType(tb)) = listType(lub(ta,tb));
 default AType lub(AType t1, AType t2){ throw "Cannot find a lub for types <prettyPrintAType(t1)> and <prettyPrintAType(t2)>"; }
 
@@ -400,6 +386,7 @@ void collectSideCondition(Type ty, DId id, current:(SideCondition) `while ( <Exp
 	       return t;
 	    }
 	    s.report(error(current, "while side condition can only guard list types"));
+		return voidType();
 	}));
 	collect(e, c);
 	c.leaveScope(current);	
@@ -640,7 +627,7 @@ void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collec
     		AType(Solver s) {
            		if (structDef(_, fs) := s.getType(name))  
             		s.requireTrue(size(fs) == size(tpActuals), error(current, "Incorrect number of provided type arguments"));
-            	else if (sructType(_,_) := s.getType(name))
+            	else if (structType(_,_) := s.getType(name))
             		s.report(error(current, "User-defined type %v does not require parameters", name));
             	else
             		s.report(error(current, "Type %v does not receive parameters", name));
@@ -805,7 +792,7 @@ void collect(current: (Expr) `<Id id> <Arguments args>`, Collector c){
 			return retType;
 		else{
 			s.report(error(current, "Function arguments only apply to function types but got %t", ty));
-			
+			return voidType();
 		}
 	});	
 }
@@ -850,6 +837,7 @@ void collectRange(Expr access, Expr e, current: (Range) `<Expr idx>`, Collector 
 		s.requireTrue(listType(ty) := s.getType(e), error(e, "Expression is not of type list"));
 		if (listType(ty) := s.getType(e))
 			return ty;
+		return voidType();
 	});	
 }
 
@@ -1001,6 +989,7 @@ void collectGenerator(Id loopVar, Expr source, Collector c) {
             return tp;
         }
         s.report(error(source, "Expected a list type, got: %t", source));
+		return voidType();
     }));
 }
 
@@ -1013,6 +1002,7 @@ void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, T
 		}	
 		catch str msg:{
 			s.report(error(current, msg));
+			return voidType();
 		}
 	});
 }	
@@ -1020,7 +1010,7 @@ void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, T
 // ----  Examples & Tests --------------------------------
 TModel birdTModelFromTree(Tree pt, bool debug = false, PathConfig pathConf = pathConfig(pt@\loc)){
     if (pt has top) pt = pt.top;
-    c = newCollector("collectAndSolve", pt, config=getBirdConfig(debug = debug));    // TODO get more meaningfull name
+    c = newCollector("collectAndSolve", pt, getBirdConfig(debug = debug));    // TODO get more meaningfull name
     println("Bird: Version 1.0");
     collect(pt, pathConf, c);
     handleImports(c, pt, pathConf);
@@ -1043,6 +1033,7 @@ AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope
     }
     else
     {	s.report(error(selector, "Undefined field <selector> on %t",containerType));
+	return voidType();
     }
 }
 
@@ -1055,16 +1046,15 @@ private TypePalConfig getBirdConfig(bool debug = false) = tconfig(
     logTModel = debug, 
     logAttempts = debug, 
     logSolverIterations= debug, 
-    logSolverSteps = debug,
-    lookup = lookupWide
+    logSolverSteps = debug
 );
 
 
-list[Message] runBird(str name, bool debug = false) {
-    Tree pt = sampleBird(name);
-    TModel tm = birdTModelFromTree(pt, debug = debug);
-    return tm.messages;
-}
+// list[Message] runBird(str name, bool debug = false) {
+//     Tree pt = sampleBird(name);
+//     TModel tm = birdTModelFromTree(pt, debug = debug);
+//     return tm.messages;
+// }
  
 bool testBird(int n, bool debug = false, set[str] runOnly = {}) {
     return runTests([|project://bird-core/src/lang/bird/bird<"<n>">.ttl|], #start[Program], TModel (Tree t) {

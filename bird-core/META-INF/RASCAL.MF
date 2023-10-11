@@ -1,5 +1,5 @@
 Manifest-Version: 0.0.1
-Main-Function: main
-Courses: courses
-Main-Module: Plugin
-Source: src
+Project-Name: bird-core
+Source: src/main/rascal
+Require-Libraries: |lib://rascal-lsp|, |lib://typepal|
+
