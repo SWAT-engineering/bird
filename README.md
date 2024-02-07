@@ -21,8 +21,6 @@ The Bird project consist of several interrelated components, which are subprojec
 - nest: Java library for parsing binary data (the Bird compiler targets Java code that uses this library).
 - bird-core: Bird toolset developed in Rascal. It includes the grammar definition, type checker, generator, and components for the integration with Nescio.
 - bird-nescio-ide: Bird and Nescio IDE plugin.
-- bird-nescio-feature: Bird and Nescio IDE eclipse feature.
-- bird-nescio-update-site: Bird and Nescio IDE eclipse update site.
 - bird-doc: Bird documentation.
 
 In order to build them all, clone this project and execute `mvn install` on the root subdirectory. Notice that it is necessary first to build the [Nescio project](https://github.com/SWAT-engineering/nescio), since the Bird components related to the integration with Nescio depend on it.
