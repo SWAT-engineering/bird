@@ -14,7 +14,7 @@ choice BMPorPNG{
 	PNG
 }
 
-struct ICO@(endian = Endianness.LITTLE){
+struct ICO@(endianness = LITTLE){
 	IconDir header
 	IconDirEntry[] imageDirectory[header.numberOfImages]
 	BMPorPNG[] images[header.numberOfImages]
@@ -27,13 +27,13 @@ struct IconDir{
 }
 
 struct IconDirEntry{
-	u8 widthRep ? (<= 255)
-	int width = (widthRep == 0)? 256 : widthRep
-	u8 heightRep ? (<= 255)
-	int height = (widthRep == 0)? 256 : heightRep
+	u8 widthRep ? (this.as[int] <= 255)
+	int width = (widthRep.as[int] == 0)? 256 : widthRep
+	u8 heightRep ? (this.as[int] <= 255)
+	int height = (widthRep.as[int] == 0)? 256 : heightRep
 	u8 colors
-	u8 _ ?(== 0)
-	u16 planes ?(<=1)
+	u8 _ ?(this == 0)
+	u16 planes ?(this.as[int] <=1)
 	u16 bitsPerPixel
 	u32 sizeInBytes
 	u32 offset

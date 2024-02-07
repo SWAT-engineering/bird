@@ -2,13 +2,13 @@ module BMP
 
 import encoding
 
-struct BMP@(endian = Endianness.LITTLE){
+struct BMP@(endianness = LITTLE){
 	BitmapFileHeader header
 	DIBHeader dibHeader
 	PixelArray pixels(dibHeader.rawSize)
 }
 
-struct BitmapFileHeader @(encoding = Encoding.ASCII){
+struct BitmapFileHeader @(encoding = ASCII){
 	u16 header ?(== "BM")
 	u32 bmpSize
 	u16 _

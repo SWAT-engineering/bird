@@ -7,6 +7,6 @@ struct A(u8[] arr) {
 
 struct S{
 	u8[] arri[2]
-	A as(arri)
+	A nested(arri)
 	u8 end
 }

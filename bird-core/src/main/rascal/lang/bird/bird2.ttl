@@ -109,6 +109,19 @@ choice FileCluster2(u16 myCluster, u32 clusterSize, int clusterStart){
 }
 ]]
 
+test DARGS [[
+module m
+
+struct X(int a) {
+  u16[] p[a]
+}
+
+struct Y {
+  u8 c
+  X xx(c.as[int])
+}
+]]
+
 test D12 [[
 module m
     

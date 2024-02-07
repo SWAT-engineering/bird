@@ -25,7 +25,7 @@ bool biprintln(value v){
 
 tuple[str package, str class] toJavaName(str basePkg, ModuleId moduleName) =
 	<packageName, "<className>$"> 
-	when [dirs*, className] := [x | x <- moduleName.moduleName],
+	when [*dirs, className] := [x | x <- moduleName.moduleName],
 		 str packageName := ((size(dirs) == 0)? basePkg: (intercalate(".", [basePkg] +dirs)));
 		 
 
@@ -33,13 +33,12 @@ str toJavaFQName(str basePkg, ModuleId moduleName) =
 	"__$<tokenName>"
 	when [tokenName] := [x | x <- moduleName.moduleName];			 
 		 
-str toJavaFQName(str basePkg, ModuleId moduleName) = 
-	dirs == "<basePkg>.<className>$.__$<tokenName>"
+str toJavaFQName(str basePkg, ModuleId moduleName) = "<basePkg>.<className>$.__$<tokenName>"
 	when [className, tokenName] := [x | x <- moduleName.moduleName];		 
 		 
 str toJavaFQName(str basePkg, ModuleId moduleName) = 
 	intercalate(".", [basePkg] + ["<x>" | x <- dirs]  + ["<className>$"] + ["__$<tokenName>"])
-	when [dirs*, className, tokenName] := [x | x <- moduleName.moduleName],
+	when [*dirs, className, tokenName] := [x | x <- moduleName.moduleName],
 		 dirs != [];
 
 tuple[str, str] compile(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, "", rel[loc,loc] useDefs, map[loc, AType] types) {
@@ -533,4 +532,3 @@ void compileBirdModule(loc birdLoc, str basePkg, PathConfig pcfg) {
 	start[Program] pt = parse(#start[Program], birdLoc);
 	compileBirdModule(pt, basePkg, pcfg);     
 }
-

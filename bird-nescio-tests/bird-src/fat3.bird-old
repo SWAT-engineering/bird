@@ -1,15 +1,13 @@
-module fat
+module fat3
 
-import filecluster
-
-choice FORMAT(typ format){
+choice FORMAT{
 	// TODO the above apparently needs to be parameterized
-	FAT16Format(format)
+	FAT16Format
 	//SinglezZipFormat
 	// TODO PngFormat
 }
 
-struct FORMAT_ZIP@(endian = Endianness.LITTLE){
+struct FORMAT_ZIP@(endianness = LITTLE){
 	struct{
 		//TODO LocalDeflatedFile ldf
 		//TODO PNG png = parse
@@ -18,8 +16,12 @@ struct FORMAT_ZIP@(endian = Endianness.LITTLE){
 	//EndOfDir _		
 }
 
+// TODO auxiliar
+struct Type{
 
-struct FAT16Format(typ format)@(endian = Endianness.LITTLE){
+}
+
+struct FAT16Format(typ<FORMAT> format)@(endianness = LITTLE){
 	Reserved reserved
   	BPB20 block = reserved.boot.block2_0 // types of derived things can be inferred
   	FAT[] fatArea(block)[block.fatCount]
@@ -27,7 +29,7 @@ struct FAT16Format(typ format)@(endian = Endianness.LITTLE){
 }
 
 
-choice RootDirectory (typ format, BPB20 bpe, int firstFat, int firstRoot){
+choice RootDirectory (typ<FORMAT> format, BPB20 bpe, int firstFat, int firstRoot){
   // TODO EmptyEntry
   // TODO VFATLongFileName
   DirectoryEntry(format, bpe, firstFat, firstRoot)
@@ -39,11 +41,12 @@ struct Reserved{
   BootSector boot
   u8[] restData[size]
 
-  int size = boot.biosBlock.block2_0.bytesPerLogicalSector  * (boot.biosBlock.block2_0.reservedSectorCount - 1) // How to do coercion? or polymorphic operators?
+  int size = 0//boot.biosBlock.block_2_0.bytesPerLogicalSector  * (boot.biosBlock.block_2_0.reservedSectorCount - 1) // How to do coercion? or polymorphic operators?
 }
 
 struct BootSector{
-  u24 jumpInstruction
+  // TODO add u24
+  u16 jumpInstruction
   u8[] oemName[8]
   BiosParameterBlock biosBlock
   u8[] bootCode[0x1fd - bootCode.offset] // a self offset link. Alternatively, it could be a `offset` special variable as `this` in Java
@@ -67,16 +70,13 @@ struct BPB20{
 	u8 bytesPerLogicalSector
 	u8 fatCount
 	u8 maxRootDirectoryEntryCount
-	u8 reservedSectorCount
 }
 
 struct FAT(BPB20 bootSector){
   u8[] table[bootSector.logicalSectorsPerFat * bootSector.bytesPerLogicalSector]   // might need to skip
 }
 
-u8[] parse(typ parser, u8[] content)
-
-struct DirectoryEntry(typ nestedFilesParser, BPB20 bpe, int firstFat, int firstRoot){
+struct DirectoryEntry(typ<FORMAT> nestedFilesParser, BPB20 bpe, int firstFat, int firstRoot){
   u8[] shortFileName[8]
   u8[] extension[3]
   u8 attributes
@@ -86,8 +86,24 @@ struct DirectoryEntry(typ nestedFilesParser, BPB20 bpe, int firstFat, int firstR
   u32 fileSize
   FileCluster fileData(fileStartCluster, bpe.clusterSize, firstRoot + bpe.block2_0.maxRootDirectoryEntryCount)
   
-    
   // need to think about this syntax around nested parsing, and the cat & ranges syntax
+  FORMAT fileEntry = parse(fileData.fullContent[:fileSize]) with typeOf[FORMAT]// filterEntry has the top token type
+}
 
-  u8[] fileEntry = parse(nestedFilesParser, fileData.fullContent[:fileSize])  // filterEntry has the top token type
+choice FileCluster(u16 myCluster, u32 clusterSize, int clusterStart)
+    @(offset = clusterStart + (myCluster * clusterSize)){
+  abstract u8[] fullContent  // this is not ambiguous anymore, so maybe abstract keyword is not needed
+  
+  struct{
+    // pending how to express this
+    u16 nextCluster?(!= 0xFFF8)
+    u8[] fileContents[(myCluster * clusterSize) - 2]
+    FileCluster nextFileCluster(nextCluster, clusterSize, clusterStart)
+    u8[] fullContent = fileContents ++ nextFileCluster.fullContent
+  }
+  struct{
+    u16 nextCluster ? (== 0xFFF8)
+    u8[] fileContents[(myCluster * clusterSize) - 2]
+    u8[] fullContent = fileContents
+  }
 }

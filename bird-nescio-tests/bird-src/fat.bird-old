@@ -1,3 +1,4 @@
+module fat 
 choice FORMAT{
 	FAT16Format
 	SinglezZipFormat

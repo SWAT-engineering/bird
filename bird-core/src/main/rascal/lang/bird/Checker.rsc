@@ -2,9 +2,12 @@ module lang::bird::Checker
 
 import lang::bird::Syntax;
 import util::Math;
+import util::FileSystem;
 import ListRelation;
+import Exception;
 import Set;
 import String;
+import ParseTree;
 
 import IO;
 import util::Maybe;
@@ -213,7 +216,6 @@ str getFileName((ModuleId) `<{Id "::"}+ moduleName>`) = replaceAll("<moduleName>
 tuple[bool, loc] lookupModule(ModuleId name, PathConfig pcfg) {
     for (s <- pcfg.srcs) {
         result = (s + replaceAll("<name>", "::", "/"))[extension = "bird"];
-        println(result);
         if (exists(result)) {
         	return <true, result>;
         }
@@ -268,25 +270,29 @@ void collect(current: (Program) `module <ModuleId moduleName> <Import* imports> 
  
 Tree newConstructorId(Id id, loc root) {
     return visit(parse(#ConsId, "$$<id>")) {
-        case Tree t => t[@\loc = relocsingleLine(t@\loc, root)] 
-            when t has \loc
+        case Tree t => t[src = relocsingleLine(t.src, root)] 
+            when t has src
     };
 }
 
 Tree newFieldNameId(DId id, loc root) {
 	return visit(parse(#ConsId, "$$<id>")) {
-        case Tree t => t[@\loc = relocsingleLine(t@\loc, root)] 
-            when t has \loc
+        case Tree t => t[src = relocsingleLine(t.src, root)] 
+            when t has src
     };
 }
 
-private loc relocsingleLine(loc osrc, loc base) 
-    = (base.top)
+private loc relocsingleLine(loc osrc, loc base) {
+	if (!osrc.offset?) {
+		return osrc;
+	}
+    return (base.top)
         [offset = base.offset + osrc.offset]
         [length = osrc.length]
         [begin = <base.begin.line, base.begin.column + osrc.begin.column>]
         [end = <base.end.line, base.begin.column + osrc.end.column>]
         ;
+}
 
  
 /*void collect(current:(TopLevelDecl) `struct <Id id> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
@@ -312,7 +318,7 @@ void collectAnnos(Annos? annos, Collector c) {
 void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`,  Collector c) {
      //println("defining struct <id>");
      list[Id] tformals = [tf |atypeFormals <- typeFormals, tf <- atypeFormals.typeFormals];
-     if (_ <- tformals) {
+     if (tformals != []) {
      	c.define("<id>", structId(), current, defType(structDef("<id>", ["<tf>" | tf <- tformals])));
      }
      else {
@@ -469,9 +475,10 @@ void collectArgs(Type ty, Arguments current, Collector c){
 				//println(currentScope);
 				if (structType(refName,actuals) := t){
 					// TODO check if this is aligned now
-					ct = s.getTypeInType(structType(refName, actuals), newConstructorId([Id] "<idStr>", ty@\loc), {consId()}, currentScope);
+					fk = newConstructorId([Id] "<idStr>", ty@\loc);
+					ct = s.getTypeInType(structType(refName, actuals), fk, {consId()}, currentScope);
 					argTypes = atypeList([ s.getType(a) | a <- current.args]);
-					s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments"));
+					s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments: %t expected: %t", [argTypes, ct.formals]));
 				}
 				elseif (structDef(refName, []) !:= t) {
 					throw "Operation not supported for type <t>";
@@ -1064,4 +1071,38 @@ bool testBird(int n, bool debug = false, set[str] runOnly = {}) {
     }, runOnly = runOnly);
 }
 
+
+void runTests(loc target = |project://bird-nescio-tests/bird-src|, PathConfig pcfg = pathConfig(srcs=[|project://bird-nescio-tests/bird-src|]), bool debug = false) {
+	succeeded = 0;
+	parseErrors = 0;
+	tcErrors = 0; 
+	otherErrors = 0;
+	//pcfg = pathConfig(target);
+	for (loc f <- find(target, "bird")) {
+		try {
+			p = parse(#start[Program], f);
+			m = birdTModelFromTree(p, debug = debug, pathConf = pcfg/*, pathConfig = pcfg*/);
+			for (ms <- m.messages) {
+				tcErrors += 1;
+				println("TC error: <ms.msg> at <ms.at>");
+			}
+			if (m.messages == []) {
+				succeeded += 1;
+			}
+		} catch ParseError(l): {
+			parseErrors += 1;
+			println("Parse error: <l>");
+		}
+		catch value oe: {
+			otherErrrors += 1;
+			println("General failure <f> = <oe>");
+		}
+	}
+	println("Succes: <succeeded>
+			'Fails:
+			'   Parsing: <parseErrors> 
+			'   Typechecking: <tcErrors> 
+			'   Other: <otherErrors> 
+			");
+}
 

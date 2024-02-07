@@ -40,3 +40,4 @@ struct EthernetHeader {
 	u48 srcMAC
 	u16 type
 }
+ 
