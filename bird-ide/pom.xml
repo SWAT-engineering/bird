@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>engineering.swat</groupId>
+    <artifactId>bird</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>bird-ide</artifactId>
+
+
+  <dependencies>
+    <dependency>
+      <groupId>org.rascalmpl</groupId>
+      <artifactId>rascal-lsp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>engineering.swat</groupId>
+      <artifactId>bird-core</artifactId>
+      <version>${bird.version}</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <resources>
+      <resource>
+        <directory>.</directory>
+        <filtering>false</filtering>
+        <includes>
+          <include>META-INF/RASCAL.MF</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+      <resource>
+        <directory>src/main/rascal</directory>
+        <filtering>false</filtering>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.rascalmpl</groupId>
+        <artifactId>rascal-maven-plugin</artifactId>
+      </plugin>
+       <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+    
