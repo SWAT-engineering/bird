@@ -5,7 +5,7 @@ extend lang::std::Layout;
 import ParseTree;
 
 // TODO can we specify a pattern for u? types
-keyword Reserved = "abstract" | "struct" | "choice" | "byte" | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it" | "parse" | "with" | "typeOf" | "as";
+keyword Reserved = "abstract" | "struct" | "choice" | "byte" | "int" | "str" | "bool" | "typ" | "module" | "import" | "while"  | "this" | "it" | "parse" | "with" | "typeOf" | "as" | "true" | "false";
 
 start syntax Program =
 	"module" ModuleId moduleName
@@ -36,8 +36,8 @@ syntax Import
  	;
 	
 syntax TopLevelDecl
-	= structDecl: "struct" Id TypeFormals? Formals? Annos? "{" DeclInStruct* declarations "}"
-	| choiceDecl: "choice" Id Formals? Annos? "{" DeclInChoice* declarations "}"
+	= structDecl: "struct" Id TypeFormals? Formals? Annos? "{" DeclInStruct* structDecls "}"
+	| choiceDecl: "choice" Id Formals? Annos? "{" DeclInChoice* choiceDecls "}"
 	| funDecl: "@" "(" JavaId ")" Type Id Formals?
 	;
 	
@@ -76,7 +76,7 @@ syntax SideCondition
 	
 	
 syntax DeclInStruct
-	= token: Type ty DId id Arguments? Size? SideCondition? sideCondition
+	= token: Type ty DId did Arguments? Size? SideCondition? sideCondition
 	| computed: Type ty Id id "=" Expr
 	;
 	
@@ -232,4 +232,3 @@ private start[Program] (value, loc) birdParser = parser(#start[Program]);
 
 // either invoke with (str content, loc origin) or (loc content, loc origin)
 start[Program] (value, loc) getBirdParser() = birdParser;
-

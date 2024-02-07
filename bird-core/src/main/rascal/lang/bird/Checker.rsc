@@ -12,7 +12,6 @@ import util::Maybe;
 extend analysis::typepal::TypePal;
 extend analysis::typepal::TestFramework;
 
-
 lexical ConsId =  "$$" ([a-z A-Z 0-9 _] !<< [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z A-Z 0-9 _])\Reserved;
 
 alias AnonymousFields = map[loc structIdentifier, set[Type] types];
@@ -87,21 +86,21 @@ bool isConvertible(AType t1, AType t2) = true
 	when t1 == t2;
 default bool isConvertible(AType _, AType _) = false;
 
-str prettyPrintAType(voidType()) = "void";
-str prettyPrintAType(byteType()) = "byte";
-str prettyPrintAType(intType()) = "int";
-str prettyPrintAType(typeType(t)) = "typeof(<prettyPrintAType(t)>)";
-str prettyPrintAType(strType()) = "str";
-str prettyPrintAType(boolType()) = "bool";
-str prettyPrintAType(listType(t)) = "<prettyPrintAType(t)>[]";
-str prettyPrintAType(structType(name, args)) = "structType(<name>, [<intercalate(",", [prettyPrintAType(a) | a <- args])>])";
-str prettyPrintAType(anonType(_)) = "anonymous";
-// str prettyPrintAType(byteType()) = "u<n>";
-str prettyPrintAType(consType(formals)) = "constructor(<("" | it + "<prettyPrintAType(ty)>," | atypeList(fs) := formals, ty <- fs)>)";
-str prettyPrintAType(funType(name,_,_,_)) = "fun <name>";
-str prettyPrintAType(moduleType()) = "module";
-str prettyPrintAType(variableType(s)) = "variableType(<s>)";
-str prettyPrintAType(structDef(name, formals)) = "structDef(<name>, [<intercalate(", ", formals)>])";
+str prettyAType(voidType()) = "void";
+str prettyAType(byteType()) = "byte";
+str prettyAType(intType()) = "int";
+str prettyAType(typeType(t)) = "typeof(<prettyAType(t)>)";
+str prettyAType(strType()) = "str";
+str prettyAType(boolType()) = "bool";
+str prettyAType(listType(t)) = "<prettyAType(t)>[]";
+str prettyAType(structType(name, args)) = "structType(<name>, [<intercalate(",", [prettyAType(a) | a <- args])>])";
+str prettyAType(anonType(_)) = "anonymous";
+// str prettyAType(byteType()) = "u<n>";
+str prettyAType(consType(formals)) = "constructor(<("" | it + "<prettyAType(ty)>," | atypeList(fs) := formals, ty <- fs)>)";
+str prettyAType(funType(name,_,_,_)) = "fun <name>";
+str prettyAType(moduleType()) = "module";
+str prettyAType(variableType(s)) = "variableType(<s>)";
+str prettyAType(structDef(name, formals)) = "structDef(<name>, [<intercalate(", ", formals)>])";
 
 
 AType birdInstantiateTypeParameters(Tree selector, structDef(str name1, list[str] formals), structType(str name2, list[AType] actuals), AType t, Solver s){
@@ -123,7 +122,7 @@ AType lub(intType(), byteType()) = intType();
 AType lub(byteType(), strType()) = strType();
 AType lub(strType(), byteType()) = strType();
 AType lub(t1:listType(ta),t2:listType(tb)) = listType(lub(ta,tb));
-default AType lub(AType t1, AType t2){ throw "Cannot find a lub for types <prettyPrintAType(t1)> and <prettyPrintAType(t2)>"; }
+default AType lub(AType t1, AType t2){ throw "Cannot find a lub for types <prettyAType(t1)> and <prettyAType(t2)>"; }
 
 bool isTokenType(byteType()) = true;
 bool isTokenType(structType(_,_)) = true;
@@ -141,12 +140,14 @@ AType infixLogical(t1, t2) = boolType()
 	when isConvertible(t1, boolType()) && isConvertible(t2, boolType());
 default AType infixLogical(AType t1, AType t2){ throw "Wrong operands for a logical operation"; }
 
-AType infixBitwise(t1:listType(byteType()), t2:listType(byteType())) = listType(byteType());
+AType infixBitwise(t1:listType(byteType()), t1) = t1;
+AType infixBitwise(t1:listType(listType(byteType())), t1) = t1;
 AType infixBitwise(intType(), listType(byteType())) = listType(byteType());
 
-default AType infixBitwise(AType t1, AType t2){ throw "Wrong operands for a bitwise operation: "+ prettyPrintAType(t1) +", " + prettyPrintAType(t2); }
+default AType infixBitwise(AType t1, AType t2){ throw "Wrong operands for a bitwise operation"; }
 
 AType infixShift(listType(byteType()), intType()) = listType(byteType());
+AType infixShift(intType(), intType()) = intType();
 default AType infixShift(AType t1, AType t2){ throw "Wrong operands for a shift operation"; }
 
 // TODO Maybe more combinations? Also, there is redundancy between the two following definitions.
@@ -157,6 +158,10 @@ default AType infixEquality(AType t1, AType t2){ throw "Wrong operands for equal
 
 AType infixArithmetic(t1, t2) = intType()
 	when isConvertible(t1, intType()) && isConvertible(t2, intType());
+
+AType infixArithmetic(listType(byteType()), intType()) = intType();
+AType infixArithmetic(intType(), listType(byteType())) = intType();
+AType infixArithmetic(listType(byteType()), listType(byteType())) = intType();
 default AType infixArithmetic(AType t1, AType t2){ throw "Wrong operands for an arithmetic operation"; }
 
 AType infixString(t1, t2) = strType()
@@ -201,6 +206,7 @@ PathConfig pathConfig(loc file) {
 private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
 
 private str __ANONYMOUS_FIELDS = "__anonymousFields";
+private str __TESTING = "__TESTING";
 
 str getFileName((ModuleId) `<{Id "::"}+ moduleName>`) = replaceAll("<moduleName>.bird", "::", "/");
 
@@ -241,15 +247,17 @@ void handleImports(Collector c, Tree root, PathConfig pcfg) {
 
 void collect(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, PathConfig pcfg, Collector c){
  	c.define("<moduleName>", moduleId(), current, defType(moduleType()));
- 	bool found = false;
- 	for (s <- pcfg.srcs) {
-        result = (s + replaceAll("<moduleName>", "::", "/"))[extension = "bird"];
-        if (exists(result)) {
-        	found = true;
-        }
-    }
-    if (!found)
-    	c.report(error(moduleName, "Module file is not defined in the declared package"));
+ 	if (false := c.top(__TESTING)) {
+		bool found = false;
+		for (s <- pcfg.srcs) {
+			result = (s + replaceAll("<moduleName>", "::", "/"))[extension = "bird"];
+			if (exists(result)) {
+				found = true;
+			}
+		}
+		if (!found)
+			c.report(error(moduleName, "Module file is not defined in the declared package"));
+	}
     
  	c.enterScope(current); {
  		collect(imports, c);
@@ -349,7 +357,8 @@ void collect(current:(DeclInStruct) `<Type ty> <Id id> = <Expr expr>`,  Collecto
         void (Solver s) { 
         	//println("<expr> \>\>\> <s.getType(expr)>");
         	s.requireSubType(s.getType(expr), s.getType(ty), 
-        		error(current, "Expression should be <prettyPrintAType(s.getType(ty))>, found <prettyPrintAType(s.getType(expr))>")); });
+        		error(current, "Expression should be <prettyAType(s.getType(ty))>, found <prettyAType(s.getType(expr))>")); 
+		});
 }    
 
 void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? sz> <SideCondition? cond>`,  Collector c) {
@@ -393,13 +402,11 @@ void collectSideCondition(Type ty, DId id, current:(SideCondition) `? ( <Expr e>
 void collectSideCondition(Type ty, DId id, current:(SideCondition) `while ( <Expr e>)`, Collector c){
 	c.enterScope(current);
 	c.define("it", variableId(), newFieldNameId(id, id@\loc), defType([ty], AType (Solver s) {
-	    if (listType(byteType()) := s.getType(ty)) {
-	    	return s.getType(ty);
-	  	} else if (listType(t) := s.getType(ty)) {
+	  	if (listType(t) := s.getType(ty) && t != byteType()) {
 	       return t;
 	    }
 	    s.report(error(current, "while side condition can only guard list types"));
-		return voidType();
+		return byteType();
 	}));
 	collect(e, c);
 	c.leaveScope(current);	
@@ -524,7 +531,7 @@ void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? a
                    definedFields = toMapUnique(s.getAllDefinedInType(s.getType(ty), currentScope, {fieldId()}));
                 }
                 for (<aId, aTy> <- abstractFields) {
-                    s.requireTrue(aId in definedFields, error(ty, "Field %v is missing from %v", aId, ty));
+                    s.requireTrue(aId in definedFields, error(ty, "Field %v is missing from %t", aId, ty));
                     s.requireSubType(definedFields[aId], aTy, error(ty, "Field %v is not of the expected type %t", aId, aTy));
                 }
      		};
@@ -562,11 +569,11 @@ void collect(current:(UnaryExpr) `<EqualityOperator uo> <Expr e>`, Collector c){
 
 
 void collectType(current:(Type)`<UInt v>`, Collector c, Maybe[Expr] theSize = nothing()) {
-	c.calculate("actual type", current, [],
-    	AType(Solver s) {
-    		s.requireTrue(toInt("<v>"[1..]) % 8 == 0, error(current, "The number of bits in a u? type must be a multiple of 8")); 
-            return listType(byteType(), n = just([Expr] "<toInt("<v>"[1..])/8>"));
-        }); 
+	bits = toInt("<v>"[1..]);
+	if (bits % 8 != 0) {
+		c.report(error(current, "The number of bits in a u? type must be a multiple of 8"));
+	}
+	c.fact(current, listType(byteType(), n = just([Expr]"<bits / 8>")));
 }
 
 
@@ -706,9 +713,7 @@ void collect(current: (Expr) `[<{Expr ","}*  exprs>]`, Collector c){
 void collect(current: (Expr) `<Expr e>.as[<Type t>]`, Collector c){
     collect(e, c);
     collectType(t, c);
-   	c.calculate("casting", current, [t], AType (Solver s){
-		return s.getType(t);
-	});
+	c.fact(current, t);
 }
 
 void collect(current: (Expr) `<StringLiteral lit>`, Collector c){
@@ -747,24 +752,12 @@ void collect(current: (Expr) `<BytesArrLiteral nat>`, Collector c){
     c.fact(current, listType(byteType()));
 }
 
+void collect(current: (Expr) `<BoolLiteral b>`, Collector c){
+    c.fact(current, boolType());
+}
+
 void collect(current: (Expr) `<Id id>`, Collector c){
     c.use(id, {variableId(), fieldId(), paramId()});
-}
-
-void collect(current: (Expr) `<Expr e>.offset`, Collector c){
-	collect(e, c);
-	c.require("offset", current, [e], void (Solver s) {
-		s.requireTrue(isTokenType(s.getType(e)), error(current, "Only token types have offsets"));
-	}); 
-	c.fact(current, intType());
-}
-
-void collect(current: (Expr) `<Expr e>.length`, Collector c){
-	collect(e, c);
-	c.require("length", current, [e], void (Solver s) {
-		s.requireTrue(listType(_) := s.getType(e), error(current, "Only list types have length"));
-	}); 
-	c.fact(current, intType());
 }
 
 void collect(current: (Expr) `typeOf[<Type t>]`, Collector c){
@@ -783,17 +776,9 @@ void collect(current: (Expr) `<Expr e>.size`, Collector c){
 }
 
 void collect(current: (Expr) `<Expr e>.<Id field>`, Collector c){
-	//currentScope = c.getScope();
 	c.useViaType(e, field, {fieldId()});
 	c.fact(current, field);
 	collect(e, c);
-	c.require("trivial", current, [field], void (Solver s) {
-		//println("<field> ||||| <s.getType(field)>");
-		;
-	}); 
-	//c.calculate("field type", current, [e], AType(Solver s) {
-	//	return s.getTypeInType(s.getType(e), field, {fieldId()}, currentScope); });
-
 }
 
 void collect(current: (Expr) `<Id id> <Arguments args>`, Collector c){
@@ -828,26 +813,21 @@ void collectRange(Expr access, Expr e, current:(Range) `: <Expr end>`, Collector
 
 void collectRange(Expr access, Expr e, current:(Range) `<Expr begin> : <Expr end>`, Collector c){
 	collect(begin, end, c);
-	c.calculate("list access", access, [e, begin, end], AType (Solver s){
-		s.requireEqual(begin, intType(), error(begin, "Index must be integer"));
-		s.requireEqual(end, intType(), error(end, "Index must be integer"));
-		return s.getType(e);
-	});
+	c.fact(access, e);
+	c.requireEqual(begin, intType(), error(begin, "Index must be integer"));
+	c.requireEqual(end, intType(), error(end, "Index must be integer"));
 }
 
 void collectRange(Expr access, Expr e, current: (Range) `<Expr begin> :`, Collector c){
 	collect(begin, c);
-	c.calculate("list access", access, [e, begin], AType (Solver s){
-		s.requireEqual(begin, intType(), error(begin, "Index must be integer"));
-		return s.getType(e);
-	});
+	c.fact(access, e);
+	c.requireEqual(begin, intType(), error(begin, "Index must be integer"));
 }
 
 void collectRange(Expr access, Expr e, current: (Range) `<Expr idx>`, Collector c){
 	collect(idx, c);
-	c.calculate("list access", access, [e, idx], AType (Solver s){
-		s.requireEqual(idx, intType(), error(idx, "Indexes must be integers"));
-		s.requireTrue(listType(ty) := s.getType(e), error(e, "Expression is not of type list"));
+	c.requireEqual(idx, intType(), error(idx, "Indexes must be integers"));
+	c.calculate("list access", access, [e], AType (Solver s){
 		if (listType(ty) := s.getType(e))
 			return ty;
 		return voidType();
@@ -871,9 +851,9 @@ void collect(current: (Expr) `<Expr e1> && <Expr e2>`, Collector c){
 
 void collect(current: (Expr) `<Expr e1> ? <Expr e2> : <Expr e3>`, Collector c){
     collect(e1, e2, e3, c);
+	c.requireSubType(e1, boolType(), error(e1, "Condition must be boolean"));
     // TODO relax equality requirement
 	c.calculate("ternary operator", current, [e1, e2, e3], AType(Solver s) {
-		s.requireSubType(e1, boolType(), error(e1, "Condition must be boolean"));
 		s.requireTrue(s.subtype(e2, e3) || s.subtype(e3, e2), error(e2, "The two branches of the ternary operation must have the same type"));
 		return s.subtype(e2, e3)?s.getType(e3):s.getType(e2);
 	});
@@ -1010,21 +990,24 @@ void collectGenerator(Id loopVar, Expr source, Collector c) {
 
 void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, Tree lhs, Tree rhs, Collector c) {
 	c.calculate("<op>",current, [lhs, rhs], AType(Solver s) {
+		lType = s.getType(lhs);
+		rType = s.getType(rhs);
 		try{
-			return infixFun(s.getType(lhs), s.getType(rhs));
+			return infixFun(lType, rType);
 		}	
 		catch str msg:{
-			s.report(error(current, msg));
+			s.report(error(current, "%v (%t %v %t)", msg, lType, op, rType));
 			return voidType();
 		}
 	});
 }	
 
 // ----  Examples & Tests --------------------------------
-TModel birdTModelFromTree(Tree pt, bool debug = false, PathConfig pathConf = pathConfig(pt@\loc)){
+TModel birdTModelFromTree(Tree pt, bool debug = false, bool testing=false, PathConfig pathConf = pathConfig(pt@\loc)){
     if (pt has top) pt = pt.top;
     c = newCollector("collectAndSolve", pt, getBirdConfig(debug = debug));    // TODO get more meaningfull name
-    println("Bird: Version 1.0");
+	c.push(__TESTING, testing);
+    //println("Bird: Version 1.0");
     collect(pt, pathConf, c);
     handleImports(c, pt, pathConf);
     AnonymousFields anonymousFields = ();
@@ -1044,6 +1027,12 @@ AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope
     if(anonType(fields) :=  containerType){
     	return Set::getOneFrom((ListRelation::index(fields))["<selector>"]);
     }
+	else if (isTokenType(containerType) && "<selector>" == "offset") {
+		return intType();
+	}
+	else if (listType(_) := containerType && "<selector>" == "length") {
+		return intType();
+	}
     else
     {	s.report(error(selector, "Undefined field <selector> on %t",containerType));
 	return voidType();
@@ -1070,8 +1059,8 @@ private TypePalConfig getBirdConfig(bool debug = false) = tconfig(
 // }
  
 bool testBird(int n, bool debug = false, set[str] runOnly = {}) {
-    return runTests([|project://bird-core/src/lang/bird/bird<"<n>">.ttl|], #start[Program], TModel (Tree t) {
-        return birdTModelFromTree(t, debug=debug);
+    return runTests([|project://bird-core/src/main/rascal/lang/bird/bird<"<n>">.ttl|], #start[Program], TModel (Tree t) {
+        return birdTModelFromTree(t, debug=debug, testing=true);
     }, runOnly = runOnly);
 }
 

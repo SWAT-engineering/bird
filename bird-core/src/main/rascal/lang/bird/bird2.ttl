@@ -35,7 +35,7 @@ test D4 [[
     	int foo = 5
     	u8[] bootCode[0x1fd - foo.offset]
 	}
-]] expect { "Only token types have offsets" }
+]] expect { "Undefined field offset on `int`" }
 
 test D5 [[
     module m
@@ -135,7 +135,7 @@ choice FileCluster2(u16 myCluster, u32 clusterSize, int clusterStart){
     u16 nextCluster ? (== 0xFFF8)
   }
 }
-]] expect { "Field nextCluster is missing from anonymous" }
+]] expect { "Field nextCluster is missing from `anonymous`" }
 
 test D14 [[
 module m
@@ -166,7 +166,7 @@ choice FileCluster2(u16 myCluster, u32 clusterSize, int clusterStart){
   }
   AuxStruct
 }
-]] expect { "Field nextCluster is missing from AuxStruct" }
+]] expect { "Field nextCluster is missing from `structType(AuxStruct, [])`" }
 
 test D16 [[
 module m
@@ -213,7 +213,7 @@ struct DirectoryEntry{
 test D19[[
 module m
     
-struct FORMAT_ZIP@(endian = Endianness.LITTLE){
+struct FORMAT_ZIP@(endianness = LITTLE){
 	struct{
 	} _	
 }

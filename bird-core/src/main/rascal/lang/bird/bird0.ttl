@@ -18,7 +18,7 @@ test D3 [[
 module m
     
 struct A(u8 y){
-	int x = (y == 5)?"x":0
+	bool x = (y == 5)?"x":false
 }	
 ]] expect { "The two branches of the ternary operation must have the same type" }
 
@@ -71,7 +71,7 @@ module m
 struct A(){
 	u8[] x
 	u8[] y
-	int z = x & y
+	int z = (x & y).as[int]
 }	
 ]]
 
@@ -111,5 +111,4 @@ struct A {
     u8 x
     u8 z = x[0]
 }
-]]
-expect { "Expression is not of type list" }
+]] expect { "Expression should be byte[], found byte" }

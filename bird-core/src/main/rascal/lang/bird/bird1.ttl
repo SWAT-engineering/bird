@@ -80,7 +80,7 @@ test D8 [[
 	module m
 	
     struct Address{
-		u8 housenumber ?(> 25)
+		u8 housenumber ?(this.as[int] > 25)
 	}
 ]]
 
@@ -88,9 +88,9 @@ test D9 [[
 	module m
 	
     struct Address{
-		Address housenumber ?(> 25)
+		Address housenumber ?(this > 25)
 	}
-]]  
+]] expect { "Wrong operands for a comparator" }
 
 test D10 [[
 	module m
@@ -113,7 +113,7 @@ test D12 [[
 	module m
 	
     struct Address{
-    	bool housenumber ?("2" == 2)
+		u8 housenumber ?("2" == false)
 	}
 ]] expect { "Wrong operands for equality" }
 
@@ -155,7 +155,7 @@ test D17 [[
 	module m
 	
     struct Address{
-    	u8 housenumber ?(this > 1)
+    	u8 housenumber ?(this.as[int] > 1)
 	}
 ]]
 
@@ -193,8 +193,8 @@ test D21 [[
 	module m
 	
     struct Address{
-    	u8 housenumber ?(this > 1)
-    	u16 postalCode ?(this > 1)
+    	u8 housenumber ?(this.as[int] > 1)
+    	u16 postalCode ?(this.as[int] > 1)
 	}
 ]]
 
@@ -204,7 +204,7 @@ test D22 [[
     
     struct A {
         u8[] data
-        int sum = (int it = 0 | it + d | d <- data)
+        int sum = (int it = 0 | it + d.as[int] | d <- data)
     }
 ]]
 
