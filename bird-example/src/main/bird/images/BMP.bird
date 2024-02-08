@@ -1,6 +1,4 @@
-module BMP
-
-import encoding
+module images::BMP
 
 struct BMP@(endianness = LITTLE){
 	BitmapFileHeader header
@@ -39,3 +37,4 @@ struct BitmapInfoHeader{
 struct PixelArray(int theSize){
 	u32[] pixels[theSize]
 } 
+

@@ -5,9 +5,11 @@ import ParseTree;
 import util::LanguageServer;
 import util::Monitor;
 import util::Reflective;
+import IO;
 
 import lang::bird::Checker;
 import lang::bird::Syntax;
+import lang::bird::Generator2Nest;
 
 set[LanguageService] birdLanguageContributor() {
     return {
@@ -54,14 +56,36 @@ Summary birdSummarizer(loc l, start[Program] input) {
     jobStart("Bird Summarizer");
     // pc = makeConfig(l);
     jobStep("Bird Summarizer", l.file);
-    pt = getBirdParser()(l, l);
-    tm = birdTModelFromTree(pt);
+    pcfg = calculatePathConfig(input);
+    tm = birdTModelFromTree(input, pathConf = pcfg);
     jobEnd("Bird Summarizer");
+    if (tm.messages == []) {
+        jobStart("Bird compiler");
+        try {
+            compileBirdModule(input, tm, "engineering.swat.bird.generated", pcfg);
+        }
+        catch e: {
+            println("Bird compilation failed: <e>");
+        }
+        jobEnd("Bird compiler");
+    }
+
     return summary(l,
         messages = {<message.at, message> | message <- tm.messages, message.at.top == l.top},
         definitions = tm.useDef,
         references = tm.useDef<1,0>);
 }
+
+PathConfig calculatePathConfig(start[Program] input) {
+    loc srcPath = input.src.top;
+    for (Id _ <- input.top.moduleName.moduleName) {
+        srcPath = srcPath.parent;
+    }
+    loc outputPath = srcPath.parent + "java";
+    return pathConfig(srcs=[srcPath], target=outputPath);
+}
+
+
 
 void main() {
     unregisterLanguage("Bird", "bird");

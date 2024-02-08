@@ -222,8 +222,8 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
    '}"           	
 	when lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
 		 lrel[str, Type, bool, bool] fieldsList := 
-		 	[<makeId(d.id), d.ty, d is token, (DeclInStruct) `<Type _> <DId _> <Arguments? _> <Size? _> byparsing (<Expr _>)`:= d>| DeclInStruct d <- decls],
-		 lrel[str, Type] computedFieldsList := [<makeId(d.id), d.ty>| DeclInStruct d <- decls, d is computed, isTokenType(types[d.ty@\loc])],
+		 	[<makeId(d has id ? d.id : d.did), d.ty, d is token, (DeclInStruct) `<Type _> <DId _> <Arguments? _> <Size? _> byparsing (<Expr _>)`:= d>| DeclInStruct d <- decls],
+		 lrel[str, Type] computedFieldsList := [<makeId(d has id ? d.id : d.did), d.ty>| DeclInStruct d <- decls, d is computed, isTokenType(types[d.ty@\loc])],
 		 lrel[str, Type] allFieldsList := formalsList + [<id, ty> | <id, ty, _, _> <- fieldsList],
 		 list[Id] typeFormalsList := [t | atypeFormals <- typeFormals, t <- atypeFormals.typeFormals],
 		 str javaTypeFormals := ((size(typeFormalsList) > 0)?"\<<intercalate(",", ["<tf> extends Token" | tf <- typeFormalsList])>\>":""),
@@ -251,8 +251,8 @@ str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, lre
     '    }
     '}"
 	when str sid := generateNestType(current, basePkg, types),
-		 lrel[str, Type] fieldsList := [<makeId(d.id), d.ty> | DeclInStruct d <- decls],
-		 lrel[str, Type] tokensList := [<makeId(d.id), d.ty> | DeclInStruct d <- decls, d is token]
+		 lrel[str, Type] fieldsList := [<makeId(d has id ? d.id : d.did), d.ty> | DeclInStruct d <- decls],
+		 lrel[str, Type] tokensList := [<makeId(d has id ? d.id : d.did), d.ty> | DeclInStruct d <- decls, d is token]
 		 ;
 
 		 
@@ -520,6 +520,7 @@ void compileBirdModule(start[Program] pt, TModel model, str basePkg, PathConfig 
    	tuple[str fqn, str text] compiled = compile(pt.top, basePkg, getUseDef(model), getFacts(model));
     path = replaceAll(compiled.fqn, ".", "/") + ".java";
     println("Writing to: <pcfg.target + path>");
+	mkDirectory((pcfg.target + path).parent);
     writeFile(pcfg.target + path, compiled.text);
 }
 
