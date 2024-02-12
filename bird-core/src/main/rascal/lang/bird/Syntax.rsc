@@ -36,9 +36,9 @@ syntax Import
  	;
 	
 syntax TopLevelDecl
-	= structDecl: "struct" Id TypeFormals? Formals? Annos? "{" DeclInStruct* structDecls "}"
-	| choiceDecl: "choice" Id Formals? Annos? "{" DeclInChoice* choiceDecls "}"
-	| funDecl: "@" "(" JavaId ")" Type Id Formals?
+	= structDecl: "struct" Id id TypeFormals? typeFormals Formals? formals Annos? annos "{" DeclInStruct* structDecls "}"
+	| choiceDecl: "choice" Id id Formals? formals Annos? annos "{" DeclInChoice* choiceDecls "}"
+	| funDecl: "@" "(" JavaId javaId ")" Type tp Id id Formals? formals
 	;
 	
 syntax Annos 

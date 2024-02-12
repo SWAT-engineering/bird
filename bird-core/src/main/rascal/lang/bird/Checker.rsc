@@ -282,6 +282,13 @@ Tree newFieldNameId(DId id, loc root) {
     };
 }
 
+Tree newUnnamedId(loc root) {
+	return visit(parse(#ConsId, "$$__anon<root.offset>")) {
+        case Tree t => t[src = relocsingleLine(t.src, root)] 
+            when t has src
+    };
+}
+
 private loc relocsingleLine(loc osrc, loc base) {
 	if (!osrc.offset?) {
 		return osrc;
@@ -373,6 +380,10 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
 	});
 	if ("<id>" != "_"){
 		c.define("<id>", fieldId(), id, defType(ty));
+	}
+	else {
+		fakeAnon = newUnnamedId(id@\loc);
+		c.define("<fakeAnon>", fieldId(), fakeAnon, defType(ty));
 	}
 	
 	Maybe[Expr] siz = nothing();
@@ -560,6 +571,10 @@ void collect(current:(DeclInChoice) `<Type ty> <Arguments? args> <Size? size>`, 
 	c.require("declared type", ty, [ty], void(Solver s){
 		s.requireTrue(isTokenType(s.getType(ty)), error(ty, "Non-initialized fields must be of a token type but it was %t", ty));
 	});
+
+	fakeAnon = newUnnamedId(ty@\loc);
+	c.define("<fakeAnon>", fieldId(), fakeAnon, defType(ty));
+	
 	collectType(ty, c);
 	
 	if (aargs <- args)

@@ -6,6 +6,9 @@ import util::LanguageServer;
 import util::Monitor;
 import util::Reflective;
 import IO;
+import String;
+import Set;
+import lang::bird::VisualizeGrammarBasic;
 
 import lang::bird::Checker;
 import lang::bird::Syntax;
@@ -15,7 +18,10 @@ set[LanguageService] birdLanguageContributor() {
     return {
         parser(getBirdParser()),
         outliner(birdOutliner),
-        summarizer(birdSummarizer)
+        summarizer(birdSummarizer),
+        lenses(birdLenses),
+        executor(birdExecutor),
+        inlayHinter(birdHinter)
     };
 }
 
@@ -85,13 +91,75 @@ PathConfig calculatePathConfig(start[Program] input) {
     return pathConfig(srcs=[srcPath], target=outputPath);
 }
 
+list[InlayHint] birdHinter(start[Program] input) = [hint(s.src, " \<<generateHexArray(s)>\>", \type(), atEnd = true) | /BytesStringLiteral s := input];
 
+str generateHexArray((BytesStringLiteral)`"<StringCharacter* chars>"`) = intercalate(", ", [*toHex(c) | c <- chars]);
+
+list[str] toHex(StringCharacter chs) = [toHex(c) | c <- chars("<chs>")];
+list[str] HEX_CHARS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"];
+str toHex(int n) = "0x<HEX_CHARS[n / 16]><HEX_CHARS[n % 16]>";
+
+data Command = visualizeDependencies(loc decl, str name);
+
+rel[loc, Command] birdLenses(start[Program] input) {
+    return { <d.src,  visualizeDependencies(d.src, "<d.id>", title="Visualize Grammar for <d.id>")> | /TopLevelDecl d := input, !(d is funDecl)};
+}
+
+value birdExecutor(visualizeDependencies(loc decl, str name)) {
+    gg = buildGrammarGraph(decl);
+    visualize(name, gg);
+    return ("result": true);
+}
+
+alias GrammarGraph = rel[tuple[loc, str], tuple[loc, str]];
+
+GrammarGraph buildGrammarGraph(loc decl) {
+    input = getBirdParser()(readFile(decl.top), decl.top);
+    pcfg = calculatePathConfig(input);
+    tm = birdTModelFromTree(input, pathConf = pcfg);
+    GrammarGraph result = {};
+    todo = {decl};
+    done = {};
+    iprintln(tm.definitions<0>);
+    while (todo != {}) {
+        <j, todo> = takeOneFrom(todo);
+        done += j;
+        println("Processing <j>");
+        if (j notin tm.definitions) {
+            println("Nothing");
+            continue;
+        }
+        def = tm.definitions[j];
+        lhs = <def.defined, def.id>;
+        for (<_, _, fieldId(), _, /tp:structType(tpn, _)> <- tm.defines[def.defined]) {
+
+            if (f:<_, tpn, tpn, structId(), loc tpl, defType(tp)> <- tm.defines) {
+                println(f);
+                result += <lhs, <tpl, tpn>>;
+                if (tpl notin done) {
+                    todo += tpl;
+                }
+            }
+        }
+    }
+    return result;
+}
+
+
+default value birdExecutor(value v) {
+    throw  "Missing case for <v>";
+}
+
+
+list[loc] libs = [
+    |jar+project://bird-core/target/lib/typepal.jar!/src|
+];
 
 void main() {
     unregisterLanguage("Bird", "bird");
     registerLanguage(
         language(
-            pathConfig(srcs=[|project://bird-core/src/main/rascal|, |project://bird-ide/src/main/rascal|, |jar+project://bird-core/target/lib/typepal.jar!/src|]),
+            pathConfig(srcs=[|project://bird-core/src/main/rascal|, |project://bird-ide/src/main/rascal|, *libs]),
             "Bird",
             "bird",
             "lang::bird::LanguageServer",

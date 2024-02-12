@@ -23,7 +23,7 @@ struct PNG@(encoding = US_ASCII, endianness = BIG) {
     Signature _
     Chunk[] chunks
     IEND end 
-}
+} 
 
 @(engineering.swat.bird.util.CRC)
 int crc32(byte[] x) 
