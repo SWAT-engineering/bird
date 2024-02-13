@@ -102,7 +102,7 @@ str toHex(int n) = "0x<HEX_CHARS[n / 16]><HEX_CHARS[n % 16]>";
 data Command = visualizeDependencies(loc decl, str name);
 
 rel[loc, Command] birdLenses(start[Program] input) {
-    return { <d.src,  visualizeDependencies(d.src, "<d.id>", title="Visualize Grammar for <d.id>")> | /TopLevelDecl d := input, !(d is funDecl)};
+    return { <d.src,  visualizeDependencies(d.src, "<d.id>", title="Visualize <d.id>")> | /TopLevelDecl d := input, !(d is funDecl)};
 }
 
 value birdExecutor(visualizeDependencies(loc decl, str name)) {

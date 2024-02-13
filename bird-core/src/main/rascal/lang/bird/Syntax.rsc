@@ -231,4 +231,4 @@ lexical UnicodeEscape
 private start[Program] (value, loc) birdParser = parser(#start[Program]);
 
 // either invoke with (str content, loc origin) or (loc content, loc origin)
-start[Program] (value, loc) getBirdParser() = birdParser;
+start[Program] (value, loc) getBirdParser() = birdParser; 

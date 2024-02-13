@@ -192,7 +192,7 @@ str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? a
 
 str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <Formals? formals> <Annos? annos> { <DeclInStruct* decls> }`, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
    "public static final class __$<sid><javaTypeFormals> extends UserDefinedToken {
-   '	<for ((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>` <- decls, ty is anonymousType){><generateAnonymousType(ty, basePkg, useDefs, types)>
+   '	<for ((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>` <- decls, ty is anonymousType){><generateAnonymousType(ty, [], basePkg, useDefs, types)>
    '	<}>
    '	<for (<id, typ> <- allFieldsList){>
    '		public final <generateNestType(typ, basePkg, types)> <id>;

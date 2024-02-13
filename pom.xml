@@ -27,12 +27,12 @@
           <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>rascal</artifactId>
-            <version>0.33.7</version>
+            <version>0.34.1</version>
           </dependency>
           <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>rascal-lsp</artifactId>
-            <version>2.18.0</version>
+            <version>2.19.1</version>
             <exclusions> <!-- we exclude dependencies we don't really need, or maybe want to have our own -->
               <exclusion>
                 <groupId>org.rascalmpl</groupId>
@@ -47,7 +47,7 @@
           <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
-            <version>0.8.9</version>
+            <version>0.8.10</version>
           </dependency>
           <dependency>
             <groupId>junit</groupId>
