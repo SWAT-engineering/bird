@@ -156,7 +156,6 @@ list[loc] libs = [
 ];
 
 void main() {
-    unregisterLanguage("Bird", "bird");
     registerLanguage(
         language(
             pathConfig(srcs=[|project://bird-core/src/main/rascal|, |project://bird-ide/src/main/rascal|, *libs]),

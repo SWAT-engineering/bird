@@ -1,0 +1,30 @@
+{
+	"folders": [
+		{
+			"name": "bird",
+			"path": "."
+		},
+		{
+			"name": "bird-core",
+			"path": "bird-core"
+		},
+		{
+			"name": "bird-ide",
+			"path": "bird-ide"
+		},
+		{
+			"path": "bird-example"
+		},
+		{
+			"path": "nest"
+		}
+	],
+	"settings": {
+		"java.configuration.updateBuildConfiguration": "interactive",
+		"java.compile.nullAnalysis.mode": "disabled",
+		"java.project.sourcePaths": [
+			"nest/src",
+			"bird-example/src/main/java"
+		]
+	}
+}
