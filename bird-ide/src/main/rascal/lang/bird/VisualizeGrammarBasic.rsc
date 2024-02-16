@@ -7,6 +7,7 @@ void visualize(str name, rel[tuple[loc,str], tuple[loc,str]] g) {
     nodes = g<0> + g<1>;
     lookup = nodes<1,0>;
 
+    // note, this is only until new rascal release, 0.34.0 will introduce dagre, and this should just be a simple rascal function.
     index = "\<!DOCTYPE html\>
         '\<html lang=\"en\"\>
         '    \<head\>
