@@ -18,7 +18,8 @@ set[LanguageService] birdLanguageContributor() {
     return {
         parser(getBirdParser()),
         outliner(birdOutliner),
-        summarizer(birdSummarizer),
+        analyzer(birdAnalyzer),
+        builder(birdBuilder),
         lenses(birdLenses),
         executor(birdExecutor),
         inlayHinter(birdHinter)
@@ -58,16 +59,26 @@ list[DocumentSymbol] buildOutline(current:(DeclInChoice)`abstract <Type _> <Id i
 list[DocumentSymbol] buildOutline(current:(DeclInChoice)`<Type tp> <Arguments? _> <Size? _>`)
     = [symbol("token <tp>", field(), current.src)];
 
-Summary birdSummarizer(loc l, start[Program] input) {
-    jobStart("Bird Summarizer");
-    // pc = makeConfig(l);
-    jobStep("Bird Summarizer", l.file);
+Summary birdAnalyzer(loc l, start[Program] input) = check(l, input)<1>;
+
+tuple[TModel, Summary] check(loc l, start[Program] input) {
+    jobStart("Bird Type checker");
+    jobStep("Bird Type checker", l.file);
     pcfg = calculatePathConfig(input);
     tm = birdTModelFromTree(input, pathConf = pcfg);
-    jobEnd("Bird Summarizer");
+    jobEnd("Bird Type checker");
+    return <tm, summary(l,
+        messages = {<message.at, message> | message <- tm.messages, message.at.top == l.top},
+        definitions = tm.useDef,
+        references = tm.useDef<1,0>)>;
+}
+
+Summary birdBuilder(loc l, start[Program] input) {
+    <tm, sm> = check(l, input);
     if (tm.messages == []) {
         jobStart("Bird compiler");
         try {
+            pcfg = calculatePathConfig(input);
             compileBirdModule(input, tm, "engineering.swat.bird.generated", pcfg);
         }
         catch e: {
@@ -75,12 +86,8 @@ Summary birdSummarizer(loc l, start[Program] input) {
         }
         jobEnd("Bird compiler");
     }
-
-    return summary(l,
-        messages = {<message.at, message> | message <- tm.messages, message.at.top == l.top},
-        definitions = tm.useDef,
-        references = tm.useDef<1,0>);
-}
+    return sm;
+} 
 
 PathConfig calculatePathConfig(start[Program] input) {
     loc srcPath = input.src.top;

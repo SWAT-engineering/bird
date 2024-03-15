@@ -20,10 +20,10 @@ choice DIBHeader{
 }
 
 struct BitmapInfoHeader{
-	u32 infoSize ?(== 40)
+	u32 infoSize ?(this.as[int] == 40)
 	u32 width
 	u32 height 
-	u16 colorPlanes ?(==1)
+	u16 colorPlanes ?(this.as[int] == 1)
 	u16 bitsPerPixel
 	u32 compressionMethod
 	u32 imgSize
@@ -36,5 +36,5 @@ struct BitmapInfoHeader{
 
 struct PixelArray(int theSize){
 	u32[] pixels[theSize]
-} 
+}
 
