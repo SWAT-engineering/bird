@@ -403,10 +403,12 @@ str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, str basePkg, r
 	"<javaName>.<id>(<intercalate(", ", [compile(e, this, basePkg, useDefs, types) | e <- args.args])>)"
 	when funType(_, _, _, javaName) := types[id@\loc];
 	
-str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = {
-		throw "Not yet implemented";
+str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) {
+		if (!(types[id@\loc] is funType)) {
+			throw "Not yet implemented";
+		}
+		fail;
 	}
-	when !(types[id@\loc] is funType);
 	
 	
 str compile(current: (Expr) `parse <Expr parsed> with <Type ty> <Arguments? args> <Size? sz>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
@@ -433,10 +435,12 @@ str compile(current: (Expr) `<Expr e>.as[int]`, DId this, str basePkg, rel[loc,l
 str compile(current: (Expr) `<Expr e>.as[str]`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<compile(e, this, basePkg, useDefs, types)>.asValue().asString().get()";
 
-str compile(current: (Expr) `<Expr e>.as[<Type t>]`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = {
-	throw "Cannot cast to <t>";
-} when (Type) `int` !:= t,
-	   (Type) `str` !:= t;
+str compile(current: (Expr) `<Expr e>.as[<Type t>]`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) {
+	if ((Type) `int` !:= t, (Type) `str` !:= t) {
+		throw "Cannot cast to <t>";
+	}
+	fail;
+}
 
 str compile(current: (Expr) `<Expr e>.<Id field>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"<compile(e, this, basePkg, useDefs, types)>.<field>";
