@@ -133,9 +133,6 @@ str compileAnno("encoding", (Expr) `<Id val>`, str basePkg, rel[loc,loc] useDefs
 str compileAnno("endianness", (Expr) `<Id val>`, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types)
 	= "__$ctx = __$ctx.setByteOrder(ByteOrder.<val>_ENDIAN);";
 	
-str compileAnno("endianness", (Expr) `<Id val>`, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types)
-	= "__$ctx = __$ctx.setByteOrder(ByteOrder.<val>_ENDIAN);";
-	
 str compileAnno("offset", Expr e, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types)
 	= "__$src = __$src.fork(<compile(e, DUMMY_DID, basePkg, useDefs, types)>);";	
 	
