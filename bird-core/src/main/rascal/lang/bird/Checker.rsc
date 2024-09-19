@@ -1112,7 +1112,7 @@ void runTests(loc target = |project://bird-nescio-tests/bird-src|, PathConfig pc
             println("Parse error: <l>");
         }
         catch value oe: {
-            otherErrrors += 1;
+            otherErrors += 1;
             println("General failure <f> = <oe>");
         }
     }
