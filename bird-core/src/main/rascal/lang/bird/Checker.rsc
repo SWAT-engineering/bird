@@ -638,7 +638,7 @@ void collectType(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] theSize 
     });
 }  
 
-void collectType(current: (Type) `<ModuleId name>`, Collector c, Maybe[Expr] sz = nothing()){
+void collectType(current: (Type) `<ModuleId name>`, Collector c, Maybe[Expr] theSize = nothing()){
     //println("checking <current>");
     list[Id] idsInModule = [id | id <- name.moduleName];
     
@@ -651,7 +651,7 @@ void collectType(current: (Type) `<ModuleId name>`, Collector c, Maybe[Expr] sz 
 }
 
 
-void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collector c, Maybe[Expr] sz = nothing()){
+void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collector c, Maybe[Expr] theSize = nothing()){
     //println("checking <current>");
     
     list[Id] idsInModule = [id | id <- name.moduleName];
