@@ -1073,11 +1073,7 @@ private TypePalConfig getBirdConfig(bool debug = false) = tconfig(
     getTypeNamesAndRole = birdGetTypeNameAndRole,
     getTypeInNamelessType = birdGetTypeInAnonymousStruct,
     instantiateTypeParameters = birdInstantiateTypeParameters,
-    verbose=debug, 
-    logTModel = debug, 
-    logAttempts = debug, 
-    logSolverIterations= debug, 
-    logSolverSteps = debug
+    verbose=debug
 );
 
 
