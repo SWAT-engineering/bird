@@ -206,10 +206,10 @@ PathConfig pathConfig(loc file) {
 //    return pathConfig(srcs = [ p + "src"]);
 }
 
-private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
+private str BIRD_IMPORT_QUEUE = "__birdImportQueue";
 
-private str __ANONYMOUS_FIELDS = "__anonymousFields";
-private str __TESTING = "__TESTING";
+private str ANONYMOUS_FIELDS = "__anonymousFields";
+private str TESTING = "__TESTING";
 
 str getFileName((ModuleId) `<{Id "::"}+ moduleName>`) = replaceAll("<moduleName>.bird", "::", "/");
 
@@ -225,13 +225,13 @@ tuple[bool, loc] lookupModule(ModuleId name, PathConfig pcfg) {
 
 void collect(current:(Import) `import <ModuleId moduleName>`, Collector c) {
     c.addPathToDef(moduleName, {moduleId()}, importPath());
-    c.push(__BIRD_IMPORT_QUEUE, moduleName);
+    c.push(BIRD_IMPORT_QUEUE, moduleName);
 }
 
 void handleImports(Collector c, Tree root, PathConfig pcfg) {
     set[ModuleId] imported = {};
-    while (list[ModuleId] modulesToImport := c.getStack(__BIRD_IMPORT_QUEUE) && modulesToImport != []) {
-        c.clearStack(__BIRD_IMPORT_QUEUE);
+    while (list[ModuleId] modulesToImport := c.getStack(BIRD_IMPORT_QUEUE) && modulesToImport != []) {
+        c.clearStack(BIRD_IMPORT_QUEUE);
         for (m <- modulesToImport, m notin imported) {
             if (<true, l> := lookupModule(m, pcfg)) {
                 collect(parse(#start[Program], l).top, pcfg, c);
@@ -249,7 +249,7 @@ void handleImports(Collector c, Tree root, PathConfig pcfg) {
 
 void collect(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, PathConfig pcfg, Collector c){
      c.define("<moduleName>", moduleId(), current, defType(moduleType()));
-     if (false := c.top(__TESTING)) {
+     if (false := c.top(TESTING)) {
         bool found = false;
         for (s <- pcfg.srcs) {
             result = (s + replaceAll("<moduleName>", "::", "/"))[extension = "bird"];
@@ -340,7 +340,7 @@ void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <
          collectAnnos(annos, c);
          collect(decls, c);
          
-         c.push(__ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInStruct) `<Type ty> _ <Arguments? _> <Size? _> <SideCondition? _>` <- decls}>);
+         c.push(ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInStruct) `<Type ty> _ <Arguments? _> <Size? _> <SideCondition? _>` <- decls}>);
     }
     c.leaveScope(current);
 }
@@ -556,7 +556,7 @@ void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? a
                  
          });
          
-         c.push(__ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInChoice) `<Type ty> <Arguments? _> <Size? _>` <- decls}>);
+         c.push(ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInChoice) `<Type ty> <Arguments? _> <Size? _>` <- decls}>);
     }
     c.leaveScope(current);
     
@@ -1028,12 +1028,12 @@ void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, T
 TModel birdTModelFromTree(Tree pt, bool debug = false, bool testing=false, PathConfig pathConf = pathConfig(pt@\loc)){
     if (pt has top) pt = pt.top;
     c = newCollector("collectAndSolve", pt, getBirdConfig(debug = debug));    // TODO get more meaningfull name
-    c.push(__TESTING, testing);
+    c.push(TESTING, testing);
     //println("Bird: Version 1.0");
     collect(pt, pathConf, c);
     handleImports(c, pt, pathConf);
     AnonymousFields anonymousFields = ();
-    if (lrel[loc, set[Type]] anonFields := c.getStack(__ANONYMOUS_FIELDS)) {
+    if (lrel[loc, set[Type]] anonFields := c.getStack(ANONYMOUS_FIELDS)) {
         anonymousFields = (() | it + (structLoc : types) | <structLoc, types> <- anonFields);
     }
     TModel model = newSolver(pt, c.run()).run();
