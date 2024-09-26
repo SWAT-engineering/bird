@@ -10,7 +10,7 @@ import String;
 import ParseTree;
 
 import IO;
-import util::Maybe;
+//import util::Maybe;
 
 extend analysis::typepal::TypePal;
 extend analysis::typepal::TestFramework;
@@ -23,13 +23,20 @@ data TModel (
     AnonymousFields anonymousFields = ()
 );
 
+// The following is a workaround for a bug in the Rascal type checker that rejects `nothing()` as a default value
+// TODO: change back to `Maybe[Expr]` after a release of rascal-core
+data MaybeExpr 
+   = nothing() 
+   | just(Expr val)
+   ;
+
 data AType
     = voidType()
     | intType()
     | typeType(AType ty)
     | strType()
     | boolType()
-    | listType(AType ty, Maybe[Expr] n = nothing())
+    | listType(AType ty, MaybeExpr n = nothing())
     | consType(AType formals)
     | funType(str name, AType returnType, AType formals, str javaRef)
     | structDef(str name, list[str] typeFormals)
@@ -206,10 +213,10 @@ PathConfig pathConfig(loc file) {
 //    return pathConfig(srcs = [ p + "src"]);
 }
 
-private str __BIRD_IMPORT_QUEUE = "__birdImportQueue";
+private str BIRD_IMPORT_QUEUE = "__birdImportQueue";
 
-private str __ANONYMOUS_FIELDS = "__anonymousFields";
-private str __TESTING = "__TESTING";
+private str ANONYMOUS_FIELDS = "__anonymousFields";
+private str TESTING = "__TESTING";
 
 str getFileName((ModuleId) `<{Id "::"}+ moduleName>`) = replaceAll("<moduleName>.bird", "::", "/");
 
@@ -225,13 +232,13 @@ tuple[bool, loc] lookupModule(ModuleId name, PathConfig pcfg) {
 
 void collect(current:(Import) `import <ModuleId moduleName>`, Collector c) {
     c.addPathToDef(moduleName, {moduleId()}, importPath());
-    c.push(__BIRD_IMPORT_QUEUE, moduleName);
+    c.push(BIRD_IMPORT_QUEUE, moduleName);
 }
 
 void handleImports(Collector c, Tree root, PathConfig pcfg) {
     set[ModuleId] imported = {};
-    while (list[ModuleId] modulesToImport := c.getStack(__BIRD_IMPORT_QUEUE) && modulesToImport != []) {
-        c.clearStack(__BIRD_IMPORT_QUEUE);
+    while (list[ModuleId] modulesToImport := c.getStack(BIRD_IMPORT_QUEUE) && modulesToImport != []) {
+        c.clearStack(BIRD_IMPORT_QUEUE);
         for (m <- modulesToImport, m notin imported) {
             if (<true, l> := lookupModule(m, pcfg)) {
                 collect(parse(#start[Program], l).top, pcfg, c);
@@ -249,7 +256,7 @@ void handleImports(Collector c, Tree root, PathConfig pcfg) {
 
 void collect(current: (Program) `module <ModuleId moduleName> <Import* imports> <TopLevelDecl* decls>`, PathConfig pcfg, Collector c){
      c.define("<moduleName>", moduleId(), current, defType(moduleType()));
-     if (false := c.top(__TESTING)) {
+     if (false := c.top(TESTING)) {
         bool found = false;
         for (s <- pcfg.srcs) {
             result = (s + replaceAll("<moduleName>", "::", "/"))[extension = "bird"];
@@ -340,7 +347,7 @@ void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <
          collectAnnos(annos, c);
          collect(decls, c);
          
-         c.push(__ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInStruct) `<Type ty> _ <Arguments? _> <Size? _> <SideCondition? _>` <- decls}>);
+         c.push(ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInStruct) `<Type ty> _ <Arguments? _> <Size? _> <SideCondition? _>` <- decls}>);
     }
     c.leaveScope(current);
 }
@@ -386,7 +393,7 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
         c.define("<fakeAnon>", fieldId(), fakeAnon, defType(ty));
     }
     
-    Maybe[Expr] siz = nothing();
+    MaybeExpr siz = nothing();
     if (s <- sz)
         siz = just(s.expr);
     
@@ -556,7 +563,7 @@ void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? a
                  
          });
          
-         c.push(__ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInChoice) `<Type ty> <Arguments? _> <Size? _>` <- decls}>);
+         c.push(ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInChoice) `<Type ty> <Arguments? _> <Size? _>` <- decls}>);
     }
     c.leaveScope(current);
     
@@ -590,7 +597,7 @@ void collect(current:(UnaryExpr) `<EqualityOperator uo> <Expr e>`, Collector c){
 }
 
 
-void collectType(current:(Type)`<UInt v>`, Collector c, Maybe[Expr] theSize = nothing()) {
+void collectType(current:(Type)`<UInt v>`, Collector c, MaybeExpr theSize = nothing()) {
     bits = toInt("<v>"[1..]);
     if (bits % 8 != 0) {
         c.report(error(current, "The number of bits in a u? type must be a multiple of 8"));
@@ -599,23 +606,23 @@ void collectType(current:(Type)`<UInt v>`, Collector c, Maybe[Expr] theSize = no
 }
 
 
-void collectType(current:(Type)`byte`, Collector c, Maybe[Expr] theSize = nothing()) {
+void collectType(current:(Type)`byte`, Collector c, MaybeExpr theSize = nothing()) {
     c.fact(current, byteType());
 }  
 
-void collectType(current:(Type)`str`, Collector c, Maybe[Expr] theSize = nothing()) {
+void collectType(current:(Type)`str`, Collector c, MaybeExpr theSize = nothing()) {
     c.fact(current, strType());
 }
 
-void collectType(current:(Type)`bool`, Collector c,  Maybe[Expr] theSize = nothing()) {
+void collectType(current:(Type)`bool`, Collector c,  MaybeExpr theSize = nothing()) {
     c.fact(current, boolType());
 }  
 
-void collectType(current:(Type)`int`, Collector c, Maybe[Expr] theSize = nothing()) {
+void collectType(current:(Type)`int`, Collector c, MaybeExpr theSize = nothing()) {
     c.fact(current, intType());
 }  
 
-default void collectType(current: Type t, Collector c, Maybe[Expr] theSize = nothing()) {
+default void collectType(current: Type t, Collector c, MaybeExpr theSize = nothing()) {
     throw "Collection not implemented for type <t>";
 }
 
@@ -630,7 +637,7 @@ default void collectType(current: Type t, Collector c, Maybe[Expr] theSize = not
   
 }*/
 
-void collectType(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] theSize = nothing()) {
+void collectType(current:(Type)`<Type t> [ ]`, Collector c, MaybeExpr theSize = nothing()) {
     collectType(t, c, theSize = theSize);
     c.calculate("list type", current, [t], AType(Solver s) {
         //println("<t> &&& <s.getType(t)>");
@@ -638,7 +645,7 @@ void collectType(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] theSize 
     });
 }  
 
-void collectType(current: (Type) `<ModuleId name>`, Collector c, Maybe[Expr] sz = nothing()){
+void collectType(current: (Type) `<ModuleId name>`, Collector c, MaybeExpr theSize = nothing()){
     //println("checking <current>");
     list[Id] idsInModule = [id | id <- name.moduleName];
     
@@ -651,7 +658,7 @@ void collectType(current: (Type) `<ModuleId name>`, Collector c, Maybe[Expr] sz 
 }
 
 
-void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collector c, Maybe[Expr] sz = nothing()){
+void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collector c, MaybeExpr theSize = nothing()){
     //println("checking <current>");
     
     list[Id] idsInModule = [id | id <- name.moduleName];
@@ -687,7 +694,7 @@ void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collec
     }
 }
 
-void collectType(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c, Maybe[Expr] theSize = nothing()) {
+void collectType(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c, MaybeExpr theSize = nothing()) {
     c.enterScope(current);
         collect(decls, c);
     c.leaveScope(current);
@@ -709,7 +716,7 @@ void collect(current: (Expr) `parse <Expr parsed> with <Type ty> <Arguments? arg
     collect(parsed, c);
     c.fact(current, ty);
     
-    Maybe[Expr] siz = nothing();
+    MaybeExpr siz = nothing();
     if (s <- sz)
         siz = just(s.expr);
     
@@ -1028,12 +1035,12 @@ void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, T
 TModel birdTModelFromTree(Tree pt, bool debug = false, bool testing=false, PathConfig pathConf = pathConfig(pt@\loc)){
     if (pt has top) pt = pt.top;
     c = newCollector("collectAndSolve", pt, getBirdConfig(debug = debug));    // TODO get more meaningfull name
-    c.push(__TESTING, testing);
+    c.push(TESTING, testing);
     //println("Bird: Version 1.0");
     collect(pt, pathConf, c);
     handleImports(c, pt, pathConf);
     AnonymousFields anonymousFields = ();
-    if (lrel[loc, set[Type]] anonFields := c.getStack(__ANONYMOUS_FIELDS)) {
+    if (lrel[loc, set[Type]] anonFields := c.getStack(ANONYMOUS_FIELDS)) {
         anonymousFields = (() | it + (structLoc : types) | <structLoc, types> <- anonFields);
     }
     TModel model = newSolver(pt, c.run()).run();
@@ -1066,11 +1073,7 @@ private TypePalConfig getBirdConfig(bool debug = false) = tconfig(
     getTypeNamesAndRole = birdGetTypeNameAndRole,
     getTypeInNamelessType = birdGetTypeInAnonymousStruct,
     instantiateTypeParameters = birdInstantiateTypeParameters,
-    verbose=debug, 
-    logTModel = debug, 
-    logAttempts = debug, 
-    logSolverIterations= debug, 
-    logSolverSteps = debug
+    verbose=debug
 );
 
 
@@ -1109,7 +1112,7 @@ void runTests(loc target = |project://bird-nescio-tests/bird-src|, PathConfig pc
             println("Parse error: <l>");
         }
         catch value oe: {
-            otherErrrors += 1;
+            otherErrors += 1;
             println("General failure <f> = <oe>");
         }
     }
