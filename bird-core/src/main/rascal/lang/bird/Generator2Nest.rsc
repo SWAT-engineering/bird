@@ -88,13 +88,12 @@ str generateNestType((Type) `int`, str basePkg, map[loc, AType] types)
 str generateNestType((Type) `str`, str basePkg, map[loc, AType] types)
 	= "String";	
 
+str generateNestType((Type) `bool`, str basePkg, map[loc, AType] types)
+	= "boolean";
+
 str generateNestType(current: (Type) `byte []`, str basePkg, map[loc, AType] types)
 	= "UnsignedBytes"
-	when listType(byteType(), n = nothing()) := types[current@\loc];
-	
-str generateNestType(current: (Type) `byte []`, str basePkg, map[loc, AType] types)
-	= "UnsignedBytes"
-	when listType(byteType(), n = just(_)) := types[current@\loc];	
+	when listType(byteType()) := types[current@\loc];
 	
 str generateNestType((Type) `<Type t> []`, str basePkg, map[loc, AType] types)
 	= "TokenList\<<generateNestType(t, basePkg, types)>\>"
@@ -119,7 +118,6 @@ str generateNestType(current: (Type) `<ModuleId id> <TypeActuals typeActuals>`, 
 str generateNestType(current: (Type) `<ModuleId id>`, str basePkg, map[loc, AType] types)
 	= "<id>"
 	when variableType(_) := types[current@\loc];
-
 
 str makeUnique(Tree t, str prefix) = "$<prefix>_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>"
 	when lo := t@\loc;
@@ -384,6 +382,9 @@ str compile(current: (Expr) `\< <{SingleHexIntegerLiteral ","}+ bytes> \>`, DId 
 
 str compile(current: (Expr) `<StringLiteral lit>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = "<lit.chars>";
 
+str compile(current: (Expr) `<BoolLiteral lit>`, DId this, str basePkg, rel[loc, loc] useDefs, map[loc, AType] types)
+	= "<lit>";
+
 str compile(current: (Expr) `it`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"it";
 
@@ -399,17 +400,12 @@ str compile(current: (Expr) `<Id id>`, DId this, str basePkg, rel[loc,loc] useDe
 	"<id>"
 	when !isTokenType(types[current@\loc]);
 		 
-str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<javaName>.<id>(<intercalate(", ", [compile(e, this, basePkg, useDefs, types) | e <- args.args])>)"
-	when funType(_, _, _, javaName) := types[id@\loc];
-	
 str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) {
-		if (!(types[id@\loc] is funType)) {
-			throw "Not yet implemented";
-		}
-		fail;
+	if (funType(_, _, _, javaName) := types[id@\loc]) {
+		return "<javaName>.<id>(<intercalate(", ", [compile(e, this, basePkg, useDefs, types) | e <- args.args])>)";
 	}
-	
+	throw "Not yet implemented";
+}
 	
 str compile(current: (Expr) `parse <Expr parsed> with <Type ty> <Arguments? args> <Size? sz>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
 	generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], [], basePkg, useDefs, types,
@@ -429,17 +425,15 @@ str compile(current: (Expr) `[ <Expr e> | <Id loopVar> \<- <Expr source>]`, DId 
 	return "<source>.map(<loopVar> -\> <compile(e, this, basePkg, useDefs, types)>)";
 }
 
-str compile(current: (Expr) `<Expr e>.as[int]`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<compile(e, this, basePkg, useDefs, types)>.asValue().asInteger()";
-
-str compile(current: (Expr) `<Expr e>.as[str]`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<compile(e, this, basePkg, useDefs, types)>.asValue().asString().get()";
-
 str compile(current: (Expr) `<Expr e>.as[<Type t>]`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) {
-	if ((Type) `int` !:= t, (Type) `str` !:= t) {
-		throw "Cannot cast to <t>";
+	switch (t) {
+		case (Type)`int`:
+			return "<compile(e, this, basePkg, useDefs, types)>.asValue().asInteger()";
+		case (Type)`str`:
+			return "<compile(e, this, basePkg, useDefs, types)>.asValue().asString().get()";
+		default:
+			throw "Cannot cast to <t>";
 	}
-	fail;
 }
 
 str compile(current: (Expr) `<Expr e>.<Id field>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
