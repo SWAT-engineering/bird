@@ -504,6 +504,9 @@ str compile(current: (Expr) `<Expr e1> * <Expr e2>`, DId this, str basePkg, rel[
 	
 str compile(current: (Expr) `<Expr e1> ++ <Expr e2>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
     "TokenList.of(__$ctx, <compile(e1, this, basePkg, useDefs, types)>, <compile(e2, this, basePkg, useDefs, types)>)";
+
+str compile(current: (Expr)`<Expr e1> ? <Expr e2> : <Expr e3>`, DId this, str basePkg, rel[loc, loc] useDefs, map[loc, AType] types) =
+	"((<compile(e1, this, basePkg, useDefs, types)>) ? (<compile(e2, this, basePkg, useDefs, types)>) : (<compile(e3, this, basePkg, useDefs, types)>))";
     
 str compile(current: (Expr) e, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types){
     throw "Expression not yet implemented: <e>";
