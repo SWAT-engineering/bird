@@ -56,7 +56,7 @@ test D5 [[
 		str name = "Ignacio"
 		Address[] address("Amsterdam")
 	}
-]]
+]] expect { "Constructor arguments only apply to user-defined types but got `constructor(str,)`" }
 
 test D6 [[
 	module m

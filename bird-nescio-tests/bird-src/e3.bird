@@ -7,5 +7,5 @@ struct Address(str c){
 struct Person{
 	int age = 20
 	str name = "Ignacio"
-	Address address("Amsterdam")[1]
+	Address address("Amsterdam")
 }

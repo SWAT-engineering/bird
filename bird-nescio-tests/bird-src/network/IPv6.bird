@@ -28,6 +28,9 @@ choice IPV6ExtensionHeaderChain(int remainingSize, u8 nextHeader) {
 }
 
 struct HopByHopOptions(int remainingSize, u8 previousNextHeader) {
+    int remainingDataSize = remainingSize
+    u8 protocol = previousNextHeader
+
     u8 nextHeader ?(previousNextHeader == 0B)
     u8 optionsLength
     u8[] options[6 + optionsLength.as[int]]
@@ -37,6 +40,9 @@ struct HopByHopOptions(int remainingSize, u8 previousNextHeader) {
 
 
 struct Routing(int remainingSize, u8 previousNextHeader) {
+    int remainingDataSize = remainingSize
+    u8 protocol = previousNextHeader
+
     u8 nextHeader ?(previousNextHeader == 43B)
     u8 dataLength
     u8 routingType
@@ -47,6 +53,9 @@ struct Routing(int remainingSize, u8 previousNextHeader) {
 }
 
 struct Fragment(int remainingSize, u8 previousNextHeader) {
+    int remainingDataSize = remainingSize
+    u8 protocol = previousNextHeader
+    
     u8 nextHeader ?(previousNextHeader == 44B)
     u8 _
     u16 fragmentOffset

@@ -6,7 +6,7 @@ struct BMP@(endianness = LITTLE){
 	PixelArray pixels(dibHeader.rawSize)
 }
 
-struct BitmapFileHeader @(encoding = ASCII){
+struct BitmapFileHeader @(encoding = US_ASCII){
 	u16 header ?(== "BM")
 	u32 bmpSize
 	u16 _
@@ -31,7 +31,7 @@ struct BitmapInfoHeader{
 	u32 verticalRes
 	u32 colors
 	u32 importantColors
-	int rawSize = imgSize
+	int rawSize = imgSize.as[int]
 }
 
 struct PixelArray(int theSize){
