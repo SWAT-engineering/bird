@@ -345,7 +345,7 @@ str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? a
 		 		 
 default str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, str parentId, list[str] formalIds, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =		 
 	"<generateNestType(ty, basePkg, types)> $<makeId(id)> = <generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], formalIds, basePkg, useDefs, types)>;
-	'<for (sc <- sideCondition){ bprintln(sc);><generateSideCondition(sc, parentId, id, ty, basePkg, useDefs, types)>
+	'<for (sc <- sideCondition){ /*bprintln(sc);*/><generateSideCondition(sc, parentId, id, ty, basePkg, useDefs, types)>
 	'<}>";
 
 // Computed field
