@@ -14,5 +14,6 @@ Thumbs.db
 ## maven stuff
 target/
 
-
+*/.classpath
+*/.project
 
