@@ -9,9 +9,15 @@
 			"path": "bird-ide"
 		},
 		{
+			"name": "bird-example",
 			"path": "bird-example"
 		},
 		{
+			"name": "bird-nescio-tests",
+			"path": "bird-nescio-tests"
+		},
+		{
+			"name": "nest",
 			"path": "nest"
 		},
 		{
