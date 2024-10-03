@@ -127,6 +127,11 @@
             <artifactId>checker-qual</artifactId>
             <version>${checkerframework.version}</version>
         </dependency>
+        <dependency>
+            <groupId>engineering.swat</groupId>
+            <artifactId>bird-core</artifactId>
+            <version>2.0.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
 
@@ -259,37 +264,10 @@
 
     <repositories>
         <repository>
-            <id>usethesource-cache</id>
-            <url>http://nexus.usethesource.io/content/repositories/public/</url>
-        </repository>
-        <repository>
-            <id>usethesource-snapshots</id>
-            <url>http://nexus.usethesource.io/content/repositories/snapshots/</url>
-        </repository>
-
-        <repository>
-            <id>usethesource-rascalmpl-unstable</id>
-            <layout>p2</layout>
-            <url>https://update.rascal-mpl.org/unstable/</url>
-        </repository>
-
-        <repository>
-            <id>rascalmpl-libs</id>
-            <layout>p2</layout>
-            <url>https://update.rascal-mpl.org/libs/</url>
-        </repository>
-
-        <repository>
-            <id>neon</id>
-            <layout>p2</layout>
-            <url>http://nexus.usethesource.io/content/repositories/eclipse-oxygen/</url>
-        </repository>
-        <repository>
-            <id>tm</id>
-            <layout>p2</layout>
-            <url>http://nexus.usethesource.io/content/repositories/tm-terminal-marketplace/</url>
+            <id>releases</id>
+            <name>usethesource.io releases</name>
+            <url>https://releases.usethesource.io/maven</url>
         </repository>
     </repositories>
     
-
 </project>
