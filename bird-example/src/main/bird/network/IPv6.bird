@@ -22,7 +22,7 @@ choice IPV6ExtensionHeaderChain(int remainingSize, u8 nextHeader) {
     Fragment(remainingDataSize, nextHeader)
     
     struct { // Terminating the chain, parse nothing more
-        int remainingDataSize = remainingDataSize
+        int remainingDataSize = remainingSize
         u8 protocol = nextHeader
     }
 }
