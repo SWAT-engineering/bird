@@ -60,7 +60,7 @@ struct Fragment(int remainingSize, u8 previousNextHeader) {
     u8 _
     u16 fragmentOffset
     int actualFragmentOffset = (fragmentOffset >> 3).as[int]
-    bool lastFragment = (actualFragmentOffset & 0b1) == 0b0
+    bool lastFragment = ((fragmentOffset >> 3) & 0b1) == 0b0
 
     u32 identification
 
