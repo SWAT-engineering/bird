@@ -333,7 +333,7 @@ str generateSideCondition((SideCondition) `? (<Expr e>)`, str parentId, DId this
 // 		If not, enforce constraint in type checker (together with type of it)
 str compileDeclInStruct(current:(DeclInStruct) `<Type ty>[]  <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, str parentId, list[str] formalIds, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =		 
 	"<generateNestType(current.ty, basePkg, types)> $<makeId(id)> = TokenList.parseWhile(__$src, __$ctx,
-    '	(s, c) -\> <generateParsingInstruction(ty, [e | aargs <- args, e <- aargs.args], [], basePkg, useDefs, types, src = "s", ctx = "c")>,
+    '	(s, c) -\> <generateParsingInstruction(ty, [e | aargs <- args, Expr e <- aargs.args], [], basePkg, useDefs, types, src = "s", ctx = "c")>,
     '	it -\> (<compile(e, id, basePkg, useDefs, types)>)
     ');";
     

@@ -1,0 +1,11 @@
+{
+	"files.exclude": {
+		"bird-core": true,
+		"bird-ide": true,
+		"bird-example": true,
+		"bird-ide": true,
+		"bird-nescio-ide": true,
+		"bird-nescio-tests": true,
+		"nest": true
+	}
+}
