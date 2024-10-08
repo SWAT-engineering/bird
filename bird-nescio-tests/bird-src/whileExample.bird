@@ -1,5 +1,5 @@
 module whileExample
 
 struct A{
-	byte[] xs while (it != 1B)
+	u8[] xs while (it != 1B)
 }
