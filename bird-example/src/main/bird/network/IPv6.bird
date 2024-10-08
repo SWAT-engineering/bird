@@ -22,12 +22,15 @@ choice IPV6ExtensionHeaderChain(int remainingSize, u8 nextHeader) {
     Fragment(remainingDataSize, nextHeader)
     
     struct { // Terminating the chain, parse nothing more
-        int remainingDataSize = remainingDataSize
+        int remainingDataSize = remainingSize
         u8 protocol = nextHeader
     }
 }
 
 struct HopByHopOptions(int remainingSize, u8 previousNextHeader) {
+    int remainingDataSize = remainingSize
+    u8 protocol = previousNextHeader
+
     u8 nextHeader ?(previousNextHeader == 0B)
     u8 optionsLength
     u8[] options[6 + optionsLength.as[int]]
@@ -37,6 +40,9 @@ struct HopByHopOptions(int remainingSize, u8 previousNextHeader) {
 
 
 struct Routing(int remainingSize, u8 previousNextHeader) {
+    int remainingDataSize = remainingSize
+    u8 protocol = previousNextHeader
+
     u8 nextHeader ?(previousNextHeader == 43B)
     u8 dataLength
     u8 routingType
@@ -47,11 +53,14 @@ struct Routing(int remainingSize, u8 previousNextHeader) {
 }
 
 struct Fragment(int remainingSize, u8 previousNextHeader) {
+    int remainingDataSize = remainingSize
+    u8 protocol = previousNextHeader
+    
     u8 nextHeader ?(previousNextHeader == 44B)
     u8 _
     u16 fragmentOffset
     int actualFragmentOffset = (fragmentOffset >> 3).as[int]
-    bool lastFragment = (actualFragmentOffset & 0b1) == 0b0
+    bool lastFragment = ((fragmentOffset >> 3) & 0b1) == 0b0
 
     u32 identification
 

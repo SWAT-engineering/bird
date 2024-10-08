@@ -1,6 +1,7 @@
 module lang::bird::tests::GenerateAll
 
 extend lang::bird::Generator2Nest;
+import lang::bird::Checker;
 import IO;
 
 PathConfig getDefaultPathConfig() = pathConfig(

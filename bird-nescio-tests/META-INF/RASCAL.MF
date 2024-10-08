@@ -1,7 +1,4 @@
+Project-Name: bird-nescio-tests
 Manifest-Version: 0.0.1
-Main-Function: main
-Courses: courses
-Main-Module: Plugin
-Source: src, bird-src
-BasePackage: engineering.swat.bird.generated
-Target: test
+Source: src
+Require-Libraries: |lib://bird-core|

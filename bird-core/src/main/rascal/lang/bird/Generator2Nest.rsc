@@ -289,7 +289,7 @@ str generateParsingInstruction(current: (Type) `<ModuleId id> <TypeActuals typeA
  		 ctx1 := makeUnique(id, "__$ctx");
  		 
 str generateParsingInstruction(current: (Type) `<ModuleId id>`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
- 	= "<toJavaFQName(basePkg, id)>.parse(<src>, <ctx><for (e <-args){>, <compile(e, DUMMY_DID, basePkg, useDefs, types)><}>)"
+ 	= "<toJavaFQName(basePkg, id)>.parse(<src>, <ctx><for (e <-args){>, <compileForParse(e, DUMMY_DID, basePkg, useDefs, types)><}>)"
  	when variableType(_) !:= types[current@\loc],
  		 src1 := makeUnique(id, "__$src"),
  		 ctx1 := makeUnique(id, "__$ctx");
@@ -345,7 +345,7 @@ str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? a
 		 		 
 default str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, str parentId, list[str] formalIds, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =		 
 	"<generateNestType(ty, basePkg, types)> $<makeId(id)> = <generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], formalIds, basePkg, useDefs, types)>;
-	'<for (sc <- sideCondition){ bprintln(sc);><generateSideCondition(sc, parentId, id, ty, basePkg, useDefs, types)>
+	'<for (sc <- sideCondition){ /*bprintln(sc);*/><generateSideCondition(sc, parentId, id, ty, basePkg, useDefs, types)>
 	'<}>";
 
 // Computed field
@@ -513,6 +513,13 @@ str compile(current: (Expr) e, DId this, str basePkg, rel[loc,loc] useDefs, map[
     throw "Expression not yet implemented: <e>";
 }
 
+str compileForParse(current: (Expr) `<Id id>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
+	"$<id>.get()"
+	when !isTokenType(types[current@\loc]);
+
+default str compileForParse(Expr e, DId this, str basePkg, rel[loc, loc] useDefs, map[loc, AType] types)
+	= compile(e, this, basePkg, useDefs, types);
+		 
 void compileBirdModule(start[Program] pt, TModel model, str basePkg, PathConfig pcfg) {
     str moduleName = "<pt.top.moduleName>";
     println("Compiling: <moduleName>");

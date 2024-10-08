@@ -2,5 +2,5 @@ module e2
 
 struct Person{
 	int age = 20
-	str name = 20
+	str name = "John"
 }
