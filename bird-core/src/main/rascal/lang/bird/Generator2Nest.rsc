@@ -122,7 +122,7 @@ str generateNestType(current: (Type) `<ModuleId id>`, str basePkg, map[loc, ATyp
 str makeUnique(Tree t, str prefix) = "$<prefix>_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>"
 	when lo := t@\loc;
 	
-str makeId(Tree t) = ("<t>" =="_")?"$anon_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>":"<t>"
+str makeId(Tree t) = ("<t>" =="_")?"anon_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>":"<t>"
 	when lo := t@\loc;
 	
 str compileAnno("encoding", (Expr) `<Id val>`, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types)
@@ -143,30 +143,30 @@ str compile(current:(TopLevelDecl) `choice <Id sid> <Formals? formals> <Annos? a
    '	<for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? sz>` <- decls, ty is anonymousType){><generateAnonymousType(ty, formalsList, basePkg, useDefs, types)>
    '	<}>
    '	private final Token __$$entry;
-   ' 	<for (<id, typ> <- fieldsList){>public final <generateNestType(typ, basePkg, types)> <id>;
+   ' 	<for (<id, typ> <- fieldsList){>public final <generateNestType(typ, basePkg, types)> $<id>;
    '	<}>
-   '	private __$<sid>(<intercalate(", ", ["Token __$$entry"] + ["<generateNestType(typ, basePkg, types)> <id>" | <id, typ> <- fieldsList])>){
+   '	private __$<sid>(<intercalate(", ", ["Token __$$entry"] + ["<generateNestType(typ, basePkg, types)> $<id>" | <id, typ> <- fieldsList])>){
    '		this.__$$entry = __$$entry;
-   '	<for  (<id, _> <- fieldsList){>	this.<id> = <id>;
+   '	<for  (<id, _> <- fieldsList){>	this.$<id> = $<id>;
    '	<}>	
    '	}
    '
-   '	public static __$<sid> parse(ByteStream __$src, Context __$ctx<intercalate(", ", [""] +["<generateNestType(typ, basePkg, types)> <id>" | <id, typ> <- formalsList])>) throws ParseError {
+   '	public static __$<sid> parse(ByteStream __$src, Context __$ctx<intercalate(", ", [""] +["<generateNestType(typ, basePkg, types)> $<id>" | <id, typ> <- formalsList])>) throws ParseError {
    '		<for (aannos <- annos, (Anno) `<Id prop> = <Expr e>` <- aannos.annos){><compileAnno("<prop>", e, basePkg, useDefs, types)>
    '		<}>
    '	<for (<id, ty> <- fieldsList){>
-   '		AtomicReference\<<generateNestType(ty, basePkg, types)>\> <id> = new AtomicReference\<\>();
+   '		AtomicReference\<<generateNestType(ty, basePkg, types)>\> $<id> = new AtomicReference\<\>();
    '	<}>
    '		Token __$$entry = Choice.between(__$src, __$ctx
    '	<for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? sz>` <- decls){>,
    '		(s, c) -\> {
    '			<generateNestType(ty, basePkg, types)> __$result = <generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], [id | <id, _> <- formalsList], basePkg, useDefs, types)>;
-   '			<for (<id, _> <- fieldsList){><id>.set(__$result.<id>);
+   '			<for (<id, _> <- fieldsList){>$<id>.set(__$result.$<id>);
    '			<}>
    '			return __$result;
    '		}
    '		<}>);
-   '		return new __$<sid>(<intercalate(", ", ["__$$entry"] + ["<id>.get()" | <id, _> <- fieldsList])>);
+   '		return new __$<sid>(<intercalate(", ", ["__$$entry"] + ["$<id>.get()" | <id, _> <- fieldsList])>);
    '	}
    '
    '	@Override
@@ -190,29 +190,29 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
    '	<for ((DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>` <- decls, ty is anonymousType){><generateAnonymousType(ty, [], basePkg, useDefs, types)>
    '	<}>
    '	<for (<id, typ> <- allFieldsList){>
-   '		public final <generateNestType(typ, basePkg, types)> <id>;
+   '		public final <generateNestType(typ, basePkg, types)> $<id>;
    '	<}>
-   '	private __$<sid>(<intercalate(", ", ["<generateNestType(typ, basePkg, types)> <id>" | <id, typ> <- allFieldsList])>){
-   '	<for  (<id, _> <- allFieldsList){>	this.<id> = <id>;
+   '	private __$<sid>(<intercalate(", ", ["<generateNestType(typ, basePkg, types)> $<id>" | <id, typ> <- allFieldsList])>){
+   '	<for  (<id, _> <- allFieldsList){>	this.$<id> = $<id>;
    '	<}>	
    '	}
    '
-   '	public static <javaTypeFormals> __$<sid><javaTypeFormalsNames> parse(ByteStream __$src, Context __$ctx<intercalate(", ", [""] +["<generateNestType(typ, basePkg, types)> <id>" | <id, typ> <- formalsList] + ["BiFunction\<ByteStream, Context, <tf>\> parserFor<tf>" |Id tf <- typeFormalsList])>) throws ParseError {
+   '	public static <javaTypeFormals> __$<sid><javaTypeFormalsNames> parse(ByteStream __$src, Context __$ctx<intercalate(", ", [""] +["<generateNestType(typ, basePkg, types)> $<id>" | <id, typ> <- formalsList] + ["BiFunction\<ByteStream, Context, <tf>\> parserFor<tf>" |Id tf <- typeFormalsList])>) throws ParseError {
    '		<for (aannos <- annos, (Anno) `<Id prop> = <Expr e>` <- aannos.annos){><compileAnno("<prop>", e, basePkg, useDefs, types)>
    '		<}>
    '	<for (DeclInStruct d <- decls){>
    '		<compileDeclInStruct(d, "<sid>", [id | <id ,_>  <- formalsList], basePkg, useDefs, types)><}>
-   '		return new __$<sid>(<intercalate(", ", [id | <id, _> <- allFieldsList])>);
+   '		return new __$<sid>(<intercalate(", ", ["$<id>" | <id, _> <- allFieldsList])>);
    '	}
    '
    '	@Override
    '    protected Token[] parsedTokens() {
-   '        return new Token[]{<intercalate(", ", ["<id>" | <id, _, isToken, isTie> <- fieldsList, isToken, !isTie])>};
+   '        return new Token[]{<intercalate(", ", ["$<id>" | <id, _, isToken, isTie> <- fieldsList, isToken, !isTie])>};
    '    }
    '
    '    @Override
    '    protected Token[] allTokens() {
-   '        return new Token[]{<intercalate(", ", toList({"<id>" | <id, _, isToken, _> <- fieldsList, isToken} + {"<id>" | <id, _> <- computedFieldsList}))>};
+   '        return new Token[]{<intercalate(", ", toList({"$<id>" | <id, _, isToken, _> <- fieldsList, isToken} + {"$<id>" | <id, _> <- computedFieldsList}))>};
    '    }
    '}"           	
 	when lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
@@ -227,22 +227,22 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
 		 
 str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, lrel[str, Type] formals, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"private static class <sid> extends UserDefinedToken {
-	' 	<for (<id, typ> <- fieldsList){>public final <generateNestType(typ, basePkg, types)> <id>;
+	' 	<for (<id, typ> <- fieldsList){>public final <generateNestType(typ, basePkg, types)> $<id>;
     '	<}>
-    '	private <sid>(<intercalate(", ", ["<generateNestType(typ, basePkg, types)> <id>" | <id, typ> <- fieldsList])>){
-    '	<for  (<id, _> <- fieldsList){>	this.<id> = <id>;
+    '	private <sid>(<intercalate(", ", ["<generateNestType(typ, basePkg, types)> $<id>" | <id, typ> <- fieldsList])>){
+    '	<for  (<id, _> <- fieldsList){>	this.$<id> = $<id>;
     '	<}>	
     '	}
     '
-    '	public static <sid> parse(ByteStream __$src, Context __$ctx<for (<id, ty> <- formals){>, <generateNestType(ty, basePkg, types)> <id><}>) throws ParseError {
+    '	public static <sid> parse(ByteStream __$src, Context __$ctx<for (<id, ty> <- formals){>, <generateNestType(ty, basePkg, types)> $<id><}>) throws ParseError {
     '	<for (DeclInStruct d <- decls){>
     '		<compileDeclInStruct(d, "<sid>", [], basePkg, useDefs, types)><}>
-    '		return new <sid>(<intercalate(", ", [id | <id, _> <- fieldsList])>);
+    '		return new <sid>(<intercalate(", ", ["$<id>" | <id, _> <- fieldsList])>);
     '	}
     '
     '	@Override
     '    protected Token[] parsedTokens() {
-    '        return new Token[]{<intercalate(", ", ["<id>" | <id, _> <- tokensList])>};
+    '        return new Token[]{<intercalate(", ", ["$<id>" | <id, _> <- tokensList])>};
     '    }
     '}"
 	when str sid := generateNestType(current, basePkg, types),
@@ -301,26 +301,27 @@ str generateParsingInstruction((Type) `<ModuleId id>`, list[Expr] args, list[str
  	
  	
 str generateParsingInstruction(current: (Type) `struct { <DeclInStruct* decls>}`, list[Expr] args, list[str] formalIds, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
-	="<generateNestType(current, basePkg, types)>.parse(<src>, <ctx><for (id <- formalIds){>, <id><}>)";
+	="<generateNestType(current, basePkg, types)>.parse(<src>, <ctx><for (id <- formalIds){>, $<id><}>)";
 			 
 default str generateParsingInstruction(Type t, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx") {
 	throw "Not yet generateParsingInstruction for type <t>";
 }
 
 str compileCondition((SideCondition) `? (<EqualityOperator eo> <Expr e>)`, DId this, Type thisType, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
-	"<makeId(this)>.sameBytes(<compile(e, this, basePkg, useDefs, types)>)"
+	"$<makeId(this)>.sameBytes(<compile(e, this, basePkg, useDefs, types)>)"
 	when listType(byteType()) := types[e@\loc],
 		 listType(byteType()) := types[thisType@\loc];
 
 str generateSideCondition(current: (SideCondition) `? (<EqualityOperator eo> <Expr e>)`, str parentId, DId this, Type thisType, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"if (<op>(<compileCondition(current, this, thisType, basePkg, useDefs, types)>)) {
-    '	throw new ParseError(\"<parentId>.<makeId(this)>\", <makeId(this)>);
+	'	throw new ParseError(\"<parentId>.$<makeId(this)>\", $<makeId(this)>);
     '}"
 	when op := (eo is equality?"!":"");
 
+
 str generateSideCondition((SideCondition) `? (<Expr e>)`, str parentId, DId this, Type _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) 
 	= "if (!(<compile(e, this, basePkg, useDefs, types)>)) {
-    '	throw new ParseError(\"<parentId>.<makeId(this)>\", <makeId(this)>);
+    '	throw new ParseError(\"<parentId>.$<makeId(this)>\", $<makeId(this)>);
     '}"
 	;
 
@@ -331,7 +332,7 @@ str generateSideCondition((SideCondition) `? (<Expr e>)`, str parentId, DId this
 // TODO Check if `while` does make sense for something that is not u8[].
 // 		If not, enforce constraint in type checker (together with type of it)
 str compileDeclInStruct(current:(DeclInStruct) `<Type ty>[]  <DId id> <Arguments? args> <Size? size> while (<Expr e>)`, str parentId, list[str] formalIds, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"<generateNestType(current.ty, basePkg, types)> <makeId(id)> = TokenList.parseWhile(__$src, __$ctx,
+	"<generateNestType(current.ty, basePkg, types)> $<makeId(id)> = TokenList.parseWhile(__$src, __$ctx,
     '	(s, c) -\> <generateParsingInstruction(ty, [e | aargs <- args, e <- aargs.args], [], basePkg, useDefs, types, src = "s", ctx = "c")>,
     '	it -\> (<compile(e, id, basePkg, useDefs, types)>)
     ');";
@@ -339,18 +340,18 @@ str compileDeclInStruct(current:(DeclInStruct) `<Type ty>[]  <DId id> <Arguments
 // TODO restrict in type checker that a byparsing-guarded token should not
 //		have arguments nor size?     
 str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> byparsing (<Expr e>)`, str parentId, list[str] formalIds, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"<generateNestType(ty, basePkg, types)> <makeId(id)> = <generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], [], basePkg, useDefs, types, src = "new ByteStream(<compile(e, id, basePkg, useDefs, types)>)")>;" ;
+	"<generateNestType(ty, basePkg, types)> $<makeId(id)> = <generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], [], basePkg, useDefs, types, src = "new ByteStream(<compile(e, id, basePkg, useDefs, types)>)")>;" ;
 		 	    
 		 		 
 default str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size? size> <SideCondition? sideCondition>`, str parentId, list[str] formalIds, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"<generateNestType(ty, basePkg, types)> <makeId(id)> = <generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], formalIds, basePkg, useDefs, types)>;
+	"<generateNestType(ty, basePkg, types)> $<makeId(id)> = <generateParsingInstruction(ty, [a | aargs <- args, Expr a <- aargs.args], formalIds, basePkg, useDefs, types)>;
 	'<for (sc <- sideCondition){ bprintln(sc);><generateSideCondition(sc, parentId, id, ty, basePkg, useDefs, types)>
 	'<}>";
 
 // Computed field
 
 str compileDeclInStruct(current:(DeclInStruct) `<Type ty> <Id id> = <Expr e>`, str parentId, list[str] formalIds, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =		 
-	"<generateNestType(ty, basePkg, types)> <id> = <compile(e, DUMMY_DID, basePkg, useDefs, types)>;";
+	"<generateNestType(ty, basePkg, types)> $<id> = <compile(e, DUMMY_DID, basePkg, useDefs, types)>;";
 
 
 // Expressions
@@ -386,18 +387,18 @@ str compile(current: (Expr) `<BoolLiteral lit>`, DId this, str basePkg, rel[loc,
 	= "<lit>";
 
 str compile(current: (Expr) `it`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"it";
+	"$it";
 
 str compile(current: (Expr) `this`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<makeId(this)>";
+	"$<makeId(this)>";
 	
 str compile(current: (Expr) `<Id id>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<id>"
+	"$<id>"
 	when (Id) `this` !:= id && (Id) `it` !:= id,
 		 isTokenType(types[current@\loc]);
 		 
 str compile(current: (Expr) `<Id id>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<id>"
+	"$<id>"
 	when !isTokenType(types[current@\loc]);
 		 
 str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) {
@@ -437,7 +438,7 @@ str compile(current: (Expr) `<Expr e>.as[<Type t>]`, DId this, str basePkg, rel[
 }
 
 str compile(current: (Expr) `<Expr e>.<Id field>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
-	"<compile(e, this, basePkg, useDefs, types)>.<field>";
+	"<compile(e, this, basePkg, useDefs, types)>.$<field>";
 
 str compile(current: (Expr) `(<Expr e>)`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	compile(e, this, basePkg, useDefs, types);
