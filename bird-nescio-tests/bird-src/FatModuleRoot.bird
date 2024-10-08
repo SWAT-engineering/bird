@@ -22,7 +22,7 @@ struct FORMAT_ZIP@(endianness =LITTLE){
 struct FAT16Format(str format)@(endianness = LITTLE){
 	Reserved reserved
   	BPB20 block = reserved.boot.block2_0 // types of derived things can be inferred
-  	FAT[] fatArea(reserved.boot.block2_0)[block.fatCount]
+  	FAT[] fatArea(block)[block.fatCount]
   	RootDirectory[] root(format, block, fatArea.offset, root.offset)[block.maxRootDirectoryEntryCount]
 }
 
