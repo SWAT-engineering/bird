@@ -1,0 +1,10 @@
+module images::Image
+
+import images::PNG
+import images::JPEG
+
+choice Image {
+    PNG
+    Format
+}
+
