@@ -4,7 +4,7 @@ Bird is a DSL to describe binary file formats such as BMP, PNG, JPEG or data pro
 
 In Bird each token definition has its own type. Users can define new structured types that correspond to parsers, making the process of encoding new binary specifications less error-prone. To execute these specifications, DAN generates calls to the Nest API, a Java library for parsing binary data.
 
-For a detailed introduction to Bird, check the [manual](https://github.com/SWAT-engineering/bird/blob/master/bird-doc/bird-manual.md).
+For a detailed introduction to Bird, check the [manual](https://github.com/SWAT-engineering/bird/blob/main/bird-doc/bird-manual.md).
 
 ## Integration with Nescio
 
