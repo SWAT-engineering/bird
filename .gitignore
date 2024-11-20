@@ -10,7 +10,6 @@ bird-nescio-tests/test/**/*.java
 .~*
 Thumbs.db
 
-
 ## maven stuff
 target/
 
@@ -18,3 +17,5 @@ target/
 **/.project
 **/.settings
 
+## generated stuff
+bird-example/src/main/java/engineering/swat/bird/generated/
