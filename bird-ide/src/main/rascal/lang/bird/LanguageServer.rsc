@@ -2,13 +2,14 @@ module lang::bird::LanguageServer
 
 import ParseTree;
 
+import util::IDEServices;
 import util::LanguageServer;
 import util::Monitor;
 import util::Reflective;
+import vis::Graphs;
 import IO;
 import String;
 import Set;
-import lang::bird::VisualizeGrammarBasic;
 
 import lang::bird::Checker;
 import lang::bird::Syntax;
@@ -114,7 +115,7 @@ rel[loc, Command] birdLenses(start[Program] input) {
 
 value birdExecutor(visualizeDependencies(loc decl, str name)) {
     gg = buildGrammarGraph(decl);
-    visualize(name, gg);
+    showInteractiveContent(graph(gg, \layout=defaultDagreLayout()));
     return ("result": true);
 }
 
