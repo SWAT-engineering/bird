@@ -3,6 +3,7 @@ module lang::bird::Checker
 import lang::bird::Syntax;
 import util::Math;
 import util::FileSystem;
+import util::Reflective;
 import ListRelation;
 import Exception;
 import Set;
@@ -52,7 +53,6 @@ data IdRole
     | fieldId()
     | paramId()
     | typeVariableId()
-    | variableId()
     | consId()
     | moduleId()
     | funId()
@@ -201,8 +201,6 @@ private loc project(loc file) {
    assert file.scheme == "project";
    return |project://<file.authority>|;
 }
-
-data PathConfig = pathConfig(list[loc] srcs = [], list[loc] libs = []);
 
 PathConfig pathConfig(loc file) {
     return pathConfig(srcs = [file.top.parent, file.top.parent.parent]);
