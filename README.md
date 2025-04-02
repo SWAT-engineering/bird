@@ -18,9 +18,10 @@ We provide an IDE that allows users to edit and compile Bird and Nescio descript
 
 The Bird project consist of several interrelated components, which are subprojects in this repository:
 
-- nest: Java library for parsing binary data (the Bird compiler targets Java code that uses this library).
-- bird-core: Bird toolset developed in Rascal. It includes the grammar definition, type checker, generator, and components for the integration with Nescio.
-- bird-nescio-ide: Bird and Nescio IDE plugin.
-- bird-doc: Bird documentation.
+- `nest`: Java library for parsing binary data (the Bird compiler targets Java code that uses this library).
+- `bird-core`: Bird toolset developed in Rascal. It includes the grammar definition, type checker, generator, and components for the integration with Nescio.
+- `bird-ide`: Bird language server developed in Rascal. It integrates the Bird toolset with support for syntax highlighting, jump to definition, visualization, code lenses, inlay hints, and outlines.
+- `bird-doc`: Bird documentation.
+- `vscode-extension`: The VS Code extension for Bird. It leverages the Bird language server to offer a full IDE experience.
 
-In order to build them all, clone this project and execute `mvn install` on the root subdirectory. Notice that it is necessary first to build the [Nescio project](https://github.com/SWAT-engineering/nescio), since the Bird components related to the integration with Nescio depend on it.
+To build `bird-core` and `bird-ide`, clone this project and execute `mvn install` on the root subdirectory. Notice that it is necessary first to build the [Nescio project](https://github.com/SWAT-engineering/nescio), since the Bird components related to the integration with Nescio depend on it. To build a VSIX that can be installed in VS Code, run `npm i && npx vsce package` in the `vscode-extension` subdirectory.
