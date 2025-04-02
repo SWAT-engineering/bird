@@ -23,6 +23,9 @@
 		{
 			"name": "bird",
 			"path": "."
+		},
+		{
+			"path": "vscode-extension"
 		}
 	],
 	"settings": {
