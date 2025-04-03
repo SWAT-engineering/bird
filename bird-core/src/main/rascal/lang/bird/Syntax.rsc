@@ -22,8 +22,8 @@ lexical ModuleId
 
 lexical Id 
 	=  (([a-z A-Z 0-9 _] - [u s]) !<< ([a-z A-Z] - [u s])[a-z A-Z 0-9 _]* !>> [a-z A-Z 0-9 _]) \ Reserved 
-	| @category="Constant" "this" 
-	| @category="Constant" "it"
+	| @category="keyword" "this" 
+	| @category="keyword" "it"
 	// the following two productions make sure Id is not ambigious with UInt or SInt productions
 	| [u s] !>> [a-z A-Z _] // a single u or a sigle s
 	| ([u s] [a-z A-Z _][a-z A-Z 0-9 _]* !>> [a-z A-Z 0-9 _]) \ Reserved // or a u or an s not followed by a number
@@ -166,10 +166,10 @@ syntax AnonStruct
 	;
 	
 syntax Type
-	= "byte"
-	| "int"
-	| "str"
-	| "bool"
+	= @category="type" "byte"
+	| @category="type" "int"
+	| @category="type" "str"
+	| @category="type" "bool"
 	| UInt
 	| anonymousType: AnonStruct
 	| ModuleId id
@@ -198,23 +198,23 @@ lexical BoolLiteral = "false" | "true";
 
 lexical StringLiteral = Characters chars "S";
 	
-lexical UInt = @category="Constant" "u" [0-9]+ !>> [0-9];
+lexical UInt = @category="type" "u" [0-9]+ !>> [0-9];
 
 lexical NatLiteral
-	=  @category="Constant" [0-9 _]+ !>> [0-9 _]
+	=  @category="number" [0-9 _]+ !>> [0-9 _]
 	;
 
 lexical HexIntegerLiteral
-	=  [0] [X x] [0-9 A-F a-f _]+ !>> [0-9 A-F a-f _] ;
+	=  @category="number" "0" [X x] [0-9 A-F a-f _]+ !>> [0-9 A-F a-f _] ;
 	
 lexical SingleHexIntegerLiteral
-	=  [0] [X x] [0-9 A-F a-f _] [0-9 A-F a-f _];
+	=  @category="number" "0" [X x] [0-9 A-F a-f _] [0-9 A-F a-f _];
 
 lexical BitLiteral 
-	= "0b" [0 1 _]+ !>> [0 1 _];
+	=  @category="number" "0b" [0 1 _]+ !>> [0 1 _];
 	
 lexical Characters
-	= @category="Constant" "\"" StringCharacter* chars "\"" ;	
+	= @category="string" "\"" StringCharacter* chars "\"" ;	
 	
 lexical StringCharacter
 	= "\\" [\" \\ b f n r t] 

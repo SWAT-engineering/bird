@@ -1,0 +1,61 @@
+{
+  "name": "bird",
+  "displayName": "Bird",
+  "description": "A DSL to describe binary file formats",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.67.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:bird"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "bird",
+        "aliases": [
+          "Bird"
+        ],
+        "extensions": [
+          ".bird"
+        ],
+        "configuration": "./assets/bird-language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "bird",
+        "scopeName": "source.bird",
+        "path": "./assets/bird.tmGrammar.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "prepackage": "sh prepackage.sh",
+    "compile": "npx webpack",
+    "watch": "npx webpack --watch",
+    "package": "npx webpack --mode production --devtool hidden-source-map",
+    "lint": "npx eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.67.0",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.42.0",
+    "@typescript-eslint/parser": "^5.42.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "eslint": "^8.26.0",
+    "typescript": "^4.8.4",
+    "ts-loader": "^9.4.1",
+    "vsce": "^2.8.0",
+    "webpack": "^5.74.0",
+    "webpack-cli": "^4.10.0"
+  },
+  "dependencies": {
+    "@usethesource/rascal-vscode-dsl-lsp-server": "0.12.2"
+  }
+}
