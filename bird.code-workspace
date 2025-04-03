@@ -9,6 +9,10 @@
 			"path": "bird-ide"
 		},
 		{
+			"name": "bird-extension",
+			"path": "bird-extension"
+		},
+		{
 			"name": "bird-example",
 			"path": "bird-example"
 		},
@@ -23,9 +27,6 @@
 		{
 			"name": "bird",
 			"path": "."
-		},
-		{
-			"path": "vscode-extension"
 		}
 	],
 	"settings": {

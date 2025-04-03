@@ -6,6 +6,7 @@
 		"bird-ide": true,
 		"bird-nescio-ide": true,
 		"bird-nescio-tests": true,
+		"bird-extension": true,
 		"nest": true
 	}
 }
