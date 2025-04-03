@@ -24,4 +24,4 @@ The Bird project consist of several interrelated components, which are subprojec
 - `bird-extension`: The VS Code extension for Bird. It leverages the Bird language server to offer a full IDE experience.
 - `bird-doc`: Bird documentation.
 
-To build `bird-core` and `bird-ide`, clone this project and execute `mvn install` on the root subdirectory. Notice that it is necessary first to build the [Nescio project](https://github.com/SWAT-engineering/nescio), since the Bird components related to the integration with Nescio depend on it. To build a VSIX that can be installed in VS Code, run `npm i && npx vsce package` in the `bird-extension` subdirectory.
+To build `bird-core` and `bird-ide`, clone this project and execute `mvn build` on the root subdirectory. To build a VSIX that can be installed in VS Code, run `npm i && npx vsce package` in the `bird-extension` subdirectory.
