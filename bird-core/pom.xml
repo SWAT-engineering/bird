@@ -29,6 +29,19 @@
           <artifactId>junit</artifactId>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>org.rascalmpl</groupId>
+          <artifactId>rascal-textmate-core</artifactId>
+          <version>0.1.0-SNAPSHOT</version>
+          <!--
+            To generate, open a REPL and enter:
+            ```
+            import lang::bird::Syntax;
+            import lang::textmate::main::Main;
+            main(#Program, "source.bird", |home:///Desktop/bird.tmGrammar.json|)
+            ```
+          -->
+        </dependency>
       </dependencies>
 
       <build>
