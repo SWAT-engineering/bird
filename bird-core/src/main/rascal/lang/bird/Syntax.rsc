@@ -166,10 +166,10 @@ syntax AnonStruct
 	;
 	
 syntax Type
-	= "byte"
-	| "int"
-	| "str"
-	| "bool"
+	= @category="type" "byte"
+	| @category="type" "int"
+	| @category="type" "str"
+	| @category="type" "bool"
 	| UInt
 	| anonymousType: AnonStruct
 	| ModuleId id
