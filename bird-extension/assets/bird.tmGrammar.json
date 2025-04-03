@@ -9,6 +9,24 @@
         }
       }
     },
+    "/inner/single/bitliteral": {
+      "match": "((?<=(?:[\\t-\\r\\x{20}\\x{85}\\x{A0}\\x{1680}\\x{180E}\\x{2000}-\\x{200A}\\x{2028}-\\x{2029}\\x{202F}\\x{205F}\\x{3000}]|(?:\\/\\/)|(?:(?:^))))(?:(?:\\b0b\\b)(?:[0-1\\_]+?(?![0-1\\_]))))",
+      "name": "/inner/single/bitliteral",
+      "captures": {
+        "1": {
+          "name": "constant.numeric"
+        }
+      }
+    },
+    "/inner/single/singlehexintegerliteral": {
+      "match": "((?:\\b0\\b)[Xx][0-9A-F\\_a-f][0-9A-F\\_a-f])",
+      "name": "/inner/single/singlehexintegerliteral",
+      "captures": {
+        "1": {
+          "name": "constant.numeric"
+        }
+      }
+    },
     "/inner/multi/characters": {
       "begin": "(\\\")",
       "end": "(\\\")",
@@ -83,15 +101,6 @@
         }
       }
     },
-    "/inner/single/natliteral": {
-      "match": "((?<=(?:[\\t-\\r\\x{20}\\x{85}\\x{A0}\\x{1680}\\x{180E}\\x{2000}-\\x{200A}\\x{2028}-\\x{2029}\\x{202F}\\x{205F}\\x{3000}]|(?:\\/\\/)|(?:(?:^))))(?:[0-9\\_]+?(?![0-9\\_])))",
-      "name": "/inner/single/natliteral",
-      "captures": {
-        "1": {
-          "name": "string"
-        }
-      }
-    },
     "/inner/single/$keywords": {
       "match": "((?:parse\\x{20})|(?:\\bmodule\\b)|(?:\\bint\\b)|(?:\\btrue\\b)|(?:\\bI\\b)|(?:\\bbyte\\b)|(?:\\bbool\\b)|(?:\\bimport\\b)|(?:\\bwith\\b)|(?:\\bchoice\\b)|(?:\\bfalse\\b)|(?:\\bthis\\b)|(?:\\bbyparsing\\b)|(?:\\b0\\b)|(?:\\btyp\\b)|(?:\\bit\\b)|(?:\\babstract\\b)|(?:\\bB\\b)|(?:\\b10\\b)|(?:\\b\\_\\b)|(?:\\bstruct\\b)|(?:\\bu\\b)|(?:\\bwhile\\b)|(?:\\btypeOf\\b)|(?:\\bstr\\b)|(?:\\bparse\\b)|(?:\\bS\\b)|(?:\\b0b\\b)|(?:\\bas\\b))",
       "name": "/inner/single/$keywords",
@@ -106,12 +115,114 @@
       "name": "/inner/single/$delimiters",
       "captures": {}
     },
+    "/inner/single/type.1": {
+      "match": "((?<=(?:[\\t-\\r\\x{20}\\x{85}\\x{A0}\\x{1680}\\x{180E}\\x{2000}-\\x{200A}\\x{2028}-\\x{2029}\\x{202F}\\x{205F}\\x{3000}]|(?:\\/\\/)|(?:(?:^))))(?:\\bbool\\b))",
+      "name": "/inner/single/type.1",
+      "captures": {
+        "1": {
+          "name": "support.type"
+        }
+      }
+    },
+    "/inner/single/type.4": {
+      "match": "((?<=(?:[\\t-\\r\\x{20}\\x{85}\\x{A0}\\x{1680}\\x{180E}\\x{2000}-\\x{200A}\\x{2028}-\\x{2029}\\x{202F}\\x{205F}\\x{3000}]|(?:\\/\\/)|(?:(?:^))))(?:\\bstr\\b))",
+      "name": "/inner/single/type.4",
+      "captures": {
+        "1": {
+          "name": "support.type"
+        }
+      }
+    },
+    "/inner/single/natliteral": {
+      "match": "((?<=(?:[\\t-\\r\\x{20}\\x{85}\\x{A0}\\x{1680}\\x{180E}\\x{2000}-\\x{200A}\\x{2028}-\\x{2029}\\x{202F}\\x{205F}\\x{3000}]|(?:\\/\\/)|(?:(?:^))))(?:[0-9\\_]+?(?![0-9\\_])))",
+      "name": "/inner/single/natliteral",
+      "captures": {
+        "1": {
+          "name": "constant.numeric"
+        }
+      }
+    },
+    "/inner/single/hexintegerliteral": {
+      "match": "((?<=(?:[\\t-\\r\\x{20}\\x{85}\\x{A0}\\x{1680}\\x{180E}\\x{2000}-\\x{200A}\\x{2028}-\\x{2029}\\x{202F}\\x{205F}\\x{3000}]|(?:\\/\\/)|(?:(?:^))))(?:(?:\\b0\\b)[Xx](?:[0-9A-F\\_a-f]+?(?![0-9A-F\\_a-f]))))",
+      "name": "/inner/single/hexintegerliteral",
+      "captures": {
+        "1": {
+          "name": "constant.numeric"
+        }
+      }
+    },
+    "/outer/<": {
+      "begin": "(?:\\<)",
+      "end": "(?:\\>)",
+      "patterns": [
+        {
+          "include": "#/inner/single/$delimiters"
+        },
+        {
+          "include": "#/inner/single/singlehexintegerliteral"
+        },
+        {
+          "include": "#/inner/single/comment"
+        },
+        {
+          "include": "#/inner/single/characters"
+        },
+        {
+          "include": "#/inner/multi/characters"
+        },
+        {
+          "include": "#/inner/single/bitliteral"
+        },
+        {
+          "include": "#/inner/single/hexintegerliteral"
+        },
+        {
+          "include": "#/inner/single/id.1"
+        },
+        {
+          "include": "#/inner/single/id.2"
+        },
+        {
+          "include": "#/inner/single/natliteral"
+        },
+        {
+          "include": "#/inner/single/type.1"
+        },
+        {
+          "include": "#/inner/single/type.2"
+        },
+        {
+          "include": "#/inner/single/type.3"
+        },
+        {
+          "include": "#/inner/single/type.4"
+        },
+        {
+          "include": "#/inner/single/uint"
+        },
+        {
+          "include": "#/inner/single/$keywords"
+        }
+      ],
+      "endCaptures": {},
+      "name": "/outer/<",
+      "beginCaptures": {}
+    },
     "/inner/single/uint": {
       "match": "((?<=(?:[\\t-\\r\\x{20}\\x{85}\\x{A0}\\x{1680}\\x{180E}\\x{2000}-\\x{200A}\\x{2028}-\\x{2029}\\x{202F}\\x{205F}\\x{3000}]|(?:\\/\\/)|(?:(?:^))))(?:(?:\\bu\\b)(?:[0-9]+?(?![0-9]))))",
       "name": "/inner/single/uint",
       "captures": {
         "1": {
-          "name": "string"
+          "name": "support.type"
+        }
+      }
+    },
+    "/inner/single/type.2": {
+      "match": "((?<=(?:[\\t-\\r\\x{20}\\x{85}\\x{A0}\\x{1680}\\x{180E}\\x{2000}-\\x{200A}\\x{2028}-\\x{2029}\\x{202F}\\x{205F}\\x{3000}]|(?:\\/\\/)|(?:(?:^))))(?:\\bbyte\\b))",
+      "name": "/inner/single/type.2",
+      "captures": {
+        "1": {
+          "name": "support.type"
         }
       }
     },
@@ -120,7 +231,16 @@
       "name": "/inner/single/id.1",
       "captures": {
         "1": {
-          "name": "string"
+          "name": "keyword.control"
+        }
+      }
+    },
+    "/inner/single/type.3": {
+      "match": "((?<=(?:[\\t-\\r\\x{20}\\x{85}\\x{A0}\\x{1680}\\x{180E}\\x{2000}-\\x{200A}\\x{2028}-\\x{2029}\\x{202F}\\x{205F}\\x{3000}]|(?:\\/\\/)|(?:(?:^))))(?:\\bint\\b))",
+      "name": "/inner/single/type.3",
+      "captures": {
+        "1": {
+          "name": "support.type"
         }
       }
     },
@@ -129,15 +249,18 @@
       "name": "/inner/single/id.2",
       "captures": {
         "1": {
-          "name": "string"
+          "name": "keyword.control"
         }
       }
     }
   },
-  "scopeName": "source.bird",
+  "scopeName": "source.foo",
   "patterns": [
     {
       "include": "#/inner/single/$delimiters"
+    },
+    {
+      "include": "#/outer/<"
     },
     {
       "include": "#/inner/single/comment"
@@ -149,6 +272,12 @@
       "include": "#/inner/multi/characters"
     },
     {
+      "include": "#/inner/single/bitliteral"
+    },
+    {
+      "include": "#/inner/single/hexintegerliteral"
+    },
+    {
       "include": "#/inner/single/id.1"
     },
     {
@@ -156,6 +285,18 @@
     },
     {
       "include": "#/inner/single/natliteral"
+    },
+    {
+      "include": "#/inner/single/type.1"
+    },
+    {
+      "include": "#/inner/single/type.2"
+    },
+    {
+      "include": "#/inner/single/type.3"
+    },
+    {
+      "include": "#/inner/single/type.4"
     },
     {
       "include": "#/inner/single/uint"
