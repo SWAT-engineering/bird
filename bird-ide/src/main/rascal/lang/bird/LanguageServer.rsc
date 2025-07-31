@@ -62,24 +62,24 @@ set[CallHierarchyItem] birdCallHierarchy(Focus focus, TModel tm) {
     str id = "<focus[0]>";
     set[Define] calleableDefines = (tm.defines<idRole, scope, id, orgId, idRole, defined, defInfo>)[callableRoles];
 
-    if (Tree t <- focus, {role} := (calleableDefines<defined, id, idRole>)[t@\loc, id]) {
+    if (TopLevelDecl decl <- focus, {role} := (calleableDefines<defined, id, idRole>)[decl@\loc, id]) {
         // at definition
-        return {item(id, roleToSymbolKind(role), t@\loc)};
+        return {item(id, roleToSymbolKind(role), decl@\loc, selection=delc.id@\loc)};
     }
 
     // at use
     return {
-        item(id, roleToSymbolKind(role), def)
+        item(id, roleToSymbolKind(role), def, selection=parse(#TopLevelDecl, def).id@\loc)
         | defs := tm.useDef[focus[0]@\loc]
         , <role, def> <- (calleableDefines<defined, idRole, defined>)[defs]
     };
 }
 
 rel[CallHierarchyItem, loc] functionCalls(TopLevelDecl scope, TModel tm)
-    = {<item("<id>", \function(), def), id@\loc> | /(Expr) `<Id id> <Arguments _>` := scope, def <- tm.useDef[id@\loc]};
+    = {<item("<id>", \function(), def, selection=parse(#TopLevelDecl, def).id@\loc), id@\loc> | /(Expr) `<Id id> <Arguments _>` := scope, def <- tm.useDef[id@\loc]};
 
 rel[CallHierarchyItem, loc] parserCalls(TopLevelDecl scope, TModel tm)
-    = {<item("<id>", \struct(), def), id@\loc> | /ModuleId id := scope, def <- tm.useDef[id@\loc]};
+    = {<item("<id>", \struct(), def, selection=parse(#TopLevelDecl, def).id@\loc), id@\loc> | /ModuleId id := scope, def <- tm.useDef[id@\loc]};
 
 rel[CallHierarchyItem, loc] birdIncomingCalls(item(_, _, loc defined), Focus focus) {
     tm = birdTModelFromTree(focus[-1]);
@@ -91,7 +91,7 @@ rel[CallHierarchyItem, loc] birdIncomingCalls(item(_, _, loc defined), Focus foc
         prog = parse(#start[Program], f);
         tm = birdTModelFromTree(prog);
         for (/TopLevelDecl scope := prog, u <- uses, isContainedIn(u, scope@\loc)) {
-            calls += <item("<scope.id>", roleToSymbolKind(tm.definitions[scope@\loc].idRole), scope@\loc), u>;
+            calls += <item("<scope.id>", roleToSymbolKind(tm.definitions[scope@\loc].idRole), scope@\loc, selection=scope.id@\loc), u>;
         }
     }
 
