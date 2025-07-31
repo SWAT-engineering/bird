@@ -8,6 +8,8 @@ import util::Monitor;
 import util::Reflective;
 import vis::Graphs;
 import IO;
+import Location;
+import Relation;
 import String;
 import Set;
 
@@ -23,9 +25,114 @@ set[LanguageService] birdLanguageContributor() {
         build(birdBuilder),
         codeLens(birdLenses),
         execution(birdExecutor),
-        inlayHint(birdHinter)
+        inlayHint(birdHinter),
+        callHierarchy(birdCallHierarchy),
+        incomingCalls(birdIncomingCalls),
+        outgoingCalls(birdOutgoingCalls)
     };
 }
+
+data LanguageService
+    = callHierarchy (set[CallHierarchyItem] (Focus _focus) callHierarchyService)
+    | incomingCalls (rel[CallHierarchyItem, loc] (CallHierarchyItem f, Focus focus) incomingCallsService)
+    | outgoingCalls (rel[CallHierarchyItem, loc] (CallHierarchyItem f, Focus focus) outgoingCallsService)
+    ;
+
+data CallHierarchyItem
+    = item(
+        str name,
+        DocumentSymbolKind kind,
+        loc src,
+        loc selection = src,
+        list[DocumentSymbolTag] tags = [],
+        str detail = "",
+        value \data = ()
+    );
+
+set[CallHierarchyItem] birdCallHierarchy(Focus focus)
+    = birdCallHierarchy(focus, birdTModelFromTree(focus[-1]));
+
+set[IdRole] callableRoles = {funId(), structId()};
+DocumentSymbolKind roleToSymbolKind(funId()) = \function();
+DocumentSymbolKind roleToSymbolKind(structId()) = \struct();
+
+Focus computeFocusList(loc l) = computeFocusList(parse(#start[Program], l.top), l.begin.line, l.begin.column);
+
+set[CallHierarchyItem] birdCallHierarchy(Focus focus, TModel tm) {
+    str id = "<focus[0]>";
+    set[Define] calleableDefines = (tm.defines<idRole, scope, id, orgId, idRole, defined, defInfo>)[callableRoles];
+
+    if (Tree t <- focus, {role} := (calleableDefines<defined, id, idRole>)[t@\loc, id]) {
+        // at definition
+        return {item(id, roleToSymbolKind(role), t@\loc)};
+    }
+
+    // at use
+    return {
+        item(id, roleToSymbolKind(role), def)
+        | defs := tm.useDef[focus[0]@\loc]
+        , <role, def> <- (calleableDefines<defined, idRole, defined>)[defs]
+    };
+}
+
+rel[CallHierarchyItem, loc] functionCalls(TopLevelDecl scope, TModel tm)
+    = {<item("<id>", \function(), def), id@\loc> | /(Expr) `<Id id> <Arguments _>` := scope, def <- tm.useDef[id@\loc]};
+
+rel[CallHierarchyItem, loc] parserCalls(TopLevelDecl scope, TModel tm)
+    = {<item("<id>", \struct(), def), id@\loc> | /ModuleId id := scope, def <- tm.useDef[id@\loc]};
+
+rel[CallHierarchyItem, loc] birdIncomingCalls(item(_, _, loc defined), Focus focus) {
+    tm = birdTModelFromTree(focus[-1]);
+    usesByFile = {<u.top, u> | u <- invert(tm.useDef)[defined]};
+
+    calls = {};
+    for (loc f <- usesByFile<0>) {
+        uses = usesByFile[f];
+        prog = parse(#start[Program], f);
+        tm = birdTModelFromTree(prog);
+        for (/TopLevelDecl scope := prog, u <- uses, isContainedIn(u, scope@\loc)) {
+            calls += <item("<scope.id>", roleToSymbolKind(tm.definitions[scope@\loc].idRole), scope@\loc), u>;
+        }
+    }
+
+    return calls;
+}
+
+rel[CallHierarchyItem, loc] birdOutgoingCalls(item(_, _, loc defined), Focus focus) {
+    tm = birdTModelFromTree(focus[-1]);
+    if (Tree scope <- focus, defined := scope@\loc) {
+        return functionCalls(scope, tm) + parserCalls(scope, tm);
+    }
+    return {};
+}
+
+@synopsis{Resolve all reachable ingoing/outgoing calls.}
+rel[CallHierarchyItem, CallHierarchyItem] computeCallHierarchy(loc file, int line, int col) {
+    tree = parse(#start[Program], file);
+    focus = computeFocusList(tree, line, col);
+    root = birdCallHierarchy(focus);
+    rel[CallHierarchyItem, CallHierarchyItem] hierarchy = {};
+    solve (hierarchy) {
+        for (current <- hierarchy<0> + hierarchy<1> + root) {
+            focus = computeFocusList(tree, current.src.begin.line, current.src.begin.column);
+            incoming = birdIncomingCalls(current, focus);
+            hierarchy += {<\in, current> | \in <- birdIncomingCalls(current, focus)<0>};
+            hierarchy += {<current, out> | out <- birdOutgoingCalls(current, focus)<0>};
+        }
+    };
+
+    print("Roots: ");
+    iprintln(hierarchy<0> - hierarchy<1>);
+    println();
+
+    print("Leaves: ");
+    iprintln(hierarchy<1> - hierarchy<0>);
+    println();
+
+    return hierarchy;
+}
+
+Content visualizeHierarchy(rel[CallHierarchyItem, CallHierarchyItem] hierarchy) = graph(toList(hierarchy));
 
 list[DocumentSymbol] birdOutliner(start[Program] input) {
     jobStart("Bird Outliner");
