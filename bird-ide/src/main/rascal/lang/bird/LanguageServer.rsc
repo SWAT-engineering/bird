@@ -64,7 +64,7 @@ set[CallHierarchyItem] birdCallHierarchy(Focus focus, TModel tm) {
 
     if (TopLevelDecl decl <- focus, {role} := (calleableDefines<defined, id, idRole>)[decl@\loc, id]) {
         // at definition
-        return {item(id, roleToSymbolKind(role), decl@\loc, selection=delc.id@\loc)};
+        return {item(id, roleToSymbolKind(role), decl@\loc, selection=decl.id@\loc)};
     }
 
     // at use
@@ -110,16 +110,19 @@ rel[CallHierarchyItem, loc] birdOutgoingCalls(item(_, _, loc defined), Focus foc
 rel[CallHierarchyItem, CallHierarchyItem] computeCallHierarchy(loc file, int line, int col) {
     tree = parse(#start[Program], file);
     focus = computeFocusList(tree, line, col);
-    root = birdCallHierarchy(focus);
+    roots = birdCallHierarchy(focus);
     rel[CallHierarchyItem, CallHierarchyItem] hierarchy = {};
-    solve (hierarchy) {
-        for (current <- hierarchy<0> + hierarchy<1> + root) {
+    rel[CallHierarchyItem, CallHierarchyItem] oldHierarchy = {};
+    do {
+        newItems = (hierarchy<0> + hierarchy<1> + roots) - (oldHierarchy<0> + oldHierarchy<1>);
+        oldHierarchy = hierarchy;
+        for (current <- newItems) {
             focus = computeFocusList(tree, current.src.begin.line, current.src.begin.column);
             incoming = birdIncomingCalls(current, focus);
             hierarchy += {<\in, current> | \in <- birdIncomingCalls(current, focus)<0>};
             hierarchy += {<current, out> | out <- birdOutgoingCalls(current, focus)<0>};
         }
-    };
+    } while (hierarchy != oldHierarchy);
 
     print("Roots: ");
     iprintln(hierarchy<0> - hierarchy<1>);
