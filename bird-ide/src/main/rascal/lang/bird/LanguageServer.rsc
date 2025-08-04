@@ -33,10 +33,12 @@ set[LanguageService] birdLanguageContributor() {
 }
 
 data LanguageService
-    = callHierarchy (set[CallHierarchyItem] (Focus _focus) callHierarchyService)
-    | incomingCalls (rel[CallHierarchyItem, loc] (CallHierarchyItem f, Focus focus) incomingCallsService)
-    | outgoingCalls (rel[CallHierarchyItem, loc] (CallHierarchyItem f, Focus focus) outgoingCallsService)
+    = callHierarchy (set[loc] (Focus _focus, Summary _s) callHierarchyService)
+    | incomingCalls (rel[loc toDef, loc call] (CallHierarchyItem _f, Tree _input, Summary _s) incomingCallsService)
+    | outgoingCalls (rel[loc fromDef, loc call] (CallHierarchyItem _f, Tree _input, Summary _s) outgoingCallsService)
     ;
+
+data Summary(map[loc, tuple[str id, loc idLoc, DocumentSymbolKind kind, set[DocumentSymbolTag] tags]] definitionDetails = ());
 
 data CallHierarchyItem
     = item(
@@ -44,83 +46,76 @@ data CallHierarchyItem
         DocumentSymbolKind kind,
         loc src,
         loc selection = src,
-        list[DocumentSymbolTag] tags = [],
+        set[DocumentSymbolTag] tags = {},
         str detail = "",
         value \data = ()
     );
 
-set[CallHierarchyItem] birdCallHierarchy(Focus focus)
-    = birdCallHierarchy(focus, birdTModelFromTree(focus[-1]));
-
-set[IdRole] callableRoles = {funId(), structId()};
 DocumentSymbolKind roleToSymbolKind(funId()) = \function();
 DocumentSymbolKind roleToSymbolKind(structId()) = \struct();
+DocumentSymbolKind roleToSymbolKind(variableId()) = \variable();
+DocumentSymbolKind roleToSymbolKind(consId()) = \constructor();
+DocumentSymbolKind roleToSymbolKind(fieldId()) = \field();
+DocumentSymbolKind roleToSymbolKind(moduleId()) = \module();
+DocumentSymbolKind roleToSymbolKind(paramId()) = \variable();
 
 Focus computeFocusList(loc l) = computeFocusList(parse(#start[Program], l.top), l.begin.line, l.begin.column);
 
-set[CallHierarchyItem] birdCallHierarchy(Focus focus, TModel tm) {
-    str id = "<focus[0]>";
-    set[Define] calleableDefines = (tm.defines<idRole, scope, id, orgId, idRole, defined, defInfo>)[callableRoles];
-
-    if (TopLevelDecl decl <- focus, {role} := (calleableDefines<defined, id, idRole>)[decl@\loc, id]) {
+set[loc] birdCallHierarchy(Focus focus, Summary s) {
+    if (TopLevelDecl decl <- focus) {
         // at definition
-        return {item(id, roleToSymbolKind(role), decl@\loc, selection=decl.id@\loc)};
+        return {decl@\loc};
     }
 
     // at use
-    return {
-        item(id, roleToSymbolKind(role), def, selection=parse(#TopLevelDecl, def).id@\loc)
-        | defs := tm.useDef[focus[0]@\loc]
-        , <role, def> <- (calleableDefines<defined, idRole, defined>)[defs]
-    };
+    return s.definitions[focus[0]@\loc];
 }
 
-rel[CallHierarchyItem, loc] functionCalls(TopLevelDecl scope, TModel tm)
-    = {<item("<id>", \function(), def, selection=parse(#TopLevelDecl, def).id@\loc), id@\loc> | /(Expr) `<Id id> <Arguments _>` := scope, def <- tm.useDef[id@\loc]};
+rel[loc, loc] functionCalls(TopLevelDecl scope, Summary s)
+    = {<def, id@\loc> | /(Expr) `<Id id> <Arguments _>` := scope, def <- s.definitions[id@\loc]};
 
-rel[CallHierarchyItem, loc] parserCalls(TopLevelDecl scope, TModel tm)
-    = {<item("<id>", \struct(), def, selection=parse(#TopLevelDecl, def).id@\loc), id@\loc> | /ModuleId id := scope, def <- tm.useDef[id@\loc]};
+rel[loc, loc] parserCalls(TopLevelDecl scope, Summary s)
+    = {<def, id@\loc> | /ModuleId id := scope, def <- s.definitions[id@\loc]};
 
-rel[CallHierarchyItem, loc] birdIncomingCalls(item(_, _, loc defined), Focus focus) {
-    tm = birdTModelFromTree(focus[-1]);
-    usesByFile = {<u.top, u> | u <- invert(tm.useDef)[defined]};
+rel[loc, loc] birdIncomingCalls(item(_, _, loc defined), Tree _, Summary s) {
+    usesByFile = {<u.top, u> | u <- s.references[defined]};
 
     calls = {};
     for (loc f <- usesByFile<0>) {
         uses = usesByFile[f];
         prog = parse(#start[Program], f);
-        tm = birdTModelFromTree(prog);
-        for (/TopLevelDecl scope := prog, u <- uses, isContainedIn(u, scope@\loc)) {
-            calls += <item("<scope.id>", roleToSymbolKind(tm.definitions[scope@\loc].idRole), scope@\loc, selection=scope.id@\loc), u>;
-        }
+        calls += {<scope@\loc, u> | /TopLevelDecl scope := prog, u <- uses, isContainedIn(u, scope@\loc)};
     }
 
     return calls;
 }
 
-rel[CallHierarchyItem, loc] birdOutgoingCalls(item(_, _, loc defined), Focus focus) {
-    tm = birdTModelFromTree(focus[-1]);
-    if (Tree scope <- focus, defined := scope@\loc) {
-        return functionCalls(scope, tm) + parserCalls(scope, tm);
+rel[loc, loc] birdOutgoingCalls(item(_, _, loc defined), Tree tree, Summary s) {
+    if (/TopLevelDecl scope := tree, defined := scope@\loc) {
+        return functionCalls(scope, s) + parserCalls(scope, s);
     }
     return {};
 }
 
 @synopsis{Resolve all reachable ingoing/outgoing calls.}
 rel[CallHierarchyItem, CallHierarchyItem] computeCallHierarchy(loc file, int line, int col) {
+    CallHierarchyItem itemForLoc(loc l, Summary s)
+        = item(def.id, def.kind, l, selection=def.idLoc, tags=def.tags)
+        when def := s.definitionDetails[l];
+
     tree = parse(#start[Program], file);
     focus = computeFocusList(tree, line, col);
-    roots = birdCallHierarchy(focus);
+    Summary summary = birdAnalyzer(file, tree);
+    set[CallHierarchyItem] roots = {itemForLoc(l, summary) | loc l <- birdCallHierarchy(focus, summary)};
     rel[CallHierarchyItem, CallHierarchyItem] hierarchy = {};
     rel[CallHierarchyItem, CallHierarchyItem] oldHierarchy = {};
     do {
-        newItems = (hierarchy<0> + hierarchy<1> + roots) - (oldHierarchy<0> + oldHierarchy<1>);
+        set[CallHierarchyItem] newItems = (hierarchy<0> + hierarchy<1> + roots) - (oldHierarchy<0> + oldHierarchy<1>);
         oldHierarchy = hierarchy;
         for (current <- newItems) {
             focus = computeFocusList(tree, current.src.begin.line, current.src.begin.column);
-            incoming = birdIncomingCalls(current, focus);
-            hierarchy += {<\in, current> | \in <- birdIncomingCalls(current, focus)<0>};
-            hierarchy += {<current, out> | out <- birdOutgoingCalls(current, focus)<0>};
+            hierarchy += {<itemForLoc(\in, summary), current> | \in <- birdIncomingCalls(current, focus[-1], summary)<0>};
+            hierarchy += {<current, itemForLoc(out, summary)> | out <- birdOutgoingCalls(current, focus[-1], summary)<0>};
         }
     } while (hierarchy != oldHierarchy);
 
@@ -178,10 +173,16 @@ tuple[TModel, Summary] check(loc l, start[Program] input) {
     pcfg = calculatePathConfig(input);
     tm = birdTModelFromTree(input, pathConf = pcfg);
     jobEnd("Bird Type checker");
+
+    idLocs = (decl@\loc: decl.id@\loc | /TopLevelDecl decl := input);
     return <tm, summary(l,
         messages = {<message.at, message> | message <- tm.messages, message.at.top == l.top},
         definitions = tm.useDef,
-        references = tm.useDef<1,0>)>;
+        references = tm.useDef<1,0>,
+        definitionDetails = (
+            d.defined: <d.id, idLocs[d.defined] ? d.defined, roleToSymbolKind(d.idRole), {}>
+            | d <- tm.defines
+    ))>;
 }
 
 Summary birdBuilder(loc l, start[Program] input) {
