@@ -17,13 +17,13 @@ import lang::bird::Generator2Nest;
 
 set[LanguageService] birdLanguageContributor() {
     return {
-        parser(getBirdParser()),
-        outliner(birdOutliner),
-        analyzer(birdAnalyzer),
-        builder(birdBuilder),
-        lenses(birdLenses),
-        executor(birdExecutor),
-        inlayHinter(birdHinter)
+        parsing(getBirdParser()),
+        documentSymbol(birdOutliner),
+        analysis(birdAnalyzer),
+        build(birdBuilder),
+        codeLens(birdLenses),
+        execution(birdExecutor),
+        inlayHint(birdHinter)
     };
 }
 
@@ -109,8 +109,8 @@ str toHex(int n) = "0x<HEX_CHARS[n / 16]><HEX_CHARS[n % 16]>";
 
 data Command = visualizeDependencies(loc decl, str name);
 
-rel[loc, Command] birdLenses(start[Program] input) {
-    return { <d.src,  visualizeDependencies(d.src, "<d.id>", title="Visualize <d.id>")> | /TopLevelDecl d := input, !(d is funDecl)};
+lrel[loc, Command] birdLenses(start[Program] input) {
+    return [ <d.src,  visualizeDependencies(d.src, "<d.id>", title="Visualize <d.id>")> | /TopLevelDecl d := input, !(d is funDecl)];
 }
 
 value birdExecutor(visualizeDependencies(loc decl, str name)) {
@@ -168,7 +168,7 @@ void main() {
         language(
             pathConfig(srcs=[|project://bird-core/src/main/rascal|, |project://bird-ide/src/main/rascal|, *libs]),
             "Bird",
-            "bird",
+            {"bird"},
             "lang::bird::LanguageServer",
             "birdLanguageContributor"));
 }
