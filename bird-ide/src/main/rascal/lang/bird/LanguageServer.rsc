@@ -2,6 +2,7 @@ module lang::bird::LanguageServer
 
 import ParseTree;
 
+import util::FileSystem;
 import util::IDEServices;
 import util::LanguageServer;
 import util::Monitor;
@@ -83,17 +84,20 @@ lrel[CallHierarchyItem, loc] functionCalls(TopLevelDecl scope, TModel tm)
 lrel[CallHierarchyItem, loc] parserCalls(TopLevelDecl scope, TModel tm)
     = [<ci, id@\loc> | /ModuleId id := scope, def <- tm.useDef[id@\loc], ci := itemForLoc(def)];
 
-lrel[CallHierarchyItem, loc] birdCalls(callItem(_, _, loc defined, _), incoming()) {
-    tm = birdTModelFromTree(parse(#start[Program], defined.top));
-    usesByFile = {<u.top, u> | u <- invert(tm.useDef)[defined]};
-
+lrel[CallHierarchyItem, loc] birdCalls(callItem(str name, _, loc defined, _), incoming()) {
     lrel[CallHierarchyItem, loc] calls = [];
-    for (loc f <- usesByFile<0>) {
-        uses = usesByFile[f];
-        prog = parse(#start[Program], f);
-        calls += [<ci, u> | /TopLevelDecl scope := prog, u <- uses, isContainedIn(u, scope@\loc), ci := itemForLoc(scope@\loc)];
+    start[Program] prog = parse(#start[Program], defined.top);
+    modName = "<prog.top.moduleName>";
+    projFolder = defined.top;
+    for (_ <- [0..size(findAll(modName, "::")) + 1]) {
+        projFolder = projFolder.parent;
     }
 
+    for (loc f <- find(projFolder, "bird"), contains(readFile(f), name)) {
+        tm = birdTModelFromTree(parse(#start[Program], f));
+        prog = parse(#start[Program], f);
+        calls += [<ci, u> | /TopLevelDecl scope := prog, u <- invert(tm.useDef)[defined], isContainedIn(u, scope@\loc), ci := itemForLoc(scope@\loc)];
+    }
     return calls;
 }
 
