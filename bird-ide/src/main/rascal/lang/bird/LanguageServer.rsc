@@ -158,17 +158,13 @@ default value birdExecutor(value v) {
     throw  "Missing case for <v>";
 }
 
-
-list[loc] libs = [
-    |jar+project://bird-core/target/lib/typepal.jar!/src|
-];
-
 void main() {
     registerLanguage(
         language(
-            pathConfig(srcs=[|project://bird-core/src/main/rascal|, |project://bird-ide/src/main/rascal|, *libs]),
+            getProjectPathConfig(|project://bird-ide|, mode=interpreter())[messages=[]],
             "Bird",
             {"bird"},
             "lang::bird::LanguageServer",
             "birdLanguageContributor"));
 }
+
