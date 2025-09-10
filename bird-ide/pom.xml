@@ -22,6 +22,10 @@
       <artifactId>bird-core</artifactId>
       <version>${bird.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.rascalmpl</groupId>
+      <artifactId>typepal</artifactId>
+    </dependency>
   </dependencies>
   <build>
     <resources>
