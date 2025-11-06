@@ -31,28 +31,6 @@ set[LanguageService] birdLanguageContributor() {
     };
 }
 
-data LanguageService
-    = callHierarchy (
-        list[CallHierarchyItem] (Focus _focus) callableItem,
-        lrel[CallHierarchyItem item, loc call] (CallHierarchyItem _ci, CallDirection _dir) calculateCalls)
-    ;
-
-data CallHierarchyItem
-    = callItem(
-        str name,
-        DocumentSymbolKind kind,
-        loc src,                            // location of the definition
-        loc selection,                      // location of the name of the definition
-        set[DocumentSymbolTag] tags = {},
-        str detail = "",                    // detailed description, e.g. the function signature
-        value \data = ()                    // shared state between `callHierarchy::callableItem` and `callHierarchy::calculateCalls`
-    );
-
-data CallDirection
-    = incoming()
-    | outgoing()
-    ;
-
 DocumentSymbolKind roleToSymbolKind(funId()) = \function();
 DocumentSymbolKind roleToSymbolKind(structId()) = \struct();
 DocumentSymbolKind roleToSymbolKind(variableId()) = \variable();
@@ -84,8 +62,7 @@ lrel[CallHierarchyItem, loc] functionCalls(TopLevelDecl scope, TModel tm)
 lrel[CallHierarchyItem, loc] parserCalls(TopLevelDecl scope, TModel tm)
     = [<ci, id@\loc> | /ModuleId id := scope, def <- tm.useDef[id@\loc], ci := itemForLoc(def)];
 
-lrel[CallHierarchyItem, loc] birdCalls(callItem(str name, _, loc defined, _), incoming()) {
-    lrel[CallHierarchyItem, loc] calls = [];
+lrel[CallHierarchyItem, loc] birdCalls(callHierarchyItem(str name, _, loc defined, _), incoming()) {
     start[Program] prog = parse(#start[Program], defined.top);
     modName = "<prog.top.moduleName>";
     projFolder = defined.top;
@@ -93,6 +70,7 @@ lrel[CallHierarchyItem, loc] birdCalls(callItem(str name, _, loc defined, _), in
         projFolder = projFolder.parent;
     }
 
+    lrel[CallHierarchyItem, loc] calls = [];
     for (loc f <- find(projFolder, "bird"), contains(readFile(f), name)) {
         tm = birdTModelFromTree(parse(#start[Program], f));
         prog = parse(#start[Program], f);
@@ -101,7 +79,7 @@ lrel[CallHierarchyItem, loc] birdCalls(callItem(str name, _, loc defined, _), in
     return calls;
 }
 
-lrel[CallHierarchyItem, loc] birdCalls(callItem(_, _, loc defined, _), outgoing()) {
+lrel[CallHierarchyItem, loc] birdCalls(callHierarchyItem(_, _, loc defined, _), outgoing()) {
     tree = parse(#start[Program], defined.top);
     tm = birdTModelFromTree(tree);
     if (/TopLevelDecl scope := tree, defined := scope@\loc) {
@@ -111,7 +89,7 @@ lrel[CallHierarchyItem, loc] birdCalls(callItem(_, _, loc defined, _), outgoing(
 }
 
 CallHierarchyItem itemForLoc(loc l)
-    = callItem(def.id, roleToSymbolKind(def.idRole), l, l) // TODO Correct name of location
+    = callHierarchyItem(def.id, roleToSymbolKind(def.idRole), l, l) // TODO Correct name of location
     when tm := birdTModelFromTree(parse(#start[Program], l.top))
        , def := tm.definitions[l]
        ;
