@@ -115,7 +115,7 @@ lrel[loc, Command] birdLenses(start[Program] input) {
 
 value birdExecutor(visualizeDependencies(loc decl, str name)) {
     gg = buildGrammarGraph(decl);
-    showInteractiveContent(graph(gg, \layout=defaultDagreLayout()), viewColumn=2, title="<name> Grammar");
+    showInteractiveContent(graph(gg, cfg=cytoGraphConfig(\layout=defaultDagreLayout())), viewColumn=2, title="<name> Grammar");
     return ("result": true);
 }
 
