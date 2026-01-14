@@ -38,10 +38,6 @@
                 <groupId>org.rascalmpl</groupId>
                 <artifactId>typepal</artifactId>
               </exclusion>
-              <exclusion>
-                <groupId>org.rascalmpl</groupId>
-                <artifactId>rascal-core</artifactId>
-              </exclusion>
             </exclusions>
           </dependency>
           <dependency>
