@@ -3,4 +3,3 @@ Project-Name: bird-ide
 Source: src/main/rascal
 Main-Module: lang::bird::LanguageServer
 Main-Function: birdLanguageContributor
-Require-Libraries: |lib://bird-core|, |lib://typepal|, |lib://rascal-lsp|
