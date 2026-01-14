@@ -11,7 +11,7 @@ import String;
 import ParseTree;
 
 import IO;
-//import util::Maybe;
+import util::Maybe;
 
 extend analysis::typepal::TypePal;
 extend analysis::typepal::TestFramework;
@@ -24,20 +24,13 @@ data TModel (
     AnonymousFields anonymousFields = ()
 );
 
-// The following is a workaround for a bug in the Rascal type checker that rejects `nothing()` as a default value
-// TODO: change back to `Maybe[Expr]` after a release of rascal-core
-data MaybeExpr 
-   = nothing() 
-   | just(Expr val)
-   ;
-
 data AType
     = voidType()
     | intType()
     | typeType(AType ty)
     | strType()
     | boolType()
-    | listType(AType ty, MaybeExpr n = nothing())
+    | listType(AType ty, Maybe[Expr] n = nothing())
     | consType(AType formals)
     | funType(str name, AType returnType, AType formals, str javaRef)
     | structDef(str name, list[str] typeFormals)
@@ -197,18 +190,8 @@ default Type getNestedType(Type t) = t;
 
 // ---- Modules and imports
 
-private loc project(loc file) {
-   assert file.scheme == "project";
-   return |project://<file.authority>|;
-}
-
 PathConfig pathConfig(loc file) {
     return pathConfig(srcs = [file.top.parent, file.top.parent.parent]);
-//    assert file.scheme == "project";
-
-//    p = project(file);      
- 
-//    return pathConfig(srcs = [ p + "src"]);
 }
 
 private str BIRD_IMPORT_QUEUE = "__birdImportQueue";
@@ -233,7 +216,7 @@ void collect(current:(Import) `import <ModuleId moduleName>`, Collector c) {
     c.push(BIRD_IMPORT_QUEUE, moduleName);
 }
 
-void handleImports(Collector c, Tree root, PathConfig pcfg) {
+void handleImports(Collector c, Tree _root, PathConfig pcfg) {
     set[ModuleId] imported = {};
     while (list[ModuleId] modulesToImport := c.getStack(BIRD_IMPORT_QUEUE) && modulesToImport != []) {
         c.clearStack(BIRD_IMPORT_QUEUE);
@@ -391,7 +374,7 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
         c.define("<fakeAnon>", fieldId(), fakeAnon, defType(ty));
     }
     
-    MaybeExpr siz = nothing();
+    Maybe[Expr] siz = nothing();
     if (s <- sz)
         siz = just(s.expr);
     
@@ -496,7 +479,7 @@ void collectArgs(Type ty, Arguments current, Collector c){
                     argTypes = atypeList([ s.getType(a) | a <- current.args]);
                     s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments: %t expected: %t", [argTypes, ct.formals]));
                 }
-                elseif (structDef(refName, []) !:= t) {
+                else if (structDef(_, []) !:= t) {
                     throw "Operation not supported for type <t>";
                 }
                 
@@ -545,14 +528,8 @@ void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? a
          currentScope = c.getScope();
          c.require("abstract fields", current, ts, void(Solver s){
              abstractFields = [<"<id>", s.getType(id)> | (DeclInChoice) `abstract <Type _> <Id id>` <- decls];
-             for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? size>` <- decls){
-                map[str id, AType tp] definedFields;
-                if (anonType(fields) := s.getType(ty)) {
-                    definedFields = toMapUnique(fields);
-                }
-                else {
-                   definedFields = toMapUnique(s.getAllDefinedInType(s.getType(ty), currentScope, {fieldId()}));
-                }
+             for ((DeclInChoice) `<Type ty> <Arguments? _> <Size? _>` <- decls){
+                map[str id, AType tp] definedFields = anonType(fields) := s.getType(ty) ? toMapUnique(fields) : toMapUnique(s.getAllDefinedInType(s.getType(ty), currentScope, {fieldId()}));
                 for (<aId, aTy> <- abstractFields) {
                     s.requireTrue(aId in definedFields, error(ty, "Field %v is missing from %t", aId, ty));
                     s.requireSubType(definedFields[aId], aTy, error(ty, "Field %v is not of the expected type %t", aId, aTy));
@@ -595,7 +572,7 @@ void collect(current:(UnaryExpr) `<EqualityOperator uo> <Expr e>`, Collector c){
 }
 
 
-void collectType(current:(Type)`<UInt v>`, Collector c, MaybeExpr theSize = nothing()) {
+void collectType(current:(Type)`<UInt v>`, Collector c, Maybe[Expr] theSize = nothing()) {
     bits = toInt("<v>"[1..]);
     if (bits % 8 != 0) {
         c.report(error(current, "The number of bits in a u? type must be a multiple of 8"));
@@ -604,23 +581,23 @@ void collectType(current:(Type)`<UInt v>`, Collector c, MaybeExpr theSize = noth
 }
 
 
-void collectType(current:(Type)`byte`, Collector c, MaybeExpr theSize = nothing()) {
+void collectType(current:(Type)`byte`, Collector c, Maybe[Expr] theSize = nothing()) {
     c.fact(current, byteType());
 }  
 
-void collectType(current:(Type)`str`, Collector c, MaybeExpr theSize = nothing()) {
+void collectType(current:(Type)`str`, Collector c, Maybe[Expr] theSize = nothing()) {
     c.fact(current, strType());
 }
 
-void collectType(current:(Type)`bool`, Collector c,  MaybeExpr theSize = nothing()) {
+void collectType(current:(Type)`bool`, Collector c,  Maybe[Expr] theSize = nothing()) {
     c.fact(current, boolType());
 }  
 
-void collectType(current:(Type)`int`, Collector c, MaybeExpr theSize = nothing()) {
+void collectType(current:(Type)`int`, Collector c, Maybe[Expr] theSize = nothing()) {
     c.fact(current, intType());
 }  
 
-default void collectType(current: Type t, Collector c, MaybeExpr theSize = nothing()) {
+default void collectType(current: Type t, Collector c, Maybe[Expr] theSize = nothing()) {
     throw "Collection not implemented for type <t>";
 }
 
@@ -635,7 +612,7 @@ default void collectType(current: Type t, Collector c, MaybeExpr theSize = nothi
   
 }*/
 
-void collectType(current:(Type)`<Type t> [ ]`, Collector c, MaybeExpr theSize = nothing()) {
+void collectType(current:(Type)`<Type t> [ ]`, Collector c, Maybe[Expr] theSize = nothing()) {
     collectType(t, c, theSize = theSize);
     c.calculate("list type", current, [t], AType(Solver s) {
         //println("<t> &&& <s.getType(t)>");
@@ -643,7 +620,7 @@ void collectType(current:(Type)`<Type t> [ ]`, Collector c, MaybeExpr theSize = 
     });
 }  
 
-void collectType(current: (Type) `<ModuleId name>`, Collector c, MaybeExpr theSize = nothing()){
+void collectType(current: (Type) `<ModuleId name>`, Collector c, Maybe[Expr] theSize = nothing()){
     //println("checking <current>");
     list[Id] idsInModule = [id | id <- name.moduleName];
     
@@ -656,7 +633,7 @@ void collectType(current: (Type) `<ModuleId name>`, Collector c, MaybeExpr theSi
 }
 
 
-void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collector c, MaybeExpr theSize = nothing()){
+void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collector c, Maybe[Expr] theSize = nothing()){
     //println("checking <current>");
     
     list[Id] idsInModule = [id | id <- name.moduleName];
@@ -692,14 +669,14 @@ void collectType(current: (Type) `<ModuleId name> <TypeActuals actuals>`, Collec
     }
 }
 
-void collectType(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c, MaybeExpr theSize = nothing()) {
+void collectType(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c, Maybe[Expr] theSize = nothing()) {
     c.enterScope(current);
         collect(decls, c);
     c.leaveScope(current);
     fields =for (d <-decls){
             switch(d){
-                case (DeclInStruct) `<Type t> <Id id> = <Expr e>`: append(<"<id>", t>);
-                case (DeclInStruct) `<Type t> <DId id> <Arguments? args> <Size? size> <SideCondition? sc>`: append(<"<id>", t>);
+                case (DeclInStruct) `<Type t> <Id id> = <Expr _>`: append(<"<id>", t>);
+                case (DeclInStruct) `<Type t> <DId id> <Arguments? _> <Size? _> <SideCondition? _>`: append(<"<id>", t>);
             };
         };
     //for (<id, ty> <- fields){
@@ -714,7 +691,7 @@ void collect(current: (Expr) `parse <Expr parsed> with <Type ty> <Arguments? arg
     collect(parsed, c);
     c.fact(current, ty);
     
-    MaybeExpr siz = nothing();
+    Maybe[Expr] siz = nothing();
     if (s <- sz)
         siz = just(s.expr);
     
@@ -1050,7 +1027,7 @@ tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structTyp
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(funType(str name, _, _, _)) = <[name], {funId()}>;
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(AType t) = <[], {}>;
 
-AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope, Solver s){
+AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc _scope, Solver s){
     if(anonType(fields) :=  containerType){
         return Set::getOneFrom((ListRelation::index(fields))["<selector>"]);
     }
