@@ -223,7 +223,7 @@ void collect(current:(Import) `import <ModuleId moduleName>`, Collector c) {
     c.push(BIRD_IMPORT_QUEUE, moduleName);
 }
 
-void handleImports(Collector c, Tree root, PathConfig pcfg) {
+void handleImports(Collector c, Tree _root, PathConfig pcfg) {
     set[ModuleId] imported = {};
     while (list[ModuleId] modulesToImport := c.getStack(BIRD_IMPORT_QUEUE) && modulesToImport != []) {
         c.clearStack(BIRD_IMPORT_QUEUE);
@@ -486,7 +486,7 @@ void collectArgs(Type ty, Arguments current, Collector c){
                     argTypes = atypeList([ s.getType(a) | a <- current.args]);
                     s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments: %t expected: %t", [argTypes, ct.formals]));
                 }
-                elseif (structDef(refName, []) !:= t) {
+                else if (structDef(_, []) !:= t) {
                     throw "Operation not supported for type <t>";
                 }
                 
@@ -535,14 +535,8 @@ void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? a
          currentScope = c.getScope();
          c.require("abstract fields", current, ts, void(Solver s){
              abstractFields = [<"<id>", s.getType(id)> | (DeclInChoice) `abstract <Type _> <Id id>` <- decls];
-             for ((DeclInChoice) `<Type ty> <Arguments? args> <Size? size>` <- decls){
-                map[str id, AType tp] definedFields;
-                if (anonType(fields) := s.getType(ty)) {
-                    definedFields = toMapUnique(fields);
-                }
-                else {
-                   definedFields = toMapUnique(s.getAllDefinedInType(s.getType(ty), currentScope, {fieldId()}));
-                }
+             for ((DeclInChoice) `<Type ty> <Arguments? _> <Size? _>` <- decls){
+                map[str id, AType tp] definedFields = anonType(fields) := s.getType(ty) ? toMapUnique(fields) : toMapUnique(s.getAllDefinedInType(s.getType(ty), currentScope, {fieldId()}));
                 for (<aId, aTy> <- abstractFields) {
                     s.requireTrue(aId in definedFields, error(ty, "Field %v is missing from %t", aId, ty));
                     s.requireSubType(definedFields[aId], aTy, error(ty, "Field %v is not of the expected type %t", aId, aTy));
@@ -688,8 +682,8 @@ void collectType(current:(Type)`struct { <DeclInStruct* decls>}`, Collector c, M
     c.leaveScope(current);
     fields =for (d <-decls){
             switch(d){
-                case (DeclInStruct) `<Type t> <Id id> = <Expr e>`: append(<"<id>", t>);
-                case (DeclInStruct) `<Type t> <DId id> <Arguments? args> <Size? size> <SideCondition? sc>`: append(<"<id>", t>);
+                case (DeclInStruct) `<Type t> <Id id> = <Expr _>`: append(<"<id>", t>);
+                case (DeclInStruct) `<Type t> <DId id> <Arguments? _> <Size? _> <SideCondition? _>`: append(<"<id>", t>);
             };
         };
     //for (<id, ty> <- fields){
@@ -1040,7 +1034,7 @@ tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(structTyp
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(funType(str name, _, _, _)) = <[name], {funId()}>;
 tuple[list[str] typeNames, set[IdRole] idRoles] birdGetTypeNameAndRole(AType t) = <[], {}>;
 
-AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc scope, Solver s){
+AType birdGetTypeInAnonymousStruct(AType containerType, Tree selector, loc _scope, Solver s){
     if(anonType(fields) :=  containerType){
         return Set::getOneFrom((ListRelation::index(fields))["<selector>"]);
     }
