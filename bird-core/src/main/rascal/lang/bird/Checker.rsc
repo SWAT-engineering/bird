@@ -197,18 +197,8 @@ default Type getNestedType(Type t) = t;
 
 // ---- Modules and imports
 
-private loc project(loc file) {
-   assert file.scheme == "project";
-   return |project://<file.authority>|;
-}
-
 PathConfig pathConfig(loc file) {
     return pathConfig(srcs = [file.top.parent, file.top.parent.parent]);
-//    assert file.scheme == "project";
-
-//    p = project(file);      
- 
-//    return pathConfig(srcs = [ p + "src"]);
 }
 
 private str BIRD_IMPORT_QUEUE = "__birdImportQueue";
