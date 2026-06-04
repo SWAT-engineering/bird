@@ -328,7 +328,7 @@ void collect(current:(TopLevelDecl) `struct <Id id> <TypeFormals? typeFormals> <
          collectAnnos(annos, c);
          collect(decls, c);
          
-         c.push(ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInStruct) `<Type ty> _ <Arguments? _> <Size? _> <SideCondition? _>` <- decls}>);
+         c.push(ANONYMOUS_FIELDS, <current.src, {ty | (DeclInStruct) `<Type ty> _ <Arguments? _> <Size? _> <SideCondition? _>` <- decls}>);
     }
     c.leaveScope(current);
 }
@@ -370,7 +370,7 @@ void collect(current:(DeclInStruct) `<Type ty> <DId id> <Arguments? args> <Size?
         c.define("<id>", fieldId(), id, defType(ty));
     }
     else {
-        fakeAnon = newUnnamedId(id@\loc);
+        fakeAnon = newUnnamedId(id.src);
         c.define("<fakeAnon>", fieldId(), fakeAnon, defType(ty));
     }
     
@@ -406,7 +406,7 @@ void collectSideCondition(Type ty, DId id, current:(SideCondition) `? ( <Expr e>
 
 void collectSideCondition(Type ty, DId id, current:(SideCondition) `while ( <Expr e>)`, Collector c){
     c.enterScope(current);
-    c.define("it", variableId(), newFieldNameId(id, id@\loc), defType([ty], AType (Solver s) {
+    c.define("it", variableId(), newFieldNameId(id, id.src), defType([ty], AType (Solver s) {
           if (listType(t) := s.getType(ty) && t != byteType()) {
            return t;
         }
@@ -474,7 +474,7 @@ void collectArgs(Type ty, Arguments current, Collector c){
                 //println(currentScope);
                 if (structType(refName,actuals) := t){
                     // TODO check if this is aligned now
-                    fk = newConstructorId([Id] "<idStr>", ty@\loc);
+                    fk = newConstructorId([Id] "<idStr>", ty.src);
                     ct = s.getTypeInType(structType(refName, actuals), fk, {consId()}, currentScope);
                     argTypes = atypeList([ s.getType(a) | a <- current.args]);
                     s.requireSubType(argTypes, ct.formals, error(current, "Wrong type of arguments: %t expected: %t", [argTypes, ct.formals]));
@@ -509,7 +509,7 @@ void collectFunctionArgs(Id id, Arguments current, Collector c){
 
 void collectFormals(TopLevelDecl decl, Id id, Formals? current, Collector c){
     actualFormals = [af | fformals <- current, af <- fformals.formals];
-    constructorFakeTree = newConstructorId(id, decl@\loc);
+    constructorFakeTree = newConstructorId(id, decl.src);
     c.define("<constructorFakeTree>", consId(), constructorFakeTree, defType(actualFormals, AType(Solver s) {
              return consType(atypeList([s.getType(a) | a <- actualFormals]));
     }));
@@ -538,7 +538,7 @@ void collect(current:(TopLevelDecl) `choice <Id id> <Formals? formals> <Annos? a
                  
          });
          
-         c.push(ANONYMOUS_FIELDS, <current@\loc, {ty | (DeclInChoice) `<Type ty> <Arguments? _> <Size? _>` <- decls}>);
+         c.push(ANONYMOUS_FIELDS, <current.src, {ty | (DeclInChoice) `<Type ty> <Arguments? _> <Size? _>` <- decls}>);
     }
     c.leaveScope(current);
     
@@ -554,7 +554,7 @@ void collect(current:(DeclInChoice) `<Type ty> <Arguments? args> <Size? size>`, 
         s.requireTrue(isTokenType(s.getType(ty)), error(ty, "Non-initialized fields must be of a token type but it was %t", ty));
     });
 
-    fakeAnon = newUnnamedId(ty@\loc);
+    fakeAnon = newUnnamedId(ty.src);
     c.define("<fakeAnon>", fieldId(), fakeAnon, defType(ty));
     
     collectType(ty, c);
@@ -1007,7 +1007,7 @@ void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, T
 }    
 
 // ----  Examples & Tests --------------------------------
-TModel birdTModelFromTree(Tree pt, bool debug = false, bool testing=false, PathConfig pathConf = pathConfig(pt@\loc)){
+TModel birdTModelFromTree(Tree pt, bool debug = false, bool testing=false, PathConfig pathConf = pathConfig(pt.src)){
     if (pt has top) pt = pt.top;
     c = newCollector("collectAndSolve", pt, getBirdConfig(debug = debug));    // TODO get more meaningfull name
     c.push(TESTING, testing);
@@ -1059,7 +1059,7 @@ private TypePalConfig getBirdConfig(bool debug = false) = tconfig(
 // }
  
 bool testBird(int n, bool debug = false, set[str] runOnly = {}) {
-    return runTests([|project://bird-core/src/main/rascal/lang/bird/bird<"<n>">.ttl|], #start[Program], TModel (Tree t) {
+    return runTests([|project://bird-core/src/main/rascal/lang/bird/bird<"<n>">.ttl|], #start[Program], TModel (Tree t, str _name) {
         return birdTModelFromTree(t, debug=debug, testing=true);
     }, runOnly = runOnly);
 }
