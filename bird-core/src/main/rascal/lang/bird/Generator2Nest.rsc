@@ -80,7 +80,7 @@ tuple[str, str] compile(current: (Program) `module <ModuleId moduleName> <Import
 		 
 str generateNestType(current: (Type) `struct { <DeclInStruct* decls>}`, str basePkg, map[loc, AType] types)
 	= "$anon_type_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>"
-	when lo := current@\loc;
+	when lo := current.src;
 
 str generateNestType((Type) `int`, str basePkg, map[loc, AType] types)
 	= "NestBigInteger";
@@ -93,7 +93,7 @@ str generateNestType((Type) `bool`, str basePkg, map[loc, AType] types)
 
 str generateNestType(current: (Type) `byte []`, str basePkg, map[loc, AType] types)
 	= "UnsignedBytes"
-	when listType(byteType()) := types[current@\loc];
+	when listType(byteType()) := types[current.src];
 	
 str generateNestType((Type) `<Type t> []`, str basePkg, map[loc, AType] types)
 	= "TokenList\<<generateNestType(t, basePkg, types)>\>"
@@ -108,7 +108,7 @@ str generateNestType((Type) `<UInt v>`, str basePkg, map[loc, AType] types)
 
 str generateNestType(current: (Type) `<ModuleId id>`, str basePkg, map[loc, AType] types)
 	="<toJavaFQName(basePkg, id)>"
-	when variableType(_) !:= types[current@\loc];	
+	when variableType(_) !:= types[current.src];	
 
 str generateNestType(current: (Type) `<ModuleId id> <TypeActuals typeActuals>`, str basePkg, map[loc, AType] types)
 	="<toJavaFQName(basePkg, id)><nestTypeActuals>"
@@ -117,13 +117,13 @@ str generateNestType(current: (Type) `<ModuleId id> <TypeActuals typeActuals>`, 
 
 str generateNestType(current: (Type) `<ModuleId id>`, str basePkg, map[loc, AType] types)
 	= "<id>"
-	when variableType(_) := types[current@\loc];
+	when variableType(_) := types[current.src];
 
 str makeUnique(Tree t, str prefix) = "$<prefix>_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>"
-	when lo := t@\loc;
+	when lo := t.src;
 	
 str makeId(Tree t) = ("<t>" =="_")?"anon_<lo.offset>_<lo.length>_<lo.begin.line>_<lo.begin.column>_<lo.end.line>_<lo.end.column>":"<t>"
-	when lo := t@\loc;
+	when lo := t.src;
 	
 str compileAnno("encoding", (Expr) `<Id val>`, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types)
 	= "__$ctx = __$ctx.setEncoding(StandardCharsets.<val>);";
@@ -218,7 +218,7 @@ str compile(current:(TopLevelDecl) `struct <Id sid> <TypeFormals? typeFormals> <
 	when lrel[str, Type] formalsList := [<"<id>", typ> | aformals <- formals,(Formal) `<Type typ> <Id id>` <- aformals.formals],
 		 lrel[str, Type, bool, bool] fieldsList := 
 		 	[<makeId(d has id ? d.id : d.did), d.ty, d is token, (DeclInStruct) `<Type _> <DId _> <Arguments? _> <Size? _> byparsing (<Expr _>)`:= d>| DeclInStruct d <- decls],
-		 lrel[str, Type] computedFieldsList := [<makeId(d has id ? d.id : d.did), d.ty>| DeclInStruct d <- decls, d is computed, isTokenType(types[d.ty@\loc])],
+		 lrel[str, Type] computedFieldsList := [<makeId(d has id ? d.id : d.did), d.ty>| DeclInStruct d <- decls, d is computed, isTokenType(types[d.ty.src])],
 		 lrel[str, Type] allFieldsList := formalsList + [<id, ty> | <id, ty, _, _> <- fieldsList],
 		 list[Id] typeFormalsList := [t | atypeFormals <- typeFormals, t <- atypeFormals.typeFormals],
 		 str javaTypeFormals := ((size(typeFormalsList) > 0)?"\<<intercalate(",", ["<tf> extends Token" | tf <- typeFormalsList])>\>":""),
@@ -253,23 +253,23 @@ str generateAnonymousType(current: (Type) `struct { <DeclInStruct* decls>}`, lre
 		 
 str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
 	= "<src>.readUnsigned(<compile(expr, DUMMY_DID, basePkg, useDefs, types)>, <ctx>)"
-	when listType(byteType(), n = just(expr)) :=  types[current@\loc];
+	when listType(byteType(), n = just(expr)) :=  types[current.src];
 	
 str generateParsingInstruction(current: (Type) `byte []`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
 	= "<src>.readUnsignedUntilEnd(<ctx>)"
-	when listType(byteType(), n = nothing()) :=  types[current@\loc];
+	when listType(byteType(), n = nothing()) :=  types[current.src];
 	
 str generateParsingInstruction(current: (Type) `<Type t> []`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
 	= "TokenList.times(<src>, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], basePkg, useDefs, types, src = "<src1>", ctx = "<ctx1>")>, <compile(expr, DUMMY_DID, basePkg, useDefs, types)>.intValueExact())"
 	when (Type) `byte` !:= t,
-	     listType(_, n = just(expr)) :=  types[current@\loc],
+	     listType(_, n = just(expr)) :=  types[current.src],
 		 src1 := makeUnique(t, "__$src"),
 		 ctx1 := makeUnique(t, "__$ctx");
 		 
 str generateParsingInstruction(current: (Type) `<Type t> []`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
 	= "TokenList.untilParseFailure(<src>, <ctx>, (<src1>, <ctx1>) -\> <generateParsingInstruction(t, [], [], basePkg, useDefs, types, src = "<src1>", ctx = "<ctx1>")>)"
 	when (Type) `byte` !:= t,
-		 listType(_, n = nothing()) :=  types[current@\loc],
+		 listType(_, n = nothing()) :=  types[current.src],
 		 src1 := makeUnique(t, "__$src"),
 		 ctx1 := makeUnique(t, "__$ctx");		 
 	
@@ -280,7 +280,7 @@ str generateParsingInstruction((Type) `byte`, list[Expr] args, list[str] _, str 
 
 str generateParsingInstruction(current: (Type) `<UInt v>`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
 	= "<src>.readUnsigned(<n>, <ctx>)"
-	when listType(byteType(), n = just(n)) :=  types[current@\loc];
+	when listType(byteType(), n = just(n)) :=  types[current.src];
 
 str generateParsingInstruction(current: (Type) `<ModuleId id> <TypeActuals typeActuals>`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
  	= "<toJavaFQName(basePkg, id)>.parse(<src>, <ctx><for (e <-args){>, <compile(e, DUMMY_DID, basePkg, useDefs, types)><}><for (Type ta <- typeActuals.typeActuals){>, (<src1>, <ctx1>) -\> <generateParsingInstruction(ta, [], [], basePkg, useDefs, types, src = src1, ctx = ctx1)><}>)"
@@ -290,14 +290,14 @@ str generateParsingInstruction(current: (Type) `<ModuleId id> <TypeActuals typeA
  		 
 str generateParsingInstruction(current: (Type) `<ModuleId id>`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
  	= "<toJavaFQName(basePkg, id)>.parse(<src>, <ctx><for (e <-args){>, <compileForParse(e, DUMMY_DID, basePkg, useDefs, types)><}>)"
- 	when variableType(_) !:= types[current@\loc],
+ 	when variableType(_) !:= types[current.src],
  		 src1 := makeUnique(id, "__$src"),
  		 ctx1 := makeUnique(id, "__$ctx");
  		 
  	
 str generateParsingInstruction((Type) `<ModuleId id>`, list[Expr] args, list[str] _, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
  	= "parserFor<id>.apply(<src>, <ctx>)"
- 	when variableType(_) := types[id@\loc];
+ 	when variableType(_) := types[id.src];
  	
  	
 str generateParsingInstruction(current: (Type) `struct { <DeclInStruct* decls>}`, list[Expr] args, list[str] formalIds, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types, str src = "__$src", str ctx = "__$ctx")
@@ -309,8 +309,8 @@ default str generateParsingInstruction(Type t, list[Expr] args, list[str] _, str
 
 str compileCondition((SideCondition) `? (<EqualityOperator eo> <Expr e>)`, DId this, Type thisType, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"$<makeId(this)>.sameBytes(<compile(e, this, basePkg, useDefs, types)>)"
-	when listType(byteType()) := types[e@\loc],
-		 listType(byteType()) := types[thisType@\loc];
+	when listType(byteType()) := types[e.src],
+		 listType(byteType()) := types[thisType.src];
 
 str generateSideCondition(current: (SideCondition) `? (<EqualityOperator eo> <Expr e>)`, str parentId, DId this, Type thisType, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"if (<op>(<compileCondition(current, this, thisType, basePkg, useDefs, types)>)) {
@@ -395,14 +395,14 @@ str compile(current: (Expr) `this`, DId this, str basePkg, rel[loc,loc] useDefs,
 str compile(current: (Expr) `<Id id>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"$<id>"
 	when (Id) `this` !:= id && (Id) `it` !:= id,
-		 isTokenType(types[current@\loc]);
+		 isTokenType(types[current.src]);
 		 
 str compile(current: (Expr) `<Id id>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"$<id>"
-	when !isTokenType(types[current@\loc]);
+	when !isTokenType(types[current.src]);
 		 
 str compile(current: (Expr) `<Id id> <Arguments args>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) {
-	if (funType(_, _, _, javaName) := types[id@\loc]) {
+	if (funType(_, _, _, javaName) := types[id.src]) {
 		return "<javaName>.<id>(<intercalate(", ", [compile(e, this, basePkg, useDefs, types) | e <- args.args])>)";
 	}
 	throw "Not yet implemented";
@@ -450,14 +450,14 @@ str compile(current: (Expr) `<Expr e1> <ComparatorOperator uo> <Expr e2>`, DId t
 str compile(current: (Expr) `<Expr e1> <EqualityOperator uo> <Expr e2>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"<op>(<compile(e1, this, basePkg, useDefs, types)>.sameBytes(<compile(e2, this, basePkg, useDefs, types)>))"
 	when op := (uo is equality?"":"!"),
-		 listType(byteType()) := types[e1@\loc],
-		 listType(byteType()) := types[e2@\loc];
+		 listType(byteType()) := types[e1.src],
+		 listType(byteType()) := types[e2.src];
 			 
 str compile(current: (Expr) `<Expr e1> <EqualityOperator uo> <Expr e2>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"<op>(<compile(e1, this, basePkg, useDefs, types)>.equals(<compile(e2, this, basePkg, useDefs, types)>))"
 	when op := (uo is equality?"":"!"),
-		 listType(byteType()) != types[e1@\loc],
-		 listType(byteType()) != types[e2@\loc];
+		 listType(byteType()) != types[e1.src],
+		 listType(byteType()) != types[e2.src];
 
 str compile(current: (Expr) `<Expr e>[<Expr index>]`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) =
 	"<compile(e, this, basePkg, useDefs, types)>.get(<compile(index, this, basePkg, useDefs, types)>.intValueExact())";
@@ -515,7 +515,7 @@ str compile(current: (Expr) e, DId this, str basePkg, rel[loc,loc] useDefs, map[
 
 str compileForParse(current: (Expr) `<Id id>`, DId this, str basePkg, rel[loc,loc] useDefs, map[loc, AType] types) = 
 	"$<id>.get()"
-	when !isTokenType(types[current@\loc]);
+	when !isTokenType(types[current.src]);
 
 default str compileForParse(Expr e, DId this, str basePkg, rel[loc, loc] useDefs, map[loc, AType] types)
 	= compile(e, this, basePkg, useDefs, types);
