@@ -1059,7 +1059,7 @@ private TypePalConfig getBirdConfig(bool debug = false) = tconfig(
 // }
  
 bool testBird(int n, bool debug = false, set[str] runOnly = {}) {
-    return runTests([|project://bird-core/src/main/rascal/lang/bird/bird<"<n>">.ttl|], #start[Program], TModel (Tree t) {
+    return runTests([|project://bird-core/src/main/rascal/lang/bird/bird<"<n>">.ttl|], #start[Program], TModel (Tree t, str _name) {
         return birdTModelFromTree(t, debug=debug, testing=true);
     }, runOnly = runOnly);
 }
