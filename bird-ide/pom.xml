@@ -16,6 +16,16 @@
     <dependency>
       <groupId>org.rascalmpl</groupId>
       <artifactId>rascal-lsp</artifactId>
+      <exclusions> <!-- we exclude dependencies we don't really need, or maybe want to have our own -->
+        <exclusion>
+          <groupId>org.rascalmpl</groupId>
+          <artifactId>typepal</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.rascalmpl</groupId>
+          <artifactId>rascal</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>engineering.swat</groupId>
