@@ -1007,8 +1007,10 @@ void collectInfixOperation(Tree current, str op, AType (AType,AType) infixFun, T
 }    
 
 // ----  Examples & Tests --------------------------------
-TModel birdTModelFromTree(Tree pt, bool debug = false, bool testing=false, PathConfig pathConf = pathConfig(pt.src)){
-    if (pt has top) pt = pt.top;
+TModel birdTModelFromTree(start[Program] pt, bool debug = false, bool testing=false, PathConfig pathConf = pathConfig(pt.src))
+    = birdTModelFromTree(pt.top, debug=debug, testing=testing, pathConf=pathConf);
+
+default TModel birdTModelFromTree(Tree pt, bool debug = false, bool testing=false, PathConfig pathConf = pathConfig(pt.src)){
     c = newCollector("collectAndSolve", pt, getBirdConfig(debug = debug));    // TODO get more meaningfull name
     c.push(TESTING, testing);
     //println("Bird: Version 1.0");
